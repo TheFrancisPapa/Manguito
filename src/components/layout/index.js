@@ -1,0 +1,7 @@
+// src/components/layout/index.js
+export { PageWrapper, PageHeader } from './PageWrapper'
+export { BottomNav }               from './BottomNav'
+export { Sidebar }                 from './Sidebar'
+export { MovCard }                 from './MovCard'
+export { PresupCard }              from './PresupCard'
+export { MetaCard }                from './MetaCard'
