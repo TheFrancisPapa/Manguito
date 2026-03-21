@@ -1,4 +1,5 @@
 // src/components/ui/Button.jsx
+import { Spinner } from './Spinner'   // ← este import faltaba
 
 const VARIANTES = {
   primary:   'bg-amber-400 hover:bg-amber-500 text-amber-900',
