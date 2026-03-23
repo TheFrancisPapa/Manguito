@@ -43,7 +43,7 @@ export function MovimientosPage() {
   }
 
   const handleEliminar = async () => {
-    if (window.confirm('¿Seguro que querés eliminar este registro? Esto afectará tus balances.')) {
+    if (window.confirm('¿Estás seguro de que querés eliminar este movimiento? Esta acción no se puede deshacer.')) {
       try {
         if (eliminar) {
            await eliminar(movSeleccionado.id)
@@ -52,7 +52,7 @@ export function MovimientosPage() {
         window.location.reload()
       } catch (error) {
         console.error("Error al eliminar", error)
-        alert("Hubo un error al eliminar. Asegurate de que la función 'eliminar' esté lista en tu API y en el hook useMovimientos.")
+        alert("Hubo un error al eliminar. Por favor, intentá de nuevo más tarde.")
       }
     }
   }
@@ -123,33 +123,36 @@ export function MovimientosPage() {
         <FormMovimiento onSubmit={handleGuardar} onCancel={() => setModalNuevo(false)} />
       </Modal>
 
-      {/* Modal de Detalle del Movimiento (El que faltaba) */}
-      <Modal abierto={!!movSeleccionado} onCerrar={() => setMovSeleccionado(null)} titulo="Detalle del registro">
+      {/* Modal de Detalle del Movimiento Mejorado */}
+      <Modal abierto={!!movSeleccionado} onCerrar={() => setMovSeleccionado(null)} titulo="Detalle del movimiento">
         {movSeleccionado && (
-          <div className="flex flex-col gap-6">
-            <div className="text-center bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-               <div className="w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-3" style={{ background: (movSeleccionado.categorias?.color ?? '#6B7280') + '22' }}>
+          <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4 fade-in duration-300">
+            {/* Cabecera del Detalle (Impactante visualmente) */}
+            <div className="text-center p-6 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50">
+               <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-sm" style={{ background: (movSeleccionado.categorias?.color ?? '#6B7280') + '22' }}>
                  <span className="text-3xl">{movSeleccionado.categorias?.icono ?? '📦'}</span>
                </div>
-               <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{movSeleccionado.categorias?.nombre}</p>
-               <h2 className={`text-4xl font-bold mt-1 ${movSeleccionado.tipo === 'ingreso' ? 'text-emerald-600' : 'text-zinc-900 dark:text-white'}`}>
+               <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">{movSeleccionado.categorias?.nombre}</p>
+               <h2 className={`text-4xl font-extrabold mt-2 tracking-tight ${movSeleccionado.tipo === 'ingreso' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'}`}>
                  {movSeleccionado.tipo === 'ingreso' ? '+' : '-'}{formatMoneda(movSeleccionado.monto, usuario?.moneda, true)}
                </h2>
-               <p className="text-sm text-zinc-500 mt-2">
-                 {new Date(movSeleccionado.fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-3 font-medium">
+                 {new Date(movSeleccionado.fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                </p>
             </div>
 
+            {/* Detalles Adicionales */}
             {movSeleccionado.descripcion && (
-              <div>
-                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1">Descripción / Nota</p>
-                <p className="text-sm text-zinc-900 dark:text-zinc-300">{movSeleccionado.descripcion}</p>
+              <div className="px-2">
+                <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Nota</p>
+                <p className="text-sm text-zinc-800 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-2xl leading-relaxed">{movSeleccionado.descripcion}</p>
               </div>
             )}
 
-            <div className="flex gap-3 mt-2 border-t border-zinc-100 dark:border-zinc-800 pt-4">
-              <Button variante="secondary" className="flex-1" onClick={() => setMovSeleccionado(null)}>Cerrar</Button>
-              <Button variante="danger" className="flex-1" onClick={handleEliminar}>Eliminar</Button>
+            {/* Acciones */}
+            <div className="flex gap-3 mt-4">
+              <Button variante="secondary" className="flex-1 py-3 text-base" onClick={() => setMovSeleccionado(null)}>Cerrar</Button>
+              <Button variante="danger" className="flex-1 py-3 text-base font-semibold shadow-md shadow-red-500/20 hover:shadow-red-500/30" onClick={handleEliminar}>Eliminar Movimiento</Button>
             </div>
           </div>
         )}
