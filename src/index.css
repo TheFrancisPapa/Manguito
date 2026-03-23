@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 /* Animaciones personalizadas para Manguito */
 @keyframes blob {
   0% { transform: translate(0px, 0px) scale(1); }
@@ -17,4 +18,15 @@
 
 .animation-delay-4000 {
   animation-delay: 4s;
+}
+
+/* NUEVA: Animación sutil de flote para el logo */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
 }
