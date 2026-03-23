@@ -1,8 +1,7 @@
 export function Card({ children, className = '', onClick }) {
-  const clickable = onClick ? 'cursor-pointer hover:border-zinc-200 dark:hover:border-zinc-600 transition-colors' : ''
+  const clickable = onClick ? 'cursor-pointer hover:border-zinc-200 dark:hover:border-zinc-700 active:scale-[0.99] transition-all duration-200' : ''
   return (
-    <div className={`bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800
-      rounded-2xl p-4 ${clickable} ${className}`} onClick={onClick}>
+    <div className={`bg-white dark:bg-zinc-900 shadow-sm dark:shadow-none border border-zinc-100 dark:border-zinc-800 rounded-2xl p-4 md:p-5 ${clickable} ${className}`} onClick={onClick}>
       {children}
     </div>
   )

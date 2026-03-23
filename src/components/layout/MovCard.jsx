@@ -5,8 +5,7 @@ export function MovCard({ movimiento, onClick }) {
   const fechaFmt   = new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
   return (
     <div onClick={onClick}
-      className="flex items-center gap-3 py-3 px-2 -mx-2 border-b border-zinc-100 dark:border-zinc-800
-        last:border-0 rounded-xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
+      className="flex items-center gap-3 py-3 px-2 -mx-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0 rounded-xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40 active:bg-zinc-100 dark:active:bg-zinc-800 transition-colors">
       <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
         style={{ background: (cat?.color ?? '#6B7280') + '22' }}>
         <span style={{ fontSize: 19, lineHeight: 1 }}>{cat?.icono ?? '📦'}</span>

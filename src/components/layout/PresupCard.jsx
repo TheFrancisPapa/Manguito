@@ -31,8 +31,7 @@ export function PresupCard({ presupuesto, onClick }) {
         </div>
       </div>
       <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${pctUI}%`, background: cfg.barra }} />
+        <div className="h-full rounded-full transition-all duration-700 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.15)]" style={{ width: `${pctUI}%`, background: cfg.barra }} />
       </div>
       <div className="flex items-center justify-between">
         <span className={`text-xs ${cfg.texto}`}>{cfg.etiqueta}</span>

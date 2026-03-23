@@ -15,8 +15,7 @@ export function Sidebar({ usuario }) {
     window.location.href = '/login'
   }
   return (
-    <aside className="hidden md:flex flex-col fixed top-0 left-0 bottom-0 w-56 z-40
-      bg-white dark:bg-zinc-900 border-r border-zinc-100 dark:border-zinc-800 p-4">
+    <aside className="hidden md:flex flex-col fixed top-0 left-0 bottom-0 w-56 z-40 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg border-r border-zinc-100/50 dark:border-zinc-800/50 p-4">
       <div className="flex items-center gap-2.5 px-2 py-3 mb-4">
         <span style={{ fontSize: 26, lineHeight: 1 }}>🥭</span>
         <span className="text-lg font-semibold">Manguito</span>

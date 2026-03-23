@@ -25,7 +25,7 @@ export function BarraMeta({ meta, moneda = 'ARS', onAportar }) {
         )}
       </div>
       <div className="h-3 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-3">
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: color }} />
+        <div className="h-full rounded-full transition-all duration-700 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.15)]" style={{ width: `${pct}%`, background: color }} />
       </div>
       <div className="flex items-center justify-between text-sm">
         <span className="font-semibold">{fmt(monto_actual)}</span>
