@@ -1,33 +1,66 @@
 import { useState } from 'react'
 import { useAuthContext }                          from '../../context/AuthContext'
 import { useBalance, useGastosXCategoria,
-         useUltimosMovimientos }                   from '../../hooks/useMovimientos'
+         useUltimosMovimientos, useMovimientos }   from '../../hooks/useMovimientos'
 import { usePresupuestos }                         from '../../hooks/usePresupuestos'
 import { useMetas }                                from '../../hooks/useMetas'
 import { PageWrapper, PageHeader, Sidebar,
-         BottomNav, MovCard, PresupCard }           from '../../components/layout'
+         BottomNav, MovCard, PresupCard }          from '../../components/layout'
 import { Card, CardHeader, Button,
-         EmptyState, EMPTY_STATES, Modal }          from '../../components/ui'
+         EmptyState, EMPTY_STATES, Modal }         from '../../components/ui'
 import { ResumenBalance, GraficoTorta, BarraMeta } from '../../components/charts'
+import { FormMovimiento }                          from '../../components/FormMovimiento'
 
+// Pequeño helper para sacar el rango del mes actual considerando zona horaria local
 function rangoMes() {
-  const hoy   = new Date()
-  const desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0]
-  const hasta = hoy.toISOString().split('T')[0]
+  const hoy = new Date()
+  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+  
+  // Usamos sv-SE porque devuelve formato YYYY-MM-DD local
+  const desde = primerDia.toLocaleDateString('sv-SE')
+  const hasta = hoy.toLocaleDateString('sv-SE')
+  
   return { desde, hasta }
 }
 
 export function DashboardPage() {
   const { usuario }                              = useAuthContext()
   const { desde, hasta }                         = rangoMes()
-  const { balance,   cargando: cBal }            = useBalance(desde, hasta)
+  
+  // Hooks de datos
+  const { balance, cargando: cBal }              = useBalance(desde, hasta)
   const { datos: gastosXCat, cargando: cTorta }  = useGastosXCategoria(desde, hasta)
   const { movimientos, cargando: cMovs }         = useUltimosMovimientos(5)
   const { presupuestos, resumen, cargando: cPresup } = usePresupuestos()
   const { metas, cargando: cMetas }              = useMetas('activa')
+  
+  // Hook para agregar movimientos nuevos
+  const { agregar: agregarMovimiento }           = useMovimientos()
+
+  // Estado UI
   const [modalMovs, setModalMovs]                = useState(false)
 
   const mesActual = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+
+  // Función para manejar el guardado del formulario
+  const handleGuardarMovimiento = async (datos) => {
+    try {
+      await agregarMovimiento({
+        ...datos,
+        usuario_id: usuario.id
+      })
+      // Si todo sale bien, cerramos el modal
+      setModalMovs(false)
+      // Acá podrías forzar una recarga de los datos del dashboard si quisieras
+      // llamando a las funciones recargar() de tus hooks.
+      // (Por ahora, como tenés useEffects, se van a actualizar si cambia algún filtro, 
+      // pero quizás tengas que implementar un mecanismo para recargar todo post-guardado)
+      window.location.reload() // Manera rápida de refrescar por ahora
+    } catch (error) {
+      console.error("Error al guardar:", error)
+      throw error // Lo relanzamos para que el FormMovimiento lo ataje y muestre el error
+    }
+  }
 
   return (
     <>
@@ -86,7 +119,10 @@ export function DashboardPage() {
       </PageWrapper>
 
       <Modal abierto={modalMovs} onCerrar={() => setModalMovs(false)} titulo="Nuevo movimiento">
-        <p className="text-sm text-zinc-400 text-center py-8">FormMovimiento próximamente 🥭</p>
+        <FormMovimiento 
+          onSubmit={handleGuardarMovimiento} 
+          onCancel={() => setModalMovs(false)} 
+        />
       </Modal>
     </>
   )
