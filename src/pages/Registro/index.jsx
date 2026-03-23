@@ -124,7 +124,7 @@ export function RegistroPage() {
         </div>
       )}
 
-      <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-zinc-100 dark:border-zinc-800 p-6 md:p-8 overflow-hidden relative min-h-[400px] flex flex-col justify-center">
+      <div className="w-full max-w-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 rounded-3xl shadow-sm border border-zinc-100 dark:border-zinc-800 p-6 md:p-8 overflow-hidden relative min-h-[400px] flex flex-col justify-center">
         
         {error && (
           <div className="absolute top-4 left-6 right-6 bg-red-50 dark:bg-red-900/20 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100 dark:border-red-900/50 animate-in slide-in-from-top-4">
