@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
-import { useMetas }       from '../../hooks/useMetas'
-import { PageWrapper, PageHeader, Sidebar, BottomNav, MetaCard } from '../../components/layout'
-import { Card, Button, EmptyState, EMPTY_STATES, Modal,
-         Input, Badge }  from '../../components/ui'
+import { useMetas } from '../../hooks/useMetas'
+import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout'
+import { Card, Button, EmptyState, Modal, Input } from '../../components/ui'
+import { BarraMeta } from '../../components/charts'
 
 const ICONOS_SUGERIDOS = ['🎯','✈️','🛡️','💻','🚗','🏠','📚','💍','🎸','🐶','🌍','💪']
 const COLORES_SUGERIDOS = ['#10B981','#3B82F6','#8B5CF6','#F59E0B','#EF4444','#EC4899','#06B6D4','#F97316']
@@ -197,108 +197,102 @@ function ModalConfirmar({ abierto, onCerrar, onConfirmar, titulo, mensaje, label
 // ─── Página principal ────────────────────────────────────────
 export function MetasPage() {
   const { usuario } = useAuthContext()
-  const { metas, cargando, crear, editar, aportar, pausar, reanudar, cancelar } = useMetas()
+  const { metas, cargando, agregar, aportar, completar, eliminar } = useMetas()
+  const [modalAbierto, setModalAbierto] = useState(false)
+  const [modalAporteAbierto, setModalAporteAbierto] = useState(false)
+  const [metaSeleccionada, setMetaSeleccionada] = useState(null)
+  
+  // Estado para nueva meta
+  const [formData, setFormData] = useState({
+    nombre: '',
+    monto_objetivo: '',
+    icono: '🎯',
+    color: '#F59E0B', // Ámbar por defecto
+    fecha_limite: ''
+  })
 
-  const [modalCrear,    setModalCrear]    = useState(false)
-  const [metaAportar,   setMetaAportar]   = useState(null)
-  const [metaEditar,    setMetaEditar]    = useState(null)
-  const [metaCancelar,  setMetaCancelar]  = useState(null)
-  const [filtro,        setFiltro]        = useState('activa') // 'activa' | 'completada' | 'todas'
+  // Estado para aporte
+  const [montoAporte, setMontoAporte] = useState('')
 
-  const metasFiltradas = filtro === 'todas' ? metas : metas.filter(m => m.estado === filtro)
+  const handleCrearMeta = async (e) => {
+    e.preventDefault()
+    try {
+      await agregar({
+        ...formData,
+        usuario_id: usuario.id,
+        monto_actual: 0,
+        estado: 'activa'
+      })
+      setModalAbierto(false)
+      setFormData({ nombre: '', monto_objetivo: '', icono: '🎯', color: '#F59E0B', fecha_limite: '' })
+      window.location.reload()
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const handleAbrirAporte = (meta) => {
+    setMetaSeleccionada(meta)
+    setMontoAporte('')
+    setModalAporteAbierto(true)
+  }
+
+  const handleAportar = async (e) => {
+    e.preventDefault()
+    try {
+      await aportar(metaSeleccionada.id, Number(montoAporte))
+      setModalAporteAbierto(false)
+      window.location.reload()
+    } catch (error) {
+      console.error(error)
+    }
+  }
 
   return (
-    <>
+    <div className="animate-in fade-in duration-500">
       <Sidebar usuario={usuario} />
       <BottomNav />
       <PageWrapper>
         <PageHeader
-          titulo="Mis metas"
-          subtitulo="Objetivos de ahorro"
-          accion={<Button icono="+" onClick={() => setModalCrear(true)}>Nueva meta</Button>}
+          titulo="Mis Metas"
+          subtitulo="Ahorrar con propósito"
+          accion={<Button icono="+" onClick={() => setModalAbierto(true)} className="shadow-sm shadow-amber-500/20">Nueva Meta</Button>}
         />
 
-        {/* Filtros */}
-        <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1 mb-6">
-          {[
-            { key: 'activa',    label: 'Activas'    },
-            { key: 'completada',label: 'Completadas' },
-            { key: 'todas',     label: 'Todas'      },
-          ].map(({ key, label }) => (
-            <button key={key} onClick={() => setFiltro(key)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors
-                ${filtro === key
-                  ? 'bg-white dark:bg-zinc-900 shadow-sm text-zinc-900 dark:text-white'
-                  : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}>
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Contenido */}
         {cargando ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[0,1,2].map(i => (
-              <div key={i} className="h-44 bg-zinc-100 dark:bg-zinc-800 rounded-2xl animate-pulse" />
-            ))}
+          <div className="grid md:grid-cols-2 gap-4 mt-6">
+            {[1, 2, 3, 4].map(i => <Card key={i} className="h-40 animate-pulse bg-zinc-100 dark:bg-zinc-800" />)}
           </div>
-        ) : metasFiltradas.length === 0 ? (
-          <Card>
-            <EmptyState
-              icono={filtro === 'completada' ? '🏆' : '🎯'}
-              titulo={filtro === 'completada' ? 'Todavía no completaste ninguna meta' : 'Sin metas activas'}
-              descripcion={filtro === 'completada'
-                ? 'Cuando alcances una meta, aparecerá acá.'
-                : 'Creá tu primera meta de ahorro y empezá a seguir tu progreso.'}
-              accion={filtro !== 'completada'
-                ? <Button icono="+" onClick={() => setModalCrear(true)}>Crear meta</Button>
-                : null
-              }
+        ) : metas.length === 0 ? (
+          <Card className="mt-6 py-12">
+            <EmptyState 
+              titulo="No tenés metas activas" 
+              descripcion="Ponerle nombre a tu ahorro hace que sea más fácil alcanzarlo."
+              accion={<Button icono="+" onClick={() => setModalAbierto(true)}>Crear primera meta</Button>} 
             />
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {metasFiltradas.map(meta => (
-              <div key={meta.id} className="flex flex-col gap-2">
-                <MetaCard meta={meta} onClick={() => setMetaEditar(meta)} />
-
-                {/* Acciones debajo de cada card */}
+          <div className="grid md:grid-cols-2 gap-6 mt-6">
+            {metas.map(meta => (
+              <div key={meta.id} className="relative group">
+                <BarraMeta 
+                  meta={meta} 
+                  moneda={usuario?.moneda} 
+                  onAportar={() => handleAbrirAporte(meta)}
+                />
+                {/* Botón sutil para eliminar, aparece en hover */}
                 {meta.estado === 'activa' && (
-                  <div className="flex gap-2 px-1">
-                    <Button tamaño="sm" variante="secondary" className="flex-1"
-                      onClick={() => setMetaAportar(meta)}>
-                      + Aportar
-                    </Button>
-                    <Button tamaño="sm" variante="ghost"
-                      onClick={() => pausar(meta.id)}
-                      title="Pausar meta">
-                      ⏸
-                    </Button>
-                    <Button tamaño="sm" variante="ghost"
-                      onClick={() => setMetaCancelar(meta.id)}
-                      title="Cancelar meta"
-                      className="hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
-                      ✕
-                    </Button>
-                  </div>
-                )}
-                {meta.estado === 'pausada' && (
-                  <div className="flex gap-2 px-1">
-                    <Button tamaño="sm" variante="secondary" className="flex-1"
-                      onClick={() => reanudar(meta.id)}>
-                      ▶ Reanudar
-                    </Button>
-                    <Button tamaño="sm" variante="ghost"
-                      onClick={() => setMetaCancelar(meta.id)}
-                      className="hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
-                      ✕
-                    </Button>
-                  </div>
-                )}
-                {meta.estado === 'completada' && (
-                  <p className="text-xs text-center text-emerald-600 dark:text-emerald-400 font-medium">
-                    🎉 ¡Meta alcanzada!
-                  </p>
+                  <button 
+                    onClick={() => {
+                      if(window.confirm('¿Seguro que querés eliminar esta meta?')) {
+                        eliminar(meta.id).then(() => window.location.reload())
+                      }
+                    }}
+                    className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-zinc-900 rounded-full shadow-sm"
+                    title="Eliminar meta"
+                  >
+                    🗑️
+                  </button>
                 )}
               </div>
             ))}
@@ -306,39 +300,64 @@ export function MetasPage() {
         )}
       </PageWrapper>
 
-      {/* Modales */}
-      <Modal abierto={modalCrear} onCerrar={() => setModalCrear(false)} titulo="Nueva meta de ahorro">
-        <FormMeta
-          onSubmit={async (d) => { await crear(d); setModalCrear(false) }}
-          onCancel={() => setModalCrear(false)}
-        />
+      {/* Modal Nueva Meta */}
+      <Modal abierto={modalAbierto} onCerrar={() => setModalAbierto(false)} titulo="Crear nueva meta">
+        <form onSubmit={handleCrearMeta} className="flex flex-col gap-4">
+          <div className="flex gap-3">
+            <div className="w-20">
+              <Input label="Emoji" value={formData.icono} onChange={e => setFormData({...formData, icono: e.target.value})} maxLength={2} className="text-center text-xl" />
+            </div>
+            <div className="flex-1">
+              <Input label="¿Para qué ahorramos?" placeholder="Ej: Viaje, Auto, Fondo..." required autoFocus
+                value={formData.nombre} onChange={e => setFormData({...formData, nombre: e.target.value})} />
+            </div>
+          </div>
+          
+          <Input label="Monto a alcanzar" type="number" prefijo="$" required min="1" step="0.01"
+            value={formData.monto_objetivo} onChange={e => setFormData({...formData, monto_objetivo: e.target.value})} />
+          
+          <div className="grid grid-cols-2 gap-3">
+             <Input label="Fecha límite (Opcional)" type="date"
+              value={formData.fecha_limite} onChange={e => setFormData({...formData, fecha_limite: e.target.value})} />
+             
+             {/* Selector de color simple */}
+             <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Color</label>
+                <div className="flex gap-2 h-11 items-center bg-zinc-50 dark:bg-zinc-800/50 rounded-xl px-2 border border-zinc-100 dark:border-zinc-800">
+                  {['#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'].map(c => (
+                    <button key={c} type="button" onClick={() => setFormData({...formData, color: c})}
+                      className={`w-6 h-6 rounded-full transition-transform ${formData.color === c ? 'scale-125 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900 ring-zinc-400' : 'hover:scale-110'}`}
+                      style={{backgroundColor: c}}
+                    />
+                  ))}
+                </div>
+             </div>
+          </div>
+
+          <div className="flex gap-3 mt-4">
+            <Button type="button" variante="secondary" className="flex-1" onClick={() => setModalAbierto(false)}>Cancelar</Button>
+            <Button type="submit" className="flex-1 shadow-md shadow-amber-500/20">Guardar Meta</Button>
+          </div>
+        </form>
       </Modal>
 
-      <Modal abierto={!!metaEditar} onCerrar={() => setMetaEditar(null)}
-        titulo="Editar meta">
-        {metaEditar && (
-          <FormMeta
-            inicial={metaEditar}
-            onSubmit={async (d) => { await editar(metaEditar.id, d); setMetaEditar(null) }}
-            onCancel={() => setMetaEditar(null)}
-          />
-        )}
+      {/* Modal Aportar */}
+      <Modal abierto={modalAporteAbierto} onCerrar={() => setModalAporteAbierto(false)} titulo={`Aportar a ${metaSeleccionada?.nombre}`}>
+        <form onSubmit={handleAportar} className="flex flex-col gap-4">
+           <div className="text-center py-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
+             <span className="text-3xl block mb-2">{metaSeleccionada?.icono}</span>
+             <p className="text-sm text-zinc-500">Te faltan <b>${Number(metaSeleccionada?.monto_objetivo - metaSeleccionada?.monto_actual).toLocaleString('es-AR')}</b> para llegar.</p>
+           </div>
+           
+           <Input label="Monto del aporte" type="number" prefijo="$" required min="0.01" step="0.01" autoFocus inputMode="decimal"
+            value={montoAporte} onChange={e => setMontoAporte(e.target.value)} />
+            
+           <div className="flex gap-3 mt-2">
+            <Button type="button" variante="secondary" className="flex-1" onClick={() => setModalAporteAbierto(false)}>Cancelar</Button>
+            <Button type="submit" className="flex-1">Sumar Aporte</Button>
+          </div>
+        </form>
       </Modal>
-
-      <ModalAportar
-        meta={metaAportar}
-        onSubmit={async (monto) => { await aportar(metaAportar.id, monto); setMetaAportar(null) }}
-        onCerrar={() => setMetaAportar(null)}
-      />
-
-      <ModalConfirmar
-        abierto={!!metaCancelar}
-        onCerrar={() => setMetaCancelar(null)}
-        titulo="Cancelar meta"
-        mensaje="¿Querés cancelar esta meta? El progreso se perderá."
-        labelConfirmar="Sí, cancelar"
-        onConfirmar={async () => { await cancelar(metaCancelar); setMetaCancelar(null) }}
-      />
-    </>
+    </div>
   )
 }

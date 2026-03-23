@@ -1,10 +1,9 @@
-import { useState } from 'react'
-import { useAuthContext }       from '../../context/AuthContext'
-import { usePresupuestos }      from '../../hooks/usePresupuestos'
-import { useCategorias }        from '../../hooks/useCategorias'
+import { useState, useEffect } from 'react'
+import { useAuthContext } from '../../context/AuthContext'
+import { usePresupuestos } from '../../hooks/usePresupuestos'
+import { useCategorias } from '../../hooks/useCategorias'
 import { PageWrapper, PageHeader, Sidebar, BottomNav, PresupCard } from '../../components/layout'
-import { Card, CardHeader, Button, EmptyState, EMPTY_STATES, Modal,
-         Input, Select, Badge }  from '../../components/ui'
+import { Card, Button, EmptyState, Modal, Input, Select } from '../../components/ui'
 
 // ─── Formulario para crear / editar ─────────────────────────
 function FormPresupuesto({ categorias, onSubmit, onCancel, inicial = null }) {
@@ -100,89 +99,87 @@ function ModalConfirmar({ abierto, onCerrar, onConfirmar, mensaje }) {
 
 // ─── Página principal ────────────────────────────────────────
 export function PresupuestosPage() {
-  const { usuario }   = useAuthContext()
-  const { gastos: categoriasGasto } = useCategorias()
-  const { presupuestos, resumen, cargando, crear, desactivar, clonarMes } = usePresupuestos()
+  const { usuario } = useAuthContext()
+  const { presupuestos, cargando, agregar, eliminar } = usePresupuestos()
+  const { gastos: categoriasGastos, cargando: cargandoCat } = useCategorias()
+  
+  const [modalAbierto, setModalAbierto] = useState(false)
+  const [errorLocal, setErrorLocal] = useState('')
+  const [formData, setFormData] = useState({
+    categoria_id: '',
+    limite_monto: '',
+    alerta_pct: 80 // Alerta por defecto al 80%
+  })
 
-  const [modalCrear,    setModalCrear]    = useState(false)
-  const [modalDesact,   setModalDesact]   = useState(null)  // id del presupuesto
-  const [modalClonar,   setModalClonar]   = useState(false)
+  const handleCrear = async (e) => {
+    e.preventDefault()
+    setErrorLocal('')
 
-  const mesActual = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+    // Validación: Evitar crear dos presupuestos para la misma categoría
+    const yaExiste = presupuestos.find(p => p.categoria_id === formData.categoria_id)
+    if (yaExiste) {
+      setErrorLocal('Ya tenés un límite establecido para esta categoría.')
+      return
+    }
+
+    try {
+      await agregar({
+        ...formData,
+        usuario_id: usuario.id,
+        limite_monto: Number(formData.limite_monto),
+        alerta_pct: Number(formData.alerta_pct)
+      })
+      setModalAbierto(false)
+      setFormData({ categoria_id: '', limite_monto: '', alerta_pct: 80 })
+      window.location.reload()
+    } catch (error) {
+      console.error(error)
+      setErrorLocal('Hubo un error al guardar el presupuesto.')
+    }
+  }
 
   return (
-    <>
+    <div className="animate-in fade-in duration-500">
       <Sidebar usuario={usuario} />
       <BottomNav />
       <PageWrapper>
         <PageHeader
-          titulo="Presupuestos"
-          subtitulo={mesActual.charAt(0).toUpperCase() + mesActual.slice(1)}
-          accion={
-            <div className="flex gap-2">
-              {presupuestos.length > 0 && (
-                <Button variante="secondary" tamaño="sm" onClick={() => setModalClonar(true)}>
-                  Clonar mes anterior
-                </Button>
-              )}
-              <Button icono="+" onClick={() => setModalCrear(true)}>Nuevo</Button>
-            </div>
-          }
+          titulo="Mis Presupuestos"
+          subtitulo="Límites mensuales"
+          accion={<Button icono="+" onClick={() => setModalAbierto(true)} className="shadow-sm shadow-amber-500/20">Nuevo Límite</Button>}
         />
 
-        {/* Resumen arriba */}
-        {!cargando && presupuestos.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-3 text-center">
-              <p className="text-xl font-semibold text-emerald-700 dark:text-emerald-400">
-                {resumen.holgados}
-              </p>
-              <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-0.5">Bajo control</p>
-            </div>
-            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-3 text-center">
-              <p className="text-xl font-semibold text-amber-700 dark:text-amber-400">
-                {resumen.alertas}
-              </p>
-              <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">En alerta</p>
-            </div>
-            <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-3 text-center">
-              <p className="text-xl font-semibold text-red-700 dark:text-red-400">
-                {resumen.excedidos}
-              </p>
-              <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">Excedidos</p>
-            </div>
-          </div>
-        )}
-
-        {/* Lista */}
         {cargando ? (
-          <Card>
-            {[0,1,2,3].map(i => (
-              <div key={i} className="h-16 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse mb-2" />
-            ))}
-          </Card>
+           <Card className="mt-6">
+             <div className="flex flex-col gap-4">
+               {[1, 2, 3].map(i => <div key={i} className="h-16 animate-pulse bg-zinc-100 dark:bg-zinc-800 rounded-xl" />)}
+             </div>
+           </Card>
         ) : presupuestos.length === 0 ? (
-          <Card>
-            <EmptyState {...EMPTY_STATES.presupuestos}
-              accion={<Button icono="+" onClick={() => setModalCrear(true)}>Crear mi primer límite</Button>}
+          <Card className="mt-6 py-12">
+            <EmptyState 
+              titulo="Sin límites definidos" 
+              descripcion="Elegí categorías clave (como Delivery o Salidas) y poneles un tope mensual."
+              accion={<Button icono="+" onClick={() => setModalAbierto(true)}>Crear mi primer límite</Button>} 
             />
           </Card>
         ) : (
-          <Card>
+          <Card className="mt-6">
             <div className="flex flex-col">
               {presupuestos.map(p => (
-                <div key={p.id} className="group relative">
+                <div key={p.id} className="relative group">
                   <PresupCard presupuesto={p} />
-                  {/* Botón desactivar — aparece al hover */}
-                  <button
-                    onClick={() => setModalDesact(p.id)}
-                    className="absolute right-0 top-1/2 -translate-y-1/2
-                      opacity-0 group-hover:opacity-100 transition-opacity
-                      text-xs text-zinc-400 hover:text-red-500 px-2 py-1 rounded-lg
-                      hover:bg-red-50 dark:hover:bg-red-900/20"
-                    title="Desactivar presupuesto"
+                  {/* Botón eliminar en hover */}
+                  <button 
+                    onClick={() => {
+                      if(window.confirm(`¿Eliminar el límite de ${p.categoria_nombre}?`)) {
+                        eliminar(p.id).then(() => window.location.reload())
+                      }
+                    }}
+                    className="absolute top-1/2 -translate-y-1/2 right-2 p-2 text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-zinc-900 rounded-full"
+                    title="Eliminar"
                   >
-                    ✕
+                    🗑️
                   </button>
                 </div>
               ))}
@@ -191,30 +188,51 @@ export function PresupuestosPage() {
         )}
       </PageWrapper>
 
-      {/* Modal crear */}
-      <Modal abierto={modalCrear} onCerrar={() => setModalCrear(false)} titulo="Nuevo límite de gasto">
-        <FormPresupuesto
-          categorias={categoriasGasto}
-          onSubmit={async (d) => { await crear(d); setModalCrear(false) }}
-          onCancel={() => setModalCrear(false)}
-        />
+      <Modal abierto={modalAbierto} onCerrar={() => {setModalAbierto(false); setErrorLocal('');}} titulo="Definir nuevo límite">
+        <form onSubmit={handleCrear} className="flex flex-col gap-4">
+          
+          {errorLocal && (
+            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 text-sm px-3 py-2 rounded-xl border border-red-100 dark:border-red-900/50">
+              {errorLocal}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">¿Qué gasto querés limitar?</label>
+            <Select 
+              value={formData.categoria_id} 
+              onChange={e => setFormData({...formData, categoria_id: e.target.value})}
+              required
+            >
+              <option value="" disabled>Seleccioná una categoría</option>
+              {categoriasGastos.map(c => (
+                <option key={c.id} value={c.id}>{c.icono} {c.nombre}</option>
+              ))}
+            </Select>
+          </div>
+
+          <Input label="Monto máximo mensual" type="number" prefijo="$" required min="1" step="0.01" autoFocus inputMode="decimal"
+            value={formData.limite_monto} onChange={e => setFormData({...formData, limite_monto: e.target.value})} />
+          
+          <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-xl border border-amber-100 dark:border-amber-900/30">
+            <label className="text-xs font-medium text-amber-800 dark:text-amber-400 flex justify-between mb-2">
+              <span>Avisarme cuando gaste el:</span>
+              <span className="font-bold">{formData.alerta_pct}%</span>
+            </label>
+            <input 
+              type="range" min="50" max="100" step="5"
+              value={formData.alerta_pct}
+              onChange={e => setFormData({...formData, alerta_pct: e.target.value})}
+              className="w-full accent-amber-500"
+            />
+          </div>
+
+          <div className="flex gap-3 mt-2">
+            <Button type="button" variante="secondary" className="flex-1" onClick={() => {setModalAbierto(false); setErrorLocal('');}}>Cancelar</Button>
+            <Button type="submit" className="flex-1 shadow-md shadow-amber-500/20">Guardar Límite</Button>
+          </div>
+        </form>
       </Modal>
-
-      {/* Modal confirmar desactivar */}
-      <ModalConfirmar
-        abierto={!!modalDesact}
-        onCerrar={() => setModalDesact(null)}
-        mensaje="¿Desactivar este presupuesto? Podés volver a crearlo cuando quieras."
-        onConfirmar={async () => { await desactivar(modalDesact); setModalDesact(null) }}
-      />
-
-      {/* Modal confirmar clonar */}
-      <ModalConfirmar
-        abierto={modalClonar}
-        onCerrar={() => setModalClonar(false)}
-        mensaje="¿Copiar los presupuestos del mes anterior para este mes?"
-        onConfirmar={async () => { await clonarMes(); setModalClonar(false) }}
-      />
-    </>
+    </div>
   )
 }
