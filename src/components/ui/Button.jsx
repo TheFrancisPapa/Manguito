@@ -17,6 +17,7 @@ export function Button({ children, variante = 'primary', tamaño = 'md',
   return (
     <button
       className={`inline-flex items-center justify-center gap-2 font-medium transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 ${VARIANTES[variante]} ${TAMAÑOS[tamaño]} ${className}`}
+      disabled={cargando || props.disabled}
       {...props}
     >
       {cargando ? <Spinner size={14} />
