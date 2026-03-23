@@ -1,4 +1,3 @@
-// src/components/layout/index.js
 export { PageWrapper, PageHeader } from './PageWrapper'
 export { BottomNav }               from './BottomNav'
 export { Sidebar }                 from './Sidebar'

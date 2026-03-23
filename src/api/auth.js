@@ -1,11 +1,9 @@
-// src/api/auth.js
 import { supabase } from '../lib/supabase'
 import { seedSistema, seedDemo } from '../../database/seed/run_seed'
 
 export async function registrar({ nombre, email, password, moneda, usarDemo }) {
   const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
+    email, password,
     options: { data: { nombre, moneda } },
   })
   if (error) throw error
@@ -48,9 +46,7 @@ export function onCambioSesion(callback) {
 
 export async function getPerfil() {
   const { data, error } = await supabase
-    .from('usuarios')
-    .select('*')
-    .single()
+    .from('usuarios').select('*').single()
   if (error) throw error
   return data
 }
@@ -59,8 +55,7 @@ export async function actualizarPerfil(campos) {
   const { data, error } = await supabase
     .from('usuarios')
     .update({ ...campos, updated_at: new Date().toISOString() })
-    .select()
-    .single()
+    .select().single()
   if (error) throw error
   return data
 }

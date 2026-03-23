@@ -1,9 +1,7 @@
-// src/api/metas.js
 import { supabase } from '../lib/supabase'
 
 export async function getMetas(estado = null) {
-  let q = supabase
-    .from('metas').select('*')
+  let q = supabase.from('metas').select('*')
     .order('prioridad')
     .order('fecha_limite', { ascending: true, nullsLast: true })
   if (estado) q = q.eq('estado', estado)
@@ -39,7 +37,6 @@ export async function aportarAMeta(id, montoAporte) {
   const { data: meta, error: e1 } = await supabase
     .from('metas').select('monto_actual, monto_objetivo').eq('id', id).single()
   if (e1) throw e1
-
   const nuevoMonto = Number(meta.monto_actual) + Number(montoAporte)
   const completada = nuevoMonto >= Number(meta.monto_objetivo)
   return editarMeta(id, {
@@ -48,9 +45,9 @@ export async function aportarAMeta(id, montoAporte) {
   })
 }
 
-export const pausarMeta    = (id) => editarMeta(id, { estado: 'pausada'   })
-export const reanudarMeta  = (id) => editarMeta(id, { estado: 'activa'    })
-export const cancelarMeta  = (id) => editarMeta(id, { estado: 'cancelada' })
+export const pausarMeta   = (id) => editarMeta(id, { estado: 'pausada'   })
+export const reanudarMeta = (id) => editarMeta(id, { estado: 'activa'    })
+export const cancelarMeta = (id) => editarMeta(id, { estado: 'cancelada' })
 
 export async function borrarMeta(id) {
   const { error } = await supabase.from('metas').delete().eq('id', id)

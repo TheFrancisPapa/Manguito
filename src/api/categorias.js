@@ -1,4 +1,3 @@
-// src/api/categorias.js
 import { supabase } from '../lib/supabase'
 
 export async function getCategorias(tipo = null) {
@@ -16,8 +15,7 @@ export async function crearCategoria({ nombre, tipo, icono, color }) {
   const { data, error } = await supabase
     .from('categorias')
     .insert({ nombre, tipo, icono, color, es_default: false })
-    .select()
-    .single()
+    .select().single()
   if (error) {
     if (error.code === '23505')
       throw new Error(`Ya tenés una categoría "${nombre}" de tipo ${tipo}.`)
