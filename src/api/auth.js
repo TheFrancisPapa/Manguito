@@ -3,13 +3,18 @@ import { seedSistema, seedDemo } from '../../database/seed/run_seed'
 
 export async function registrar({ nombre, email, password, moneda, usarDemo }) {
   const { data, error } = await supabase.auth.signUp({
-    email, password,
-    options: { data: { nombre, moneda } },
+    email,
+    password,
+    options: {
+      data: {
+        nombre,
+        fecha_nacimiento: fechaNacimiento,
+        objetivo_principal: objetivo,
+        moneda: 'ARS' 
+      }
+    }
   })
   if (error) throw error
-  const uid = data.user.id
-  await seedSistema(uid)
-  if (usarDemo) await seedDemo(uid)
   return data.user
 }
 
@@ -32,9 +37,10 @@ export async function logout() {
   if (error) throw error
 }
 
-export async function getUsuarioActual() {
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
+export async function getSession() {
+  const { data: { session }, error } = await supabase.auth.getSession()
+  if (error) throw error
+  return session
 }
 
 export function onCambioSesion(callback) {
