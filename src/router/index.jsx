@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider } from '../context/AuthContext'
 import { PrivateRoute, PublicRoute } from './guards'
 
@@ -12,13 +12,13 @@ import { MetasPage }        from '../pages/Metas'
 import { ConfiguracionPage } from '../pages/Configuracion'
 
 // Wrapper que inyecta el AuthProvider en toda la app
-function Root({ children }) {
-  return <AuthProvider>{children}</AuthProvider>
+function Root() {
+  return <AuthProvider><Outlet /></AuthProvider>
 }
 
 export const router = createBrowserRouter([
   {
-    element: <Root><></></Root>,  // root wrapper — AuthProvider necesita estar arriba
+    element: <Root />,  // root wrapper — AuthProvider necesita estar arriba
     children: [
       { path: '/', element: <Navigate to="/dashboard" replace /> },
 
