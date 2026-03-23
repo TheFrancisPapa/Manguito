@@ -33,10 +33,15 @@ export function useMovimientos(filtros = {}) {
 export function useUltimosMovimientos(n = 5) {
   const [movimientos, setMovimientos] = useState([])
   const [cargando, setCargando]       = useState(true)
-  useEffect(() => {
-    getUltimosMovimientos(n).then(setMovimientos).catch(console.error).finally(() => setCargando(false))
+
+  const cargar = useCallback(() => {
+    setCargando(true)
+    getUltimosMovimientos(n)
+      .then(setMovimientos).catch(console.error).finally(() => setCargando(false))
   }, [n])
-  return { movimientos, cargando }
+
+  useEffect(() => { cargar() }, [cargar])
+  return { movimientos, cargando, recargar: cargar }
 }
 
 export function useBalance(desde, hasta) {
@@ -56,7 +61,8 @@ export function useGastosXCategoria(desde, hasta) {
   useEffect(() => {
     if (!desde || !hasta) return
     setCargando(true)
-    getGastosXCategoria(desde, hasta).then(obj => setDatos(Object.values(obj))).catch(console.error).finally(() => setCargando(false))
+    getGastosXCategoria(desde, hasta)
+      .then(obj => setDatos(Object.values(obj))).catch(console.error).finally(() => setCargando(false))
   }, [desde, hasta])
   return { datos, cargando }
 }

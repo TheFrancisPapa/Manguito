@@ -1,22 +1,25 @@
 import { supabase } from '../lib/supabase'
 import { seedSistema, seedDemo } from '../../database/seed/run_seed'
 
-export async function registrar({ nombre, email, password, moneda, usarDemo }) {
+// Registrar nuevo usuario con todos los datos del onboarding multi-step
+export async function registrar({ nombre, email, password, moneda = 'ARS',
+  fechaNacimiento = null, objetivo = null, usarDemo = false }) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: {
-        nombre,
-        fecha_nacimiento: fechaNacimiento,
-        objetivo_principal: objetivo,
-        moneda: 'ARS' 
-      }
+      data: { nombre, moneda, fecha_nacimiento: fechaNacimiento, objetivo_principal: objetivo }
     }
   })
   if (error) throw error
+  const uid = data.user.id
+  await seedSistema(uid)
+  if (usarDemo) await seedDemo(uid)
   return data.user
 }
+
+// Alias para el Registro multi-step (mismo comportamiento)
+export const registrarUsuario = registrar
 
 export async function login({ email, password }) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
@@ -37,6 +40,13 @@ export async function logout() {
   if (error) throw error
 }
 
+// getUsuarioActual — lo mantenemos para compatibilidad con useAuth.js
+export async function getUsuarioActual() {
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+}
+
+// getSession — alias más moderno
 export async function getSession() {
   const { data: { session }, error } = await supabase.auth.getSession()
   if (error) throw error
@@ -51,8 +61,7 @@ export function onCambioSesion(callback) {
 }
 
 export async function getPerfil() {
-  const { data, error } = await supabase
-    .from('usuarios').select('*').single()
+  const { data, error } = await supabase.from('usuarios').select('*').single()
   if (error) throw error
   return data
 }
