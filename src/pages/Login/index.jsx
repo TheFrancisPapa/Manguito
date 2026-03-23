@@ -116,9 +116,9 @@ export function LoginPage() {
                   required 
                 />
                 <div className="flex justify-end mt-1">
-                  <a href="#" className="text-xs text-amber-600 dark:text-amber-500 hover:underline font-medium">
+                  <Link to="/recuperar-password" className="text-xs text-amber-600 dark:text-amber-500 hover:underline font-medium">
                     ¿Te olvidaste la contraseña?
-                  </a>
+                  </Link>
                 </div>
               </div>
 
