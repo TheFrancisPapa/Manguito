@@ -11,7 +11,7 @@ export function Input({ label, error, className = '', prefijo = null, ...props }
         <input
           className={`w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
             rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 
-            dark:focus:ring-amber-500/50 transition-shadow
+            dark:focus:ring-amber-500/50 transition-shadow text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500
             ${prefijo ? 'pl-8' : ''} 
             ${error ? 'border-red-300 focus:ring-red-400/50' : ''}`}
           {...props}
@@ -30,7 +30,7 @@ export function Select({ label, error, className = '', children, ...props }) {
       <select
         className={`w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
           rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50 
-          dark:focus:ring-amber-500/50 transition-shadow appearance-none cursor-pointer
+          dark:focus:ring-amber-500/50 transition-shadow appearance-none cursor-pointer text-zinc-900 dark:text-white
           ${error ? 'border-red-300 focus:ring-red-400/50' : ''}`}
         {...props}
       >

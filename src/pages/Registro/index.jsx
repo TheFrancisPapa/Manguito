@@ -211,37 +211,46 @@ export function RegistroPage() {
             </div>
             
             {!formData.metaActiva ? (
-              <div className="flex flex-col gap-3 my-4">
+              <div className="flex flex-col gap-3 my-4 mt-auto">
                 <Button onClick={() => handleChange('metaActiva', true)} className="py-4 text-base" icono="🎯">
                   ¡Dale, armemos una meta!
                 </Button>
-                <Button onClick={avanzar} variante="ghost">
-                  Prefiero hacerlo después
-                </Button>
+                <div className="flex gap-3">
+                  <Button onClick={() => setPaso(3)} variante="secondary" className="px-4">
+                    Atrás
+                  </Button>
+                  <Button onClick={avanzar} variante="ghost" className="flex-1 bg-zinc-100 dark:bg-zinc-800/50">
+                    Finalizar sin meta
+                  </Button>
+                </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-4 bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 animate-in fade-in zoom-in-95">
-                <div className="flex gap-3">
-                  <div className="w-16">
-                    <Input label="Emoji" value={formData.metaEmoji} 
-                      onChange={e => handleChange('metaEmoji', e.target.value)} maxLength={2} className="text-center text-xl" />
+              <>
+                <div className="flex flex-col gap-4 bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 animate-in fade-in zoom-in-95">
+                  <div className="flex gap-3">
+                    <div className="w-16">
+                      <Input label="Emoji" value={formData.metaEmoji} 
+                        onChange={e => handleChange('metaEmoji', e.target.value)} maxLength={2} className="text-center text-xl" />
+                    </div>
+                    <div className="flex-1">
+                      <Input label="¿Qué querés lograr?" placeholder="Ej: Celular nuevo" autoFocus
+                        value={formData.metaNombre} onChange={e => handleChange('metaNombre', e.target.value)} />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <Input label="¿Qué querés lograr?" placeholder="Ej: Celular nuevo" autoFocus
-                      value={formData.metaNombre} onChange={e => handleChange('metaNombre', e.target.value)} />
-                  </div>
+                  <Input label="¿Cuánta plata necesitás?" type="number" prefijo="$" placeholder="0.00"
+                    value={formData.metaMonto} onChange={e => handleChange('metaMonto', e.target.value)} />
                 </div>
-                <Input label="¿Cuánta plata necesitás?" type="number" prefijo="$" placeholder="0.00"
-                  value={formData.metaMonto} onChange={e => handleChange('metaMonto', e.target.value)} />
-              </div>
+                
+                <div className="flex gap-3 mt-auto">
+                  <Button onClick={() => handleChange('metaActiva', false)} variante="secondary" className="px-4">
+                    Atrás
+                  </Button>
+                  <Button onClick={avanzar} className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100">
+                    Finalizar y Crear Meta
+                  </Button>
+                </div>
+              </>
             )}
-
-            <div className="flex gap-3 mt-auto">
-              <Button onClick={() => setPaso(3)} variante="secondary" className="px-4">Atrás</Button>
-              <Button onClick={avanzar} className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100">
-                {formData.metaActiva ? 'Finalizar y Crear Meta' : 'Finalizar'}
-              </Button>
-            </div>
           </div>
         )}
 
