@@ -1,8 +1,12 @@
+import { formatMoneda } from '../../lib/utils.js'
+
 export function MovCard({ movimiento, onClick }) {
   const { tipo, monto, descripcion, fecha, categorias: cat, es_recurrente } = movimiento
   const esIngreso  = tipo === 'ingreso'
   const colorMonto = esIngreso ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
   const fechaFmt   = new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+  const montoFormateado = formatMoneda(monto, 'ARS', true)
+
   return (
     <div onClick={onClick}
       className="flex items-center gap-3 py-3 px-2 -mx-2 border-b border-zinc-100 dark:border-zinc-800 last:border-0 rounded-xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40 active:bg-zinc-100 dark:active:bg-zinc-800 transition-colors">
@@ -14,14 +18,13 @@ export function MovCard({ movimiento, onClick }) {
         <p className="text-sm font-medium truncate">{descripcion || cat?.nombre}</p>
         <div className="flex items-center gap-1.5 mt-0.5">
           <span className="text-xs text-zinc-400">{cat?.nombre}</span>
-          {es_recurrente && <span className="text-xs text-zinc-300 dark:text-zinc-600">· 🔁</span>}
+          <span className="text-[10px] text-zinc-300 dark:text-zinc-600">•</span>
+          <span className="text-xs text-zinc-400">{fechaFmt}</span>
+          {es_recurrente && <span title="Movimiento recurrente">🔁</span>}
         </div>
       </div>
-      <div className="text-right flex-shrink-0">
-        <p className={`text-sm font-semibold ${colorMonto}`}>
-          {esIngreso ? '+' : '-'} ${Number(monto).toLocaleString('es-AR')}
-        </p>
-        <p className="text-xs text-zinc-400 mt-0.5">{fechaFmt}</p>
+      <div className={`text-sm font-semibold whitespace-nowrap ${colorMonto}`}>
+        {esIngreso ? '+' : '-'}{montoFormateado}
       </div>
     </div>
   )

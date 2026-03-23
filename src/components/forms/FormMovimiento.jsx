@@ -82,7 +82,8 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
       <div className="grid grid-cols-2 gap-3">
         <Input
           label="Monto"
-          type="number"
+          type="number" // El tipo number abre el teclado numérico en celulares
+          inputMode="decimal" // Específico para forzar teclado con coma/punto
           step="0.01"
           min="0.01"
           placeholder="0.00"
@@ -90,7 +91,7 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
           value={monto}
           onChange={(e) => setMonto(e.target.value)}
           required
-          autoFocus
+          autoFocus // Hace que apenas abrís el modal, el cursor ya esté acá listo para escribir
         />
         <Input
           label="Fecha"
