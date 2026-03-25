@@ -45,7 +45,7 @@ function Burbuja({ mensaje }) {
       {/* Avatar */}
       <div className={`w-8 h-8 flex-shrink-0 rounded-xl flex items-center justify-center text-sm font-medium
         ${esUsuario
-          ? 'bg-amber-400 text-amber-900'
+          ? 'bg-[var(--mango)] text-[var(--charcoal)]'
           : 'bg-zinc-100 dark:bg-zinc-800 text-base'}`}>
         {esUsuario ? '👤' : '🥭'}
       </div>
@@ -53,7 +53,7 @@ function Burbuja({ mensaje }) {
       {/* Contenido */}
       <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed
         ${esUsuario
-          ? 'bg-amber-400 text-amber-950 rounded-tr-sm'
+          ? 'bg-[var(--mango)] text-[var(--charcoal)] rounded-tr-sm'
           : 'bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-sm'}`}>
         <MarkdownSimple texto={mensaje.contenido} />
       </div>
@@ -170,13 +170,13 @@ export function ChatPage() {
       <BottomNav />
 
       {/* Usamos layout custom para que el chat ocupe toda la altura disponible */}
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 md:pl-56 flex flex-col">
+      <div className="min-h-screen bg-[var(--cream-soft)] dark:bg-zinc-950 md:pl-[88px] flex flex-col">
         
         {/* Header */}
         <header className="sticky top-0 z-30 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg
           border-b border-zinc-100 dark:border-zinc-800 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center text-lg">
+            <div className="w-9 h-9 bg-[var(--mango)]/15 dark:bg-[var(--mango)]/10 rounded-2xl flex items-center justify-center text-lg">
               🥭
             </div>
             <div>
@@ -229,8 +229,8 @@ export function ChatPage() {
                   {SUGERENCIAS.map(s => (
                     <button key={s} onClick={() => { setInput(s); setTimeout(() => enviar(), 50) }}
                       className="text-left text-xs px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700
-                        bg-white dark:bg-zinc-900 hover:border-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/10
-                        text-zinc-600 dark:text-zinc-400 hover:text-amber-700 dark:hover:text-amber-400
+                        bg-white dark:bg-zinc-900 hover:border-[var(--mango)] hover:bg-[var(--cream)] dark:hover:bg-[var(--mango)]/10
+                        text-zinc-600 dark:text-zinc-400 hover:text-[var(--mango-dark)] dark:hover:text-[var(--mango)]
                         transition-all">
                       {s}
                     </button>
@@ -259,16 +259,16 @@ export function ChatPage() {
               rows={1}
               disabled={cargando}
               className="flex-1 resize-none bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700
-                rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-amber-400/50
-                dark:focus:ring-amber-500/50 transition-shadow text-zinc-900 dark:text-white
+                rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[var(--mango)]/40
+                dark:focus:ring-[var(--mango)]/30 transition-shadow text-zinc-900 dark:text-white
                 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 max-h-32 overflow-y-auto
                 disabled:opacity-50"
               style={{ fieldSizing: 'content' }}
             />
             <button type="submit" disabled={cargando || !input.trim()}
-              className="w-11 h-11 flex-shrink-0 rounded-2xl bg-amber-400 hover:bg-amber-500
-                text-amber-900 flex items-center justify-center transition-all active:scale-95
-                disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 shadow-sm shadow-amber-400/30">
+              className="w-11 h-11 flex-shrink-0 rounded-2xl bg-[var(--mango)] hover:bg-[var(--mango-dark)]
+                text-[var(--charcoal)] flex items-center justify-center transition-all active:scale-95 cursor-pointer
+                disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 shadow-sm shadow-[var(--mango)]/30">
               {cargando
                 ? <Spinner size={16} />
                 : <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
