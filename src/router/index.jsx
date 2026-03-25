@@ -12,6 +12,7 @@ import { PresupuestosPage }  from '../pages/Presupuestos'
 import { MetasPage }         from '../pages/Metas'
 import { ConfiguracionPage } from '../pages/Configuracion'
 import { ChatPage }          from '../pages/Chat'
+import { CotizacionesPage }  from '../pages/Cotizaciones'
 
 function Root() {
   return <AuthProvider><Outlet /></AuthProvider>
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
       { path: '/presupuestos', element: <PrivateRoute><PresupuestosPage /></PrivateRoute> },
       { path: '/metas',        element: <PrivateRoute><MetasPage /></PrivateRoute> },
       { path: '/chat',         element: <PrivateRoute><ChatPage /></PrivateRoute> },
+      { path: '/cotizaciones', element: <PrivateRoute><CotizacionesPage /></PrivateRoute> },
       { path: '/configuracion',element: <PrivateRoute><ConfiguracionPage /></PrivateRoute> },
       { path: '*', element: <Navigate to="/dashboard" replace /> },
     ]

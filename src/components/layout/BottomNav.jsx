@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'react-router-dom'
 
 const LINKS = [
-  { a: '/dashboard',    icono: '🏠', label: 'Inicio'    },
-  { a: '/movimientos',  icono: '💸', label: 'Movs'      },
-  { a: '/chat',         icono: '🤖', label: 'IA',        central: true },
-  { a: '/presupuestos', icono: '📊', label: 'Límites'   },
-  { a: '/configuracion',icono: '👤', label: 'Perfil'    },
+  { a: '/dashboard',     icono: '🏠', label: 'Inicio'     },
+  { a: '/movimientos',   icono: '💸', label: 'Movs'       },
+  { a: '/chat',          icono: '🤖', label: 'IA',        central: true },
+  { a: '/cotizaciones',  icono: '💱', label: 'Divisas'    },
+  { a: '/configuracion', icono: '👤', label: 'Perfil'     },
 ]
 
 export function BottomNav() {
