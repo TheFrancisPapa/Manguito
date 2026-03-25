@@ -14,11 +14,11 @@ const LoadingScreen = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50 dark:bg-zinc-950 animate-in fade-in duration-500 relative">
       <div className="animate-float mb-4 relative">
-        <div className="absolute inset-0 bg-amber-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
+        <div className="absolute inset-0 bg-[var(--mango)] blur-xl opacity-20 rounded-full animate-pulse"></div>
         <img 
           src="/Mango.png" 
           alt="Cargando Manguito" 
-          className="relative w-20 h-20 rounded-3xl shadow-xl shadow-amber-500/20 border border-white/50 dark:border-zinc-800/50 object-cover" 
+          className="relative w-20 h-20 object-contain" 
         />
       </div>
       <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 animate-pulse tracking-wide z-10">

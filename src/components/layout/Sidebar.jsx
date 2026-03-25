@@ -32,7 +32,7 @@ export function Sidebar({ usuario }) {
             <img 
               src="/Mango.png" 
               alt="Logo Manguito" 
-              className="relative w-10 h-10 rounded-xl object-cover shadow-sm border-2 border-white dark:border-zinc-800" 
+              className="relative w-10 h-10 object-contain" 
             />
           </div>
           <span className={`text-2xl font-extrabold bg-gradient-to-br from-[var(--mango)] to-[var(--mango-dark)] bg-clip-text text-transparent tracking-tight 

@@ -58,7 +58,7 @@ export function LoginPage() {
           <div className="inline-flex items-center justify-center lg:justify-start gap-3 mb-6">
             <div className="relative">
               <div className="absolute inset-0 bg-[var(--mango)] blur-md opacity-30 rounded-full animate-pulse"></div>
-              <img src="/Mango.png" alt="Logo Manguito" className="relative w-14 h-14 lg:w-16 lg:h-16 rounded-2xl object-cover shadow-md border-2 border-white dark:border-zinc-800" />
+              <img src="/Mango.png" alt="Logo Manguito" className="relative w-14 h-14 lg:w-16 lg:h-16 object-contain" />
             </div>
             <span className="text-3xl lg:text-4xl font-extrabold bg-gradient-to-br from-[var(--mango)] to-[var(--mango-dark)] bg-clip-text text-transparent tracking-tight">
               Manguito
