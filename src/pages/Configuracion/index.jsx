@@ -23,7 +23,7 @@ const MONEDAS = [
 // ─── Subir foto a Supabase Storage ───────────────────────────
 async function subirFoto(archivo, usuarioId) {
   const ext  = archivo.name.split('.').pop()
-  const path = `avatars/${usuarioId}.${ext}`
+  const path = `${usuarioId}.${ext}`
   const { error } = await supabase.storage
     .from('avatars')
     .upload(path, archivo, { upsert: true, contentType: archivo.type })
