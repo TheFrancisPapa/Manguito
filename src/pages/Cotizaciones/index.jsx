@@ -98,11 +98,22 @@ function TarjetaDolar({ dolar }) {
             <p className="text-[10px] text-zinc-400">{tiempoRelativo(dolar.fechaActualizacion)}</p>
           </div>
         </div>
-        {spread && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
-            spread {spread}%
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-1">
+          {dolar.variacion != null && (
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium
+              ${dolar.variacion >= 0 
+                ? 'bg-green-50 dark:bg-green-900/20 text-green-600' 
+                : 'bg-red-50 dark:bg-red-900/20 text-red-500'}`}>
+              {dolar.variacion >= 0 ? '▲' : '▼'} {Math.abs(dolar.variacion)}%
+            </span>
+          )}
+          {spread && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+              title="Diferencia entre precio de compra y venta">
+              brecha {spread}%
+            </span>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-2.5 text-center">
