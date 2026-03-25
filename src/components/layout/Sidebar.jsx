@@ -1,65 +1,68 @@
 import { Link, useLocation } from 'react-router-dom'
-import { logout } from '../../api/auth'
-
-const LINKS = [
-  { a: '/dashboard',    icono: '🏠', label: 'Inicio'       },
-  { a: '/movimientos',  icono: '💸', label: 'Movimientos'  },
-  { a: '/presupuestos', icono: '📊', label: 'Presupuestos' },
-  { a: '/metas',        icono: '🎯', label: 'Metas'        },
-  { a: '/chat',         icono: '🤖', label: 'Asesor IA'    },
-]
 
 export function Sidebar({ usuario }) {
-  const { pathname } = useLocation()
-  async function handleLogout() {
-    await logout()
-    window.location.href = '/login'
-  }
+  const location = useLocation()
+  
+  const menu = [
+    { path: '/dashboard', icono: '📊', label: 'Panel' },
+    { path: '/movimientos', icono: '💸', label: 'Movimientos' },
+    { path: '/presupuestos', icono: '🚧', label: 'Límites' },
+    { path: '/metas', icono: '🎯', label: 'Metas' },
+    { path: '/chat', icono: '🤖', label: 'Asesor IA' }, // Agrego tu nueva ruta del chat!
+    { path: '/configuracion', icono: '⚙️', label: 'Perfil' },
+  ]
+
   return (
-    <aside className="hidden md:flex flex-col fixed top-0 left-0 bottom-0 w-56 z-40 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg border-r border-zinc-100/50 dark:border-zinc-800/50 p-4">
-      <div className="flex items-center gap-2.5 px-2 py-3 mb-4">
-        <span style={{ fontSize: 26, lineHeight: 1 }}>🥭</span>
-        <span className="text-lg font-semibold">Manguito</span>
-      </div>
-      <nav className="flex flex-col gap-1 flex-1">
-        {LINKS.map(({ a, icono, label }) => {
-          const activo = pathname === a
-          return (
-            <Link key={a} to={a}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors
-                ${activo
-                  ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-medium'
-                  : 'text-zinc-500 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200'}`}>
-              <span style={{ fontSize: 18, lineHeight: 1 }}>{icono}</span>
-              {label}
-            </Link>
-          )
-        })}
-      </nav>
-      {usuario && (
-        <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3 mt-3">
-          <Link to="/configuracion"
-            className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-            {usuario.avatar_url
-              ? <img src={usuario.avatar_url} className="w-8 h-8 rounded-full object-cover" alt="" />
-              : <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center
-                  justify-center text-sm font-medium text-amber-700 dark:text-amber-400">
-                  {usuario.nombre?.[0]?.toUpperCase() ?? '?'}
-                </div>
-            }
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate">{usuario.nombre}</p>
-              <p className="text-xs text-zinc-400 truncate">{usuario.moneda}</p>
-            </div>
-          </Link>
-          <button onClick={handleLogout}
-            className="w-full flex items-center gap-2.5 px-3 py-2 mt-1 text-xs text-zinc-400
-              hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors">
-            <span style={{ fontSize: 14 }}>🚪</span>
-            Cerrar sesión
-          </button>
+    <aside className="hidden md:flex flex-col w-64 h-screen fixed border-r border-orange-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-2xl z-40">
+      <div className="p-6">
+        {/* Logo Manguito Premium */}
+        <div className="flex items-center gap-3 mb-10">
+          <div className="relative">
+            <div className="absolute inset-0 bg-orange-400 blur-md opacity-40 rounded-full animate-pulse"></div>
+            <img 
+              src="/Mango.jpg" 
+              alt="Logo Manguito" 
+              className="relative w-12 h-12 rounded-2xl object-cover shadow-sm border-2 border-white dark:border-zinc-800" 
+            />
+          </div>
+          <span className="text-3xl font-extrabold bg-gradient-to-br from-orange-500 to-amber-400 bg-clip-text text-transparent tracking-tight">
+            Manguito
+          </span>
         </div>
-      )}
+
+        <nav className="flex flex-col gap-2">
+          {menu.map(item => {
+            const activo = location.pathname === item.path
+            return (
+              <Link 
+                key={item.path} 
+                to={item.path}
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-medium transition-all duration-200 ${
+                  activo 
+                    ? 'bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-500/10 dark:to-amber-500/5 text-orange-600 dark:text-orange-400 shadow-sm border border-orange-100 dark:border-orange-500/20' 
+                    : 'text-zinc-500 hover:text-orange-500 hover:bg-orange-50/50 dark:hover:bg-zinc-900/50'
+                }`}
+              >
+                <span className={`text-xl transition-transform ${activo ? 'scale-110' : ''}`}>{item.icono}</span>
+                {item.label}
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* Mini perfil inferior */}
+      <div className="mt-auto p-4 border-t border-orange-50 dark:border-zinc-800/50 m-4 bg-orange-50/50 dark:bg-zinc-900/30 rounded-2xl">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-bold shadow-md">
+            {usuario?.nombre?.[0]?.toUpperCase() ?? '🥭'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">{usuario?.nombre}</p>
+            <p className="text-xs text-orange-600/80 dark:text-orange-400/80 truncate">Plan Gratuito</p>
+          </div>
+        </div>
+      </div>
     </aside>
   )
 }

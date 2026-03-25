@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@layer base {
+  body {
+    /* Fondo cálido "crema/durazno" clarito en vez del gris aburrido para modo claro.
+       También cambiamos el color de selección de texto para que matchee con el "mango". */
+    @apply bg-orange-50/40 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased selection:bg-orange-200 selection:text-orange-900;
+  }
+}
+
 /* Animaciones personalizadas para Manguito */
 @keyframes blob {
   0% { transform: translate(0px, 0px) scale(1); }
@@ -20,7 +28,7 @@
   animation-delay: 4s;
 }
 
-/* NUEVA: Animación sutil de flote para el logo */
+/* Animación sutil de flote para el logo en Login, Registro y Pestaña de Carga */
 @keyframes float {
   0% { transform: translateY(0px); }
   50% { transform: translateY(-8px); }
