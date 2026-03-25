@@ -67,9 +67,13 @@ export async function getPerfil() {
 }
 
 export async function actualizarPerfil(campos) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("Sesión no encontrada")
+
   const { data, error } = await supabase
     .from('usuarios')
     .update({ ...campos, updated_at: new Date().toISOString() })
+    .eq('id', user.id)
     .select().single()
   if (error) throw error
   return data
