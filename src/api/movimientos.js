@@ -71,3 +71,13 @@ export async function getRecurrentes() {
   if (error) throw error
   return data
 }
+
+export async function getEvolucionMensual(meses = 6) {
+  const { data, error } = await supabase.rpc('evolucion_mensual', { p_meses: meses })
+  if (error) throw error
+  return data.map(row => ({
+    label: new Date(row.mes + 'T12:00:00').toLocaleDateString('es-AR', { month: 'short', year: '2-digit' }),
+    ingresos: Number(row.ingresos),
+    gastos:   Number(row.gastos),
+  }))
+}

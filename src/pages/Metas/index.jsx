@@ -272,7 +272,7 @@ export function MetasPage() {
                   <button 
                     onClick={() => {
                       if(window.confirm('¿Seguro que querés eliminar esta meta?')) {
-                        eliminar(meta.id).then(() => window.location.reload())
+                        eliminar(meta.id)
                       }
                     }}
                     className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-zinc-900 rounded-full shadow-sm"

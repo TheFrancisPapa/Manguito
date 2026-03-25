@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getMovimientos, getUltimosMovimientos, getBalance,
-         getGastosXCategoria, crearMovimiento, editarMovimiento, borrarMovimiento } from '../api/movimientos'
+         getGastosXCategoria, crearMovimiento, editarMovimiento, borrarMovimiento, getEvolucionMensual } from '../api/movimientos'
 
 export function useMovimientos(filtros = {}) {
   const [movimientos, setMovimientos] = useState([])
@@ -65,4 +65,18 @@ export function useGastosXCategoria(desde, hasta) {
       .then(obj => setDatos(Object.values(obj))).catch(console.error).finally(() => setCargando(false))
   }, [desde, hasta])
   return { datos, cargando }
+}
+
+export function useEvolucionMensual(meses = 6) {
+  const [datos, setDatos]       = useState([])
+  const [cargando, setCargando] = useState(true)
+
+  const cargar = useCallback(() => {
+    setCargando(true)
+    getEvolucionMensual(meses)
+      .then(setDatos).catch(console.error).finally(() => setCargando(false))
+  }, [meses])
+
+  useEffect(() => { cargar() }, [cargar])
+  return { datos, cargando, recargar: cargar }
 }

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
-import { useBalance, useGastosXCategoria, useUltimosMovimientos, useMovimientos } from '../../hooks/useMovimientos'
+import { useBalance, useGastosXCategoria, useUltimosMovimientos, useMovimientos, useEvolucionMensual } from '../../hooks/useMovimientos'
 import { usePresupuestos } from '../../hooks/usePresupuestos'
 import { useMetas } from '../../hooks/useMetas'
 import { PageWrapper, PageHeader, Sidebar, BottomNav, MovCard, PresupCard } from '../../components/layout'
 import { Card, CardHeader, Button, EmptyState, EMPTY_STATES, Modal } from '../../components/ui'
-import { ResumenBalance, GraficoTorta, BarraMeta } from '../../components/charts'
+import { ResumenBalance, GraficoTorta, BarraMeta, LineaTemporal } from '../../components/charts'
 import { FormMovimiento } from '../../components/forms/FormMovimiento'
 
 function rangoMes() {
@@ -38,6 +38,8 @@ export function DashboardPage() {
   
   const { agregar: agregarMovimiento } = useMovimientos()
   const [modalMovs, setModalMovs] = useState(false)
+
+  const { datos: evolucion, cargando: cEvo } = useEvolucionMensual(6)
 
   const mesActual = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
   const mesCapitalizado = mesActual.charAt(0).toUpperCase() + mesActual.slice(1)
@@ -91,6 +93,17 @@ export function DashboardPage() {
             </div>
           </Card>
         </div>
+        
+        <Card className="mt-4 animate-in slide-in-from-bottom-4 fade-in duration-700"
+          style={{ animationDelay: '250ms', animationFillMode: 'both' }}>
+          <CardHeader
+            titulo="Evolución mensual"
+            subtitulo="Últimos 6 meses"
+          />
+          <div className="mt-2">
+            <LineaTemporal datos={evolucion} moneda={usuario?.moneda} cargando={cEvo} />
+          </div>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
           <Card className="lg:col-span-2 animate-in slide-in-from-bottom-4 fade-in duration-700" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>

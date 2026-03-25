@@ -173,7 +173,7 @@ export function PresupuestosPage() {
                   <button 
                     onClick={() => {
                       if(window.confirm(`¿Eliminar el límite de ${p.categoria_nombre}?`)) {
-                        eliminar(p.id).then(() => window.location.reload())
+                        desactivar(p.id).then(() => recargar())
                       }
                     }}
                     className="absolute top-1/2 -translate-y-1/2 right-2 p-2 text-zinc-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-zinc-900 rounded-full"
