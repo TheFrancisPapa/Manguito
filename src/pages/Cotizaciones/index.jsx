@@ -3,215 +3,252 @@ import { useAuthContext } from '../../context/AuthContext'
 import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout'
 import { Card, CardHeader, Button } from '../../components/ui'
 
-// ─── Monedas soportadas ─────────────────────────────────────
-const MONEDAS = [
-  { codigo: 'USD', nombre: 'Dólar estadounidense', bandera: '🇺🇸', simbolo: 'U$D' },
-  { codigo: 'EUR', nombre: 'Euro',                 bandera: '🇪🇺', simbolo: '€'   },
-  { codigo: 'BRL', nombre: 'Real brasileño',       bandera: '🇧🇷', simbolo: 'R$'  },
-  { codigo: 'CLP', nombre: 'Peso chileno',         bandera: '🇨🇱', simbolo: 'CL$' },
-  { codigo: 'UYU', nombre: 'Peso uruguayo',        bandera: '🇺🇾', simbolo: '$U'  },
-  { codigo: 'PYG', nombre: 'Guaraní paraguayo',    bandera: '🇵🇾', simbolo: '₲'   },
-  { codigo: 'BOB', nombre: 'Boliviano',            bandera: '🇧🇴', simbolo: 'Bs'  },
-  { codigo: 'PEN', nombre: 'Sol peruano',          bandera: '🇵🇪', simbolo: 'S/'  },
-  { codigo: 'COP', nombre: 'Peso colombiano',      bandera: '🇨🇴', simbolo: 'CO$' },
-  { codigo: 'MXN', nombre: 'Peso mexicano',        bandera: '🇲🇽', simbolo: 'MX$' },
-  { codigo: 'GBP', nombre: 'Libra esterlina',      bandera: '🇬🇧', simbolo: '£'   },
-  { codigo: 'JPY', nombre: 'Yen japonés',          bandera: '🇯🇵', simbolo: '¥'   },
-  { codigo: 'CNY', nombre: 'Yuan chino',           bandera: '🇨🇳', simbolo: '¥'   },
-]
+// ─── Iconos y colores por tipo de dólar ─────────────────────
+const DOLAR_META = {
+  oficial:          { icono: '🏛️', color: 'var(--leaf)',   label: 'Oficial'  },
+  blue:             { icono: '💵', color: '#3B82F6',       label: 'Blue'     },
+  bolsa:            { icono: '📈', color: 'var(--mango)',   label: 'MEP / Bolsa' },
+  contadoconliqui:  { icono: '🔄', color: '#A855F7',       label: 'CCL'      },
+  mayorista:        { icono: '🏭', color: '#6B7280',       label: 'Mayorista'},
+  cripto:           { icono: '₿',  color: '#F59E0B',       label: 'Cripto'   },
+  tarjeta:          { icono: '💳', color: '#EF4444',       label: 'Tarjeta'  },
+}
 
-const API_BASE = 'https://open.er-api.com/v6/latest'
+const MONEDA_BANDERA = {
+  USD: '🇺🇸', EUR: '🇪🇺', BRL: '🇧🇷', CLP: '🇨🇱', UYU: '🇺🇾',
+}
 
-// ─── Hook para cotizaciones ─────────────────────────────────
-function useCotizaciones(base = 'ARS') {
-  const [datos, setDatos] = useState(null)
+// ─── Formateo de números ────────────────────────────────────
+function fmtPrecio(n) {
+  if (!n && n !== 0) return '—'
+  return Number(n).toLocaleString('es-AR', { 
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2 
+  })
+}
+
+function tiempoRelativo(fechaStr) {
+  if (!fechaStr) return ''
+  const diff = (Date.now() - new Date(fechaStr).getTime()) / 1000 / 60
+  if (diff < 1) return 'Hace segundos'
+  if (diff < 60) return `Hace ${Math.floor(diff)} min`
+  if (diff < 1440) return `Hace ${Math.floor(diff / 60)} hs`
+  return new Date(fechaStr).toLocaleDateString('es-AR')
+}
+
+// ─── Hook para ambas APIs ───────────────────────────────────
+function useDolarAPI() {
+  const [dolares, setDolares] = useState([])
+  const [cotizaciones, setCotizaciones] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
-  const [ultimaAct, setUltimaAct] = useState(null)
 
   const cargar = useCallback(async () => {
     setCargando(true)
     setError(null)
     try {
-      const res = await fetch(`${API_BASE}/${base}`)
-      if (!res.ok) throw new Error(`Error ${res.status}`)
-      const json = await res.json()
-      if (json.result !== 'success') throw new Error(json['error-type'] || 'Error de API')
-      setDatos(json.conversion_rates)
-      setUltimaAct(new Date())
+      const [resDolares, resCotiz] = await Promise.all([
+        fetch('https://dolarapi.com/v1/dolares'),
+        fetch('https://dolarapi.com/v1/cotizaciones'),
+      ])
+      if (!resDolares.ok) throw new Error(`Error dólares: ${resDolares.status}`)
+      if (!resCotiz.ok) throw new Error(`Error cotizaciones: ${resCotiz.status}`)
+      
+      const [dataDolares, dataCotiz] = await Promise.all([
+        resDolares.json(),
+        resCotiz.json(),
+      ])
+      
+      setDolares(dataDolares)
+      // Filtrar USD de cotizaciones ya que los dólares los mostramos aparte
+      setCotizaciones(dataCotiz.filter(c => c.moneda !== 'USD'))
     } catch (err) {
       setError(err.message)
     } finally {
       setCargando(false)
     }
-  }, [base])
+  }, [])
 
   useEffect(() => { cargar() }, [cargar])
 
-  return { datos, cargando, error, ultimaAct, recargar: cargar }
+  return { dolares, cotizaciones, cargando, error, recargar: cargar }
 }
 
-// ─── Formateo ───────────────────────────────────────────────
-function fmtPrecio(valor, decimales = 2) {
-  if (!valor && valor !== 0) return '—'
-  if (valor >= 1000) return Number(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  if (valor >= 1) return Number(valor).toFixed(decimales)
-  return Number(valor).toFixed(4)
-}
+// ─── Tarjeta de dólar ───────────────────────────────────────
+function TarjetaDolar({ dolar }) {
+  const meta = DOLAR_META[dolar.casa] || { icono: '💲', color: '#666', label: dolar.nombre }
+  const spread = dolar.compra && dolar.venta 
+    ? ((dolar.venta - dolar.compra) / dolar.compra * 100).toFixed(1)
+    : null
 
-// ─── Componente Tarjeta de Moneda ───────────────────────────
-function TarjetaMoneda({ moneda, tasa, base }) {
-  const precio = tasa ? fmtPrecio(tasa) : '—'
-  const inverso = tasa ? fmtPrecio(1 / tasa) : '—'
-  
   return (
-    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 
-      rounded-2xl border border-[var(--mango)]/8 dark:border-zinc-800 
-      hover:border-[var(--mango)]/25 hover:shadow-md transition-all group">
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">{moneda.bandera}</span>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-zinc-900 dark:text-white">{moneda.codigo}</span>
-            <span className="text-xs text-zinc-400">/{base}</span>
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-[var(--mango)]/8 dark:border-zinc-800 
+      p-4 hover:border-[var(--mango)]/25 hover:shadow-md transition-all">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+            style={{ backgroundColor: `${meta.color}15` }}>
+            {meta.icono}
           </div>
-          <p className="text-xs text-zinc-400 mt-0.5">{moneda.nombre}</p>
+          <div>
+            <p className="font-bold text-sm text-zinc-900 dark:text-white">{meta.label}</p>
+            <p className="text-[10px] text-zinc-400">{tiempoRelativo(dolar.fechaActualizacion)}</p>
+          </div>
         </div>
+        {spread && (
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+            spread {spread}%
+          </span>
+        )}
       </div>
-      <div className="text-right">
-        <p className="text-lg font-bold text-[var(--charcoal)] dark:text-white tabular-nums">
-          {moneda.simbolo} {precio}
-        </p>
-        <p className="text-xs text-zinc-400 tabular-nums">
-          1 {moneda.codigo} = {inverso} {base}
-        </p>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-2.5 text-center">
+          <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mb-0.5">Compra</p>
+          <p className="text-base font-bold tabular-nums" style={{ color: meta.color }}>
+            ${fmtPrecio(dolar.compra)}
+          </p>
+        </div>
+        <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-2.5 text-center">
+          <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mb-0.5">Venta</p>
+          <p className="text-base font-bold tabular-nums" style={{ color: meta.color }}>
+            ${fmtPrecio(dolar.venta)}
+          </p>
+        </div>
       </div>
     </div>
   )
 }
 
-// ─── Conversor ──────────────────────────────────────────────
-function Conversor({ datos, base }) {
+// ─── Tarjeta de otra moneda ─────────────────────────────────
+function TarjetaMoneda({ cotiz }) {
+  const bandera = MONEDA_BANDERA[cotiz.moneda] || '🌐'
+  
+  return (
+    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 
+      rounded-2xl border border-[var(--mango)]/8 dark:border-zinc-800 
+      hover:border-[var(--mango)]/25 hover:shadow-md transition-all">
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">{bandera}</span>
+        <div>
+          <p className="font-bold text-sm text-zinc-900 dark:text-white">{cotiz.nombre}</p>
+          <p className="text-xs text-zinc-400">{cotiz.moneda}/ARS · {tiempoRelativo(cotiz.fechaActualizacion)}</p>
+        </div>
+      </div>
+      <div className="text-right flex gap-4">
+        <div>
+          <p className="text-[10px] text-zinc-400">Compra</p>
+          <p className="text-sm font-bold text-[var(--leaf)] tabular-nums">${fmtPrecio(cotiz.compra)}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-zinc-400">Venta</p>
+          <p className="text-sm font-bold text-[var(--charcoal)] dark:text-white tabular-nums">${fmtPrecio(cotiz.venta)}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Conversor rápido ───────────────────────────────────────
+function Conversor({ dolares }) {
   const [monto, setMonto] = useState('')
-  const [desde, setDesde] = useState(base)
-  const [hacia, setHacia] = useState('USD')
+  const [tipo, setTipo] = useState('blue')
+  const [direccion, setDireccion] = useState('ars_a_usd') // ars_a_usd | usd_a_ars
 
-  const monedas = [{ codigo: base }, ...MONEDAS]
-
+  const dolar = dolares.find(d => d.casa === tipo)
+  
   function calcular() {
-    if (!monto || !datos) return null
     const val = parseFloat(monto)
-    if (isNaN(val)) return null
-
-    if (desde === base) {
-      return val * (datos[hacia] || 0)
-    } else if (hacia === base) {
-      return val / (datos[desde] || 1)
+    if (isNaN(val) || !dolar) return null
+    if (direccion === 'ars_a_usd') {
+      return dolar.venta ? val / dolar.venta : null
     } else {
-      const enBase = val / (datos[desde] || 1)
-      return enBase * (datos[hacia] || 0)
+      return dolar.compra ? val * dolar.compra : null
     }
   }
 
   const resultado = calcular()
-  const monedaDestino = MONEDAS.find(m => m.codigo === hacia)
-
-  function invertir() {
-    setDesde(hacia)
-    setHacia(desde)
-  }
 
   return (
     <Card>
-      <CardHeader titulo="Conversor de monedas" />
-      <div className="flex flex-col gap-4 mt-2">
-        {/* Monto origen */}
-        <div className="flex gap-2">
+      <CardHeader titulo="Conversor rápido" />
+      <div className="flex flex-col gap-3 mt-2">
+        {/* Tipo de dólar */}
+        <select
+          value={tipo}
+          onChange={e => setTipo(e.target.value)}
+          className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
+            rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
+            text-zinc-900 dark:text-white appearance-none cursor-pointer"
+        >
+          {dolares.map(d => {
+            const meta = DOLAR_META[d.casa]
+            return <option key={d.casa} value={d.casa}>{meta?.icono} {meta?.label || d.nombre}</option>
+          })}
+        </select>
+
+        {/* Monto */}
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
+            {direccion === 'ars_a_usd' ? '$' : 'U$D'}
+          </span>
           <input
             type="number"
             value={monto}
             onChange={e => setMonto(e.target.value)}
-            placeholder="Monto"
-            className="flex-1 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
-              rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
+            placeholder={direccion === 'ars_a_usd' ? 'Pesos argentinos' : 'Dólares'}
+            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
+              rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
               text-zinc-900 dark:text-white placeholder:text-zinc-400"
           />
-          <select
-            value={desde}
-            onChange={e => setDesde(e.target.value)}
-            className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
-              rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
-              text-zinc-900 dark:text-white appearance-none cursor-pointer font-medium w-24"
-          >
-            {monedas.map(m => <option key={m.codigo} value={m.codigo}>{m.codigo}</option>)}
-          </select>
         </div>
 
-        {/* Botón invertir */}
-        <div className="flex justify-center">
-          <button onClick={invertir}
-            className="w-10 h-10 rounded-full bg-[var(--cream)] dark:bg-zinc-800 
-              border border-[var(--mango)]/15 dark:border-zinc-700
-              flex items-center justify-center text-lg
-              hover:bg-[var(--mango)]/15 hover:scale-110 transition-all active:scale-95 cursor-pointer">
-            ↕️
-          </button>
-        </div>
+        {/* Invertir */}
+        <button onClick={() => setDireccion(d => d === 'ars_a_usd' ? 'usd_a_ars' : 'ars_a_usd')}
+          className="self-center w-10 h-10 rounded-full bg-[var(--cream)] dark:bg-zinc-800 
+            border border-[var(--mango)]/15 dark:border-zinc-700
+            flex items-center justify-center text-lg
+            hover:bg-[var(--mango)]/15 hover:scale-110 transition-all active:scale-95 cursor-pointer">
+          ↕️
+        </button>
 
-        {/* Moneda destino */}
-        <div className="flex gap-2">
-          <div className="flex-1 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
-            rounded-xl px-4 py-3 text-sm text-zinc-900 dark:text-white min-h-[48px] flex items-center">
-            {resultado !== null ? (
-              <span className="text-lg font-bold">
-                {monedaDestino?.simbolo ?? ''} {fmtPrecio(resultado)}
-              </span>
-            ) : (
-              <span className="text-zinc-400">Resultado</span>
-            )}
-          </div>
-          <select
-            value={hacia}
-            onChange={e => setHacia(e.target.value)}
-            className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
-              rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
-              text-zinc-900 dark:text-white appearance-none cursor-pointer font-medium w-24"
-          >
-            {monedas.map(m => <option key={m.codigo} value={m.codigo}>{m.codigo}</option>)}
-          </select>
+        {/* Resultado */}
+        <div className="bg-[var(--mango)]/8 dark:bg-[var(--mango)]/5 rounded-xl px-4 py-3 
+          border border-[var(--mango)]/15 text-center min-h-[52px] flex items-center justify-center">
+          {resultado !== null ? (
+            <span className="text-xl font-bold text-[var(--mango-dark)] dark:text-[var(--mango)]">
+              {direccion === 'ars_a_usd' ? 'U$D' : '$'} {fmtPrecio(resultado)}
+            </span>
+          ) : (
+            <span className="text-sm text-zinc-400">Ingresá un monto</span>
+          )}
         </div>
 
         {/* Referencia */}
-        {resultado !== null && monto && (
-          <p className="text-xs text-zinc-400 text-center">
-            1 {desde} = {fmtPrecio(calcularTasaDirecta())} {hacia}
+        {dolar && (
+          <p className="text-[10px] text-zinc-400 text-center">
+            {DOLAR_META[tipo]?.label}: compra ${fmtPrecio(dolar.compra)} · venta ${fmtPrecio(dolar.venta)}
           </p>
         )}
       </div>
     </Card>
   )
+}
 
-  function calcularTasaDirecta() {
-    if (!datos) return 0
-    if (desde === base) return datos[hacia] || 0
-    if (hacia === base) return 1 / (datos[desde] || 1)
-    return (datos[hacia] || 0) / (datos[desde] || 1)
-  }
+// ─── Skeleton de carga ──────────────────────────────────────
+function SkeletonDolares() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {[0,1,2,3,4,5,6].map(i => (
+        <div key={i} className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl h-[136px] animate-pulse" />
+      ))}
+    </div>
+  )
 }
 
 // ─── Página principal ───────────────────────────────────────
 export function CotizacionesPage() {
   const { usuario } = useAuthContext()
-  const base = usuario?.moneda ?? 'ARS'
-  const { datos, cargando, error, ultimaAct, recargar } = useCotizaciones(base)
-  const [busqueda, setBusqueda] = useState('')
-
-  const monedasFiltradas = MONEDAS.filter(m => 
-    m.codigo !== base && (
-      m.codigo.toLowerCase().includes(busqueda.toLowerCase()) ||
-      m.nombre.toLowerCase().includes(busqueda.toLowerCase())
-    )
-  )
+  const { dolares, cotizaciones, cargando, error, recargar } = useDolarAPI()
 
   return (
     <>
@@ -220,7 +257,7 @@ export function CotizacionesPage() {
       <PageWrapper>
         <PageHeader 
           titulo="Cotizaciones" 
-          subtitulo={`Base: ${base} · ${ultimaAct ? `Actualizado ${ultimaAct.toLocaleTimeString('es-AR')}` : ''}`}
+          subtitulo="Dólar y divisas en Argentina · En vivo"
           accion={
             <Button variante="secondary" tamaño="sm" onClick={recargar} cargando={cargando}>
               🔄 Actualizar
@@ -235,55 +272,42 @@ export function CotizacionesPage() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Conversor — columna principal */}
+          {/* Conversor — sidebar derecho */}
           <div className="lg:col-span-1 order-1 lg:order-2">
-            {datos && <Conversor datos={datos} base={base} />}
+            {dolares.length > 0 && <Conversor dolares={dolares} />}
           </div>
 
-          {/* Lista de cotizaciones */}
-          <div className="lg:col-span-2 order-2 lg:order-1">
-            {/* Buscador */}
-            <div className="mb-4">
-              <input
-                type="text"
-                value={busqueda}
-                onChange={e => setBusqueda(e.target.value)}
-                placeholder="🔍 Buscar moneda..."
-                className="w-full bg-white dark:bg-zinc-900 border border-[var(--mango)]/10 dark:border-zinc-800 
-                  rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
-                  text-zinc-900 dark:text-white placeholder:text-zinc-400"
-              />
+          {/* Contenido principal */}
+          <div className="lg:col-span-2 order-2 lg:order-1 flex flex-col gap-6">
+            
+            {/* Sección: Dólares */}
+            <div>
+              <h2 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-3 px-1">
+                🇺🇸 Dólar en Argentina
+              </h2>
+              {cargando ? <SkeletonDolares /> : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {dolares.map(d => <TarjetaDolar key={d.casa} dolar={d} />)}
+                </div>
+              )}
             </div>
 
-            {cargando ? (
-              <div className="flex flex-col gap-3">
-                {[0,1,2,3,4,5].map(i => (
-                  <div key={i} className="bg-zinc-100 dark:bg-zinc-800 rounded-2xl h-[76px] animate-pulse" />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {monedasFiltradas.map(m => (
-                  <TarjetaMoneda 
-                    key={m.codigo} 
-                    moneda={m} 
-                    tasa={datos?.[m.codigo]} 
-                    base={base}
-                  />
-                ))}
-                {monedasFiltradas.length === 0 && (
-                  <div className="text-center py-12">
-                    <span className="text-4xl block mb-3">🔍</span>
-                    <p className="text-sm text-zinc-500">No se encontraron monedas con "{busqueda}"</p>
-                  </div>
-                )}
+            {/* Sección: Otras monedas */}
+            {cotizaciones.length > 0 && (
+              <div>
+                <h2 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-3 px-1">
+                  🌍 Otras divisas
+                </h2>
+                <div className="flex flex-col gap-3">
+                  {cotizaciones.map(c => <TarjetaMoneda key={c.moneda} cotiz={c} />)}
+                </div>
               </div>
             )}
           </div>
         </div>
 
         <p className="text-[10px] text-zinc-400 text-center mt-8 pb-4">
-          Fuente: ExchangeRate-API · Cotizaciones referenciales, no transaccionales.
+          Fuente: DolarAPI.com · Cotizaciones referenciales, no transaccionales.
         </p>
       </PageWrapper>
     </>
