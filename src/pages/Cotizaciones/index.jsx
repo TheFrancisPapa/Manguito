@@ -20,7 +20,7 @@ const MONEDAS = [
   { codigo: 'CNY', nombre: 'Yuan chino',           bandera: '🇨🇳', simbolo: '¥'   },
 ]
 
-const API_BASE = 'https://v6.exchangerate-api.com/v6/b46f42e5817a7f6b3d53f832/latest'
+const API_BASE = 'https://open.er-api.com/v6/latest'
 
 // ─── Hook para cotizaciones ─────────────────────────────────
 function useCotizaciones(base = 'ARS') {
