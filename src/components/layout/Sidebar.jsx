@@ -54,8 +54,12 @@ export function Sidebar({ usuario }) {
       {/* Mini perfil inferior */}
       <div className="mt-auto p-4 border-t border-orange-50 dark:border-zinc-800/50 m-4 bg-orange-50/50 dark:bg-zinc-900/30 rounded-2xl">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center text-white font-bold shadow-md">
-            {usuario?.nombre?.[0]?.toUpperCase() ?? '🥭'}
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 overflow-hidden flex items-center justify-center text-white font-bold shadow-md">
+            {usuario?.avatar_url ? (
+              <img src={usuario.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              usuario?.nombre?.[0]?.toUpperCase() ?? '🥭'
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">{usuario?.nombre}</p>

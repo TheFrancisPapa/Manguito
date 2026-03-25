@@ -33,7 +33,7 @@ async function subirFoto(archivo, usuarioId) {
 }
 
 export function ConfiguracionPage() {
-  const { usuario, session } = useAuthContext()
+  const { usuario, session, recargarPerfil } = useAuthContext()
   const inputFotoRef = useRef(null)
 
   // ── estado local
@@ -72,6 +72,7 @@ export function ConfiguracionPage() {
     try {
       const url = await subirFoto(file, session?.user?.id ?? usuario?.id)
       await actualizarPerfil({ avatar_url: url })
+      if (recargarPerfil) await recargarPerfil()
       setPreview(url)
       setFeedback({ tipo: 'ok', msg: 'Foto actualizada ✓' })
     } catch (err) {
@@ -93,6 +94,7 @@ export function ConfiguracionPage() {
     setFeedback(null)
     try {
       await actualizarPerfil({ nombre: nombre.trim(), moneda })
+      if (recargarPerfil) await recargarPerfil()
       setFeedback({ tipo: 'ok', msg: '¡Cambios guardados!' })
     } catch (err) {
       setFeedback({ tipo: 'error', msg: err.message || 'Error al guardar.' })
