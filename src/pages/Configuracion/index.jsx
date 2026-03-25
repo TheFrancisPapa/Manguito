@@ -123,19 +123,19 @@ export function ConfiguracionPage() {
 
           {/* ── Foto de perfil ── */}
           <Card>
-            <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4">
+            <h3 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-4">
               Foto de perfil
             </h3>
             <div className="flex items-center gap-5">
               {/* Avatar */}
               <div className="relative flex-shrink-0">
-                <div className="w-20 h-20 rounded-2xl overflow-hidden bg-amber-100 dark:bg-amber-900/40
+                <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[var(--mango)]/15 dark:bg-[var(--mango)]/10
                   border-2 border-white dark:border-zinc-800 shadow-md">
                   {preview ? (
                     <img src={preview} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center
-                      text-3xl font-bold text-amber-700 dark:text-amber-400">
+                      text-3xl font-bold text-[var(--mango-dark)] dark:text-[var(--mango)]">
                       {inicial}
                     </div>
                   )}
@@ -181,7 +181,7 @@ export function ConfiguracionPage() {
 
           {/* ── Datos personales ── */}
           <Card>
-            <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4">
+            <h3 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-4">
               Datos personales
             </h3>
             <form onSubmit={handleGuardar} className="flex flex-col gap-4">
@@ -193,7 +193,7 @@ export function ConfiguracionPage() {
                   onChange={e => setNombre(e.target.value)}
                   placeholder="Tu nombre"
                   className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
-                    rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50
+                    rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
                     text-zinc-900 dark:text-white"
                 />
               </div>
@@ -216,7 +216,7 @@ export function ConfiguracionPage() {
                   value={moneda}
                   onChange={e => setMoneda(e.target.value)}
                   className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
-                    rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50
+                    rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
                     text-zinc-900 dark:text-white appearance-none">
                   {MONEDAS.map(m => (
                     <option key={m.codigo} value={m.codigo}>
@@ -250,7 +250,7 @@ export function ConfiguracionPage() {
 
           {/* ── Apariencia ── */}
           <Card>
-            <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4">
+            <h3 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-4">
               Apariencia
             </h3>
             <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50
@@ -265,7 +265,7 @@ export function ConfiguracionPage() {
                 onClick={toggleTema}
                 className={`relative inline-flex h-8 w-14 flex-shrink-0 cursor-pointer rounded-full
                   border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none
-                  ${esOscuro ? 'bg-amber-400' : 'bg-zinc-200 dark:bg-zinc-700'}`}>
+                  ${esOscuro ? 'bg-[var(--mango)]' : 'bg-zinc-200 dark:bg-zinc-700'}`}>
                 <span className={`pointer-events-none flex h-7 w-7 transform items-center justify-center
                   rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
                   ${esOscuro ? 'translate-x-6' : 'translate-x-0'}`}>
@@ -277,7 +277,7 @@ export function ConfiguracionPage() {
 
           {/* ── Cuenta ── */}
           <Card>
-            <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4">
+            <h3 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-4">
               Cuenta
             </h3>
             <div className="flex flex-col gap-3">

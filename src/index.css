@@ -1,40 +1,82 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════
+   🥭  MANGUITO — Design System
+   Paleta extraída del logo (Mango.jpg)
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  /* Mango — dorado vibrante del cuerpo del mango */
+  --mango:        #F5C842;
+  --mango-dark:   #E8A317;
+  --mango-light:  #F7D96B;
+
+  /* Crema — fondo cálido (del background del logo) */
+  --cream:        #FCEBD3;
+  --cream-soft:   #FEF6EC;
+
+  /* Hoja — verde natural del tallo */
+  --leaf:         #6BA34A;
+  --leaf-light:   #E8F5E0;
+  --leaf-dark:    #4A8C2F;
+
+  /* Carbón — outline del mango, textos sobre dorado */
+  --charcoal:     #2D2D2D;
+
+  /* Sombras de marca */
+  --shadow-mango: 0 4px 14px rgba(245, 200, 66, 0.25);
+  --shadow-soft:  0 2px 8px rgba(0,0,0,0.04);
+}
+
 @layer base {
   body {
-    /* Fondo cálido "crema/durazno" clarito en vez del gris aburrido para modo claro.
-       También cambiamos el color de selección de texto para que matchee con el "mango". */
-    @apply bg-orange-50/40 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased selection:bg-orange-200 selection:text-orange-900;
+    @apply bg-[var(--cream-soft)] dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 antialiased;
+    selection-background: var(--mango-light);
+    selection-color: var(--charcoal);
+  }
+
+  ::selection {
+    background: var(--mango-light);
+    color: var(--charcoal);
   }
 }
 
-/* Animaciones personalizadas para Manguito */
+/* ── Utilidades de marca ──────────────────────────── */
+.bg-mango       { background-color: var(--mango); }
+.bg-mango-dark  { background-color: var(--mango-dark); }
+.bg-cream       { background-color: var(--cream); }
+.text-mango     { color: var(--mango); }
+.text-mango-dark{ color: var(--mango-dark); }
+.text-leaf      { color: var(--leaf); }
+.border-mango   { border-color: var(--mango); }
+.shadow-mango   { box-shadow: var(--shadow-mango); }
+
+/* ── Animaciones ──────────────────────────────────── */
 @keyframes blob {
-  0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(30px, -50px) scale(1.1); }
+  66%  { transform: translate(-20px, 20px) scale(0.9); }
   100% { transform: translate(0px, 0px) scale(1); }
 }
 
-.animate-blob {
-  animation: blob 7s infinite;
-}
-
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
-
-.animation-delay-4000 {
-  animation-delay: 4s;
-}
-
-/* Animación sutil de flote para el logo en Login, Registro y Pestaña de Carga */
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-8px); }
   100% { transform: translateY(0px); }
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
+
+.animate-blob   { animation: blob 7s infinite; }
+.animate-float  { animation: float 6s ease-in-out infinite; }
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, rgba(245,200,66,0.08) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animation-delay-2000 { animation-delay: 2s; }
+.animation-delay-4000 { animation-delay: 4s; }

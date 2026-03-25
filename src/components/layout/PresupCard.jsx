@@ -1,7 +1,7 @@
 const ESTADO = {
   sin_datos: { barra: '#D1D5DB', etiqueta: 'Sin gastos',   texto: 'text-zinc-400' },
-  holgado:   { barra: '#10B981', etiqueta: 'Bajo control', texto: 'text-emerald-600 dark:text-emerald-400' },
-  alerta:    { barra: '#F59E0B', etiqueta: 'Cuidado',      texto: 'text-amber-600 dark:text-amber-400' },
+  holgado:   { barra: '#6BA34A', etiqueta: 'Bajo control', texto: 'text-[var(--leaf)] dark:text-[var(--leaf)]' },
+  alerta:    { barra: '#F5C842', etiqueta: 'Cuidado',      texto: 'text-[var(--mango-dark)] dark:text-[var(--mango)]' },
   excedido:  { barra: '#EF4444', etiqueta: 'Excedido',     texto: 'text-red-500 dark:text-red-400' },
 }
 function calcularEstado(pct, alertaPct) {

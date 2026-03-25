@@ -9,17 +9,24 @@ export function ResumenBalance({ balance, moneda = 'ARS', cargando = false }) {
   )
   return (
     <div className="grid grid-cols-3 gap-3">
-      <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl p-3">
-        <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium mb-1">Ingresos</p>
-        <p className="text-base font-semibold text-emerald-800 dark:text-emerald-300 truncate">{fmt(balance?.total_ingresos)}</p>
+      {/* Ingresos — verde hoja del logo */}
+      <div className="bg-[var(--leaf)]/8 dark:bg-[var(--leaf)]/10 rounded-2xl p-3 border border-[var(--leaf)]/10">
+        <p className="text-xs text-[var(--leaf-dark)] dark:text-[var(--leaf)] font-medium mb-1">Ingresos</p>
+        <p className="text-base font-bold text-[var(--leaf-dark)] dark:text-[var(--leaf)] truncate">{fmt(balance?.total_ingresos)}</p>
       </div>
-      <div className="bg-red-50 dark:bg-red-900/20 rounded-2xl p-3">
+      {/* Gastos — rojo suave */}
+      <div className="bg-red-50 dark:bg-red-900/15 rounded-2xl p-3 border border-red-100 dark:border-red-900/20">
         <p className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">Gastos</p>
-        <p className="text-base font-semibold text-red-700 dark:text-red-300 truncate">{fmt(balance?.total_gastos)}</p>
+        <p className="text-base font-bold text-red-700 dark:text-red-300 truncate">{fmt(balance?.total_gastos)}</p>
       </div>
-      <div className={`rounded-2xl p-3 ${positivo ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-orange-50 dark:bg-orange-900/20'}`}>
-        <p className={`text-xs font-medium mb-1 ${positivo ? 'text-blue-700 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'}`}>Saldo</p>
-        <p className={`text-base font-semibold truncate ${positivo ? 'text-blue-800 dark:text-blue-300' : 'text-orange-700 dark:text-orange-300'}`}>
+      {/* Saldo — mango dorado (positivo) / rojo (negativo) */}
+      <div className={`rounded-2xl p-3 border ${
+        positivo 
+          ? 'bg-[var(--mango)]/8 dark:bg-[var(--mango)]/10 border-[var(--mango)]/15' 
+          : 'bg-red-50 dark:bg-red-900/15 border-red-100 dark:border-red-900/20'
+      }`}>
+        <p className={`text-xs font-medium mb-1 ${positivo ? 'text-[var(--mango-dark)] dark:text-[var(--mango)]' : 'text-red-600 dark:text-red-400'}`}>Saldo</p>
+        <p className={`text-base font-bold truncate ${positivo ? 'text-[var(--mango-dark)] dark:text-[var(--mango)]' : 'text-red-700 dark:text-red-300'}`}>
           {positivo ? '+' : ''}{fmt(saldo)}
         </p>
       </div>

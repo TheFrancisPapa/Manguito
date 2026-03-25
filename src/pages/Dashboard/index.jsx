@@ -63,7 +63,7 @@ export function DashboardPage() {
         <PageHeader
           titulo={`${saludo} ${emoji}`}
           subtitulo={`Resumen de ${mesCapitalizado}`}
-          accion={<Button icono="+" onClick={() => setModalMovs(true)} className="shadow-sm shadow-amber-500/20">Nuevo</Button>}
+          accion={<Button icono="+" onClick={() => setModalMovs(true)} className="shadow-sm">Nuevo</Button>}
         />
 
         <div className="mb-6 animate-in slide-in-from-bottom-4 fade-in duration-700" style={{ animationFillMode: 'both' }}>
@@ -82,7 +82,7 @@ export function DashboardPage() {
             <CardHeader
               titulo="Tus Límites"
               subtitulo={resumen.excedidos > 0 ? `${resumen.excedidos} excedidos 🚨` : 'Todo bajo control'}
-              accion={<a href="/presupuestos" className="text-xs font-medium text-amber-600 hover:text-amber-700">Ver todos</a>}
+              accion={<a href="/presupuestos" className="text-xs font-medium text-[var(--mango-dark)] hover:text-[var(--mango)]">Ver todos</a>}
             />
             <div className="flex flex-col gap-1 flex-1 justify-center mt-2">
               {cPresup ? (
@@ -98,7 +98,7 @@ export function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
           <Card className="lg:col-span-2 animate-in slide-in-from-bottom-4 fade-in duration-700" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
-            <CardHeader titulo="Últimos movimientos" accion={<a href="/movimientos" className="text-xs font-medium text-amber-600">Historial</a>} />
+            <CardHeader titulo="Últimos movimientos" accion={<a href="/movimientos" className="text-xs font-medium text-[var(--mango-dark)]">Historial</a>} />
             <div className="mt-4">
               {cMovs ? (
                 [0,1,2,3].map(i => <div key={i} className="h-14 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse mb-2" />)
@@ -115,14 +115,14 @@ export function DashboardPage() {
               <>
                 <div className="flex items-center justify-between px-1">
                   <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Tus Objetivos</h2>
-                  <a href="/metas" className="text-xs font-medium text-amber-600">Ver más</a>
+                  <a href="/metas" className="text-xs font-medium text-[var(--mango-dark)]">Ver más</a>
                 </div>
                 {metas.slice(0, 2).map(m => <BarraMeta key={m.id} meta={m} moneda={usuario?.moneda} />)}
               </>
             )}
             
             {!cMetas && metas.length === 0 && (
-               <Card className="bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30 text-center py-8">
+                <Card className="bg-[var(--mango)]/8 dark:bg-[var(--mango)]/5 border-[var(--mango)]/15 dark:border-[var(--mango)]/10 text-center py-8">
                  <span className="text-4xl mb-3 block animate-bounce">🎯</span>
                  <h3 className="font-semibold text-zinc-900 dark:text-white mb-1">Ponete una meta</h3>
                  <p className="text-xs text-zinc-500 mb-4 px-4">Ahorrar es más fácil cuando sabés para qué.</p>
