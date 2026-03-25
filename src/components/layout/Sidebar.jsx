@@ -20,7 +20,7 @@ export function Sidebar({ usuario }) {
           <div className="relative">
             <div className="absolute inset-0 bg-[var(--mango)] blur-md opacity-30 rounded-full animate-pulse"></div>
             <img 
-              src="/Mango.jpg" 
+              src="/Mango.png" 
               alt="Logo Manguito" 
               className="relative w-12 h-12 rounded-2xl object-cover shadow-sm border-2 border-white dark:border-zinc-800" 
             />

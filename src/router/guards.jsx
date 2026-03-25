@@ -16,7 +16,7 @@ const LoadingScreen = () => {
       <div className="animate-float mb-4 relative">
         <div className="absolute inset-0 bg-amber-500 blur-xl opacity-20 rounded-full animate-pulse"></div>
         <img 
-          src="/Mango.jpg" 
+          src="/Mango.png" 
           alt="Cargando Manguito" 
           className="relative w-20 h-20 rounded-3xl shadow-xl shadow-amber-500/20 border border-white/50 dark:border-zinc-800/50 object-cover" 
         />

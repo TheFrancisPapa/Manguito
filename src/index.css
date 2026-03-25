@@ -2,7 +2,7 @@
 
 /* ═══════════════════════════════════════════════════
    🥭  MANGUITO — Design System
-   Paleta extraída del logo (Mango.jpg)
+   Paleta extraída del logo (Mango.png)
    ═══════════════════════════════════════════════════ */
 
 :root {
@@ -31,8 +31,6 @@
 @layer base {
   body {
     @apply bg-[var(--cream-soft)] dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 antialiased;
-    selection-background: var(--mango-light);
-    selection-color: var(--charcoal);
   }
 
   ::selection {
