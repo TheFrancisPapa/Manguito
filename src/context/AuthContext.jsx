@@ -50,11 +50,14 @@ export const AuthProvider = ({ children }) => {
     getInitialSession()
 
     // Escuchamos los cambios de sesión (login, logout)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (montado) {
         setSession(newSession)
-        await cargarPerfil(newSession)
-        setCargando(false)
+        // Ejecutamos cargarPerfil de forma asíncrona pero sin retornar la promesa a Supabase
+        // para evitar que gotrue-js mantenga el "lock" interno por más de 5000ms.
+        cargarPerfil(newSession).finally(() => {
+          if (montado) setCargando(false)
+        })
       }
     })
 
