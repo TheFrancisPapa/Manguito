@@ -133,12 +133,19 @@ export function ChatPage() {
         },
       })
 
-      if (fnError) throw new Error(fnError.message || 'Error al comunicar con el asistente')
-      if (!data?.text) throw new Error('Respuesta vacía del asistente')
+      if (fnError) throw fnError
+      if (!data?.text) throw new Error('empty')
 
       setMensajes(prev => [...prev, { rol: 'asistente', contenido: data.text }])
     } catch (err) {
-      setError('Hubo un problema al conectar con el asistente. Intentá de nuevo.')
+      const msg = typeof err?.message === 'string' ? err.message : ''
+      if (msg.includes('429') || msg.includes('RATE') || msg.includes('quota')) {
+        setError('El asistente está ocupado. Esperá unos segundos e intentá de nuevo. ⏳')
+      } else if (msg.includes('401') || msg.includes('autorizado')) {
+        setError('Tu sesión expiró. Recargá la página e intentá de nuevo. 🔒')
+      } else {
+        setError('Hubo un problema al conectar con el asistente. Intentá de nuevo.')
+      }
       console.error(err)
     } finally {
       setCargando(false)
