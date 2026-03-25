@@ -100,7 +100,7 @@ function ModalConfirmar({ abierto, onCerrar, onConfirmar, mensaje }) {
 // ─── Página principal ────────────────────────────────────────
 export function PresupuestosPage() {
   const { usuario } = useAuthContext()
-  const { presupuestos, cargando, agregar, eliminar } = usePresupuestos()
+  const { presupuestos, cargando, crear, desactivar, recargar } = usePresupuestos()
   const { gastos: categoriasGastos, cargando: cargandoCat } = useCategorias()
   
   const [modalAbierto, setModalAbierto] = useState(false)
@@ -123,7 +123,7 @@ export function PresupuestosPage() {
     }
 
     try {
-      await agregar({
+      await crear({
         ...formData,
         usuario_id: usuario.id,
         limite_monto: Number(formData.limite_monto),

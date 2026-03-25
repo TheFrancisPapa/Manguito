@@ -32,7 +32,7 @@ export function DashboardPage() {
   
   const { balance, cargando: cBal } = useBalance(desde, hasta)
   const { datos: gastosXCat, cargando: cTorta } = useGastosXCategoria(desde, hasta)
-  const { movimientos, cargando: cMovs } = useUltimosMovimientos(5)
+  const { movimientos, cargando: cMovs, recargar: recargarMovs } = useUltimosMovimientos(5)
   const { presupuestos, resumen, cargando: cPresup } = usePresupuestos()
   const { metas, cargando: cMetas } = useMetas('activa')
   
@@ -45,13 +45,9 @@ export function DashboardPage() {
   const { saludo, emoji } = obtenerSaludoDinámico(usuario?.nombre)
 
   const handleGuardarMovimiento = async (datos) => {
-    try {
-      await agregarMovimiento({ ...datos, usuario_id: usuario.id })
-      setModalMovs(false)
-      window.location.reload() 
-    } catch (error) {
-      console.error(error)
-    }
+    await agregarMovimiento({ ...datos, usuario_id: usuario.id })
+    setModalMovs(false)
+    recargarMovs()
   }
 
   return (

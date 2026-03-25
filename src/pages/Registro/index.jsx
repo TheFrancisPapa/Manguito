@@ -85,7 +85,7 @@ export function RegistroPage() {
   const finalizarRegistro = async () => {
     try {
       // 1. Registramos al usuario en Supabase
-      const { user } = await registrarUsuario(formData)
+      const user = await registrarUsuario(formData)
       
       // 2. Si armó una meta inicial, la guardamos
       if (formData.metaActiva && formData.metaNombre && formData.metaMonto) {

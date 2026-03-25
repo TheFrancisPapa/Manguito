@@ -214,21 +214,12 @@ export function MetasPage() {
   // Estado para aporte
   const [montoAporte, setMontoAporte] = useState('')
 
+  // ✅ handleCrearMeta
   const handleCrearMeta = async (e) => {
     e.preventDefault()
-    try {
-      await agregar({
-        ...formData,
-        usuario_id: usuario.id,
-        monto_actual: 0,
-        estado: 'activa'
-      })
-      setModalAbierto(false)
-      setFormData({ nombre: '', monto_objetivo: '', icono: '🎯', color: '#F59E0B', fecha_limite: '' })
-      window.location.reload()
-    } catch (error) {
-      console.error(error)
-    }
+    await agregar({ ...formData, monto_actual: 0, estado: 'activa' })
+    setModalAbierto(false)
+    setFormData({ nombre: '', monto_objetivo: '', icono: '🎯', color: '#F59E0B', fecha_limite: '' })
   }
 
   const handleAbrirAporte = (meta) => {
@@ -237,15 +228,11 @@ export function MetasPage() {
     setModalAporteAbierto(true)
   }
 
+  // ✅ handleAportar
   const handleAportar = async (e) => {
     e.preventDefault()
-    try {
-      await aportar(metaSeleccionada.id, Number(montoAporte))
-      setModalAporteAbierto(false)
-      window.location.reload()
-    } catch (error) {
-      console.error(error)
-    }
+    await aportar(metaSeleccionada.id, Number(montoAporte))
+    setModalAporteAbierto(false)
   }
 
   return (

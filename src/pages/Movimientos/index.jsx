@@ -32,28 +32,19 @@ export function MovimientosPage() {
     return grupos
   }, {})
 
+  // ✅ handleGuardar
   const handleGuardar = async (datos) => {
-    try {
-      await agregar({ ...datos, usuario_id: usuario.id })
-      setModalNuevo(false)
-      window.location.reload()
-    } catch (error) {
-      console.error(error)
-    }
+    await agregar({ ...datos, usuario_id: usuario.id })
+    setModalNuevo(false)
+    // agregar() ya actualiza el estado local — no hace falta nada más
   }
 
+  // ✅ handleEliminar
   const handleEliminar = async () => {
-    if (window.confirm('¿Estás seguro de que querés eliminar este movimiento? Esta acción no se puede deshacer.')) {
-      try {
-        if (eliminar) {
-           await eliminar(movSeleccionado.id)
-        }
-        setMovSeleccionado(null)
-        window.location.reload()
-      } catch (error) {
-        console.error("Error al eliminar", error)
-        alert("Hubo un error al eliminar. Por favor, intentá de nuevo más tarde.")
-      }
+    if (window.confirm('...')) {
+      await eliminar(movSeleccionado.id)
+      setMovSeleccionado(null)
+      // eliminar() ya filtra el array local
     }
   }
 
