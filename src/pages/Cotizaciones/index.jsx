@@ -387,10 +387,7 @@ export function CotizacionesPage() {
 
         {/* ── Dólares + Conversor dólar ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-1 order-1 lg:order-2">
-            {dolares.length > 0 && <ConversorDolar dolares={dolares} />}
-          </div>
-          <div className="lg:col-span-2 order-2 lg:order-1">
+          <div className="lg:col-span-2">
             <h2 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-3 px-1">
               🇺🇸 Dólar en Argentina
             </h2>
@@ -400,21 +397,24 @@ export function CotizacionesPage() {
               </div>
             )}
           </div>
+          <div className="lg:col-span-1">
+            {dolares.length > 0 && <ConversorDolar dolares={dolares} />}
+          </div>
         </div>
 
         {/* ── Otras divisas + Conversor divisas ── */}
         {cotizaciones.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1 order-1 lg:order-2">
-              <ConversorDivisas cotizaciones={cotizaciones} />
-            </div>
-            <div className="lg:col-span-2 order-2 lg:order-1">
+            <div className="lg:col-span-2">
               <h2 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-3 px-1">
                 🌍 Otras divisas
               </h2>
               <div className="flex flex-col gap-3">
                 {cotizaciones.map(c => <TarjetaMoneda key={c.moneda} cotiz={c} />)}
               </div>
+            </div>
+            <div className="lg:col-span-1">
+              <ConversorDivisas cotizaciones={cotizaciones} />
             </div>
           </div>
         )}
