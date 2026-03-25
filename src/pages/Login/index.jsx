@@ -39,7 +39,7 @@ export function LoginPage() {
     try {
       // ✅ FIX: pasar un objeto, no dos argumentos separados
       await login({ email: formData.email, password: formData.password })
-      navigate('/dashboard')
+      // Eliminamos el navigate explícito para confiar en el PublicRoute que reacciona a onAuthStateChange
     } catch (err) {
       console.error(err)
       setError('Email o contraseña incorrectos. Volvé a intentar.')
