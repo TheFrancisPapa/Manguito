@@ -6,6 +6,7 @@ const LINKS = [
   { a: '/movimientos',  icono: '💸', label: 'Movimientos'  },
   { a: '/presupuestos', icono: '📊', label: 'Presupuestos' },
   { a: '/metas',        icono: '🎯', label: 'Metas'        },
+  { a: '/chat',         icono: '🤖', label: 'Asesor IA'    },
 ]
 
 export function Sidebar({ usuario }) {
