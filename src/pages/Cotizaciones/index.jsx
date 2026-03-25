@@ -18,6 +18,10 @@ const MONEDA_BANDERA = {
   USD: '🇺🇸', EUR: '🇪🇺', BRL: '🇧🇷', CLP: '🇨🇱', UYU: '🇺🇾',
 }
 
+const MONEDA_SIMBOLO = {
+  ARS: '$', USD: 'U$D', EUR: '€', BRL: 'R$', CLP: 'CL$', UYU: '$U',
+}
+
 // ─── Formateo de números ────────────────────────────────────
 function fmtPrecio(n) {
   if (!n && n !== 0) return '—'
@@ -60,7 +64,6 @@ function useDolarAPI() {
       ])
       
       setDolares(dataDolares)
-      // Filtrar USD de cotizaciones ya que los dólares los mostramos aparte
       setCotizaciones(dataCotiz.filter(c => c.moneda !== 'USD'))
     } catch (err) {
       setError(err.message)
@@ -148,29 +151,28 @@ function TarjetaMoneda({ cotiz }) {
   )
 }
 
-// ─── Conversor rápido ───────────────────────────────────────
-function Conversor({ dolares }) {
+// ─── Conversor de Dólar ─────────────────────────────────────
+function ConversorDolar({ dolares }) {
   const [monto, setMonto] = useState('')
   const [tipo, setTipo] = useState('blue')
-  const [direccion, setDireccion] = useState('ars_a_usd') // ars_a_usd | usd_a_ars
+  const [direccion, setDireccion] = useState('ars_a_usd')
 
   const dolar = dolares.find(d => d.casa === tipo)
+  const esARS = direccion === 'ars_a_usd'
   
   function calcular() {
     const val = parseFloat(monto)
     if (isNaN(val) || !dolar) return null
-    if (direccion === 'ars_a_usd') {
-      return dolar.venta ? val / dolar.venta : null
-    } else {
-      return dolar.compra ? val * dolar.compra : null
-    }
+    return esARS
+      ? (dolar.venta ? val / dolar.venta : null)
+      : (dolar.compra ? val * dolar.compra : null)
   }
 
   const resultado = calcular()
 
   return (
     <Card>
-      <CardHeader titulo="Conversor rápido" />
+      <CardHeader titulo="💵 Conversor de dólares" />
       <div className="flex flex-col gap-3 mt-2">
         {/* Tipo de dólar */}
         <select
@@ -186,47 +188,159 @@ function Conversor({ dolares }) {
           })}
         </select>
 
-        {/* Monto */}
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
-            {direccion === 'ars_a_usd' ? '$' : 'U$D'}
-          </span>
+        {/* Campo de origen */}
+        <div>
+          <label className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mb-1 block px-1">
+            {esARS ? 'Tengo (ARS)' : 'Tengo (USD)'}
+          </label>
           <input
             type="number"
             value={monto}
             onChange={e => setMonto(e.target.value)}
-            placeholder={direccion === 'ars_a_usd' ? 'Pesos argentinos' : 'Dólares'}
+            placeholder={esARS ? 'Ej: 100.000' : 'Ej: 100'}
             className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
-              rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
+              rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
               text-zinc-900 dark:text-white placeholder:text-zinc-400"
           />
         </div>
 
-        {/* Invertir */}
-        <button onClick={() => setDireccion(d => d === 'ars_a_usd' ? 'usd_a_ars' : 'ars_a_usd')}
-          className="self-center w-10 h-10 rounded-full bg-[var(--cream)] dark:bg-zinc-800 
-            border border-[var(--mango)]/15 dark:border-zinc-700
-            flex items-center justify-center text-lg
-            hover:bg-[var(--mango)]/15 hover:scale-110 transition-all active:scale-95 cursor-pointer">
-          ↕️
-        </button>
+        {/* Botón invertir con explicación */}
+        <div className="flex flex-col items-center gap-1">
+          <button onClick={() => setDireccion(d => d === 'ars_a_usd' ? 'usd_a_ars' : 'ars_a_usd')}
+            className="w-10 h-10 rounded-full bg-[var(--cream)] dark:bg-zinc-800 
+              border border-[var(--mango)]/15 dark:border-zinc-700
+              flex items-center justify-center text-lg
+              hover:bg-[var(--mango)]/15 hover:scale-110 transition-all active:scale-95 cursor-pointer"
+            title="Invertir conversión">
+            ↕️
+          </button>
+          <span className="text-[10px] text-zinc-400">
+            {esARS ? 'Pesos → Dólares' : 'Dólares → Pesos'}
+            <span className="text-zinc-300 dark:text-zinc-600"> · Tocá para invertir</span>
+          </span>
+        </div>
 
         {/* Resultado */}
-        <div className="bg-[var(--mango)]/8 dark:bg-[var(--mango)]/5 rounded-xl px-4 py-3 
-          border border-[var(--mango)]/15 text-center min-h-[52px] flex items-center justify-center">
-          {resultado !== null ? (
-            <span className="text-xl font-bold text-[var(--mango-dark)] dark:text-[var(--mango)]">
-              {direccion === 'ars_a_usd' ? 'U$D' : '$'} {fmtPrecio(resultado)}
-            </span>
-          ) : (
-            <span className="text-sm text-zinc-400">Ingresá un monto</span>
-          )}
+        <div>
+          <label className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mb-1 block px-1">
+            {esARS ? 'Recibís (USD)' : 'Recibís (ARS)'}
+          </label>
+          <div className="bg-[var(--mango)]/8 dark:bg-[var(--mango)]/5 rounded-xl px-4 py-3 
+            border border-[var(--mango)]/15 text-center min-h-[52px] flex items-center justify-center">
+            {resultado !== null ? (
+              <span className="text-xl font-bold text-[var(--mango-dark)] dark:text-[var(--mango)]">
+                {esARS ? 'U$D' : '$'} {fmtPrecio(resultado)}
+              </span>
+            ) : (
+              <span className="text-sm text-zinc-400">Ingresá un monto arriba</span>
+            )}
+          </div>
         </div>
 
         {/* Referencia */}
         {dolar && (
           <p className="text-[10px] text-zinc-400 text-center">
             {DOLAR_META[tipo]?.label}: compra ${fmtPrecio(dolar.compra)} · venta ${fmtPrecio(dolar.venta)}
+          </p>
+        )}
+      </div>
+    </Card>
+  )
+}
+
+// ─── Conversor de divisas ───────────────────────────────────
+function ConversorDivisas({ cotizaciones }) {
+  const [monto, setMonto] = useState('')
+  const [moneda, setMoneda] = useState(cotizaciones[0]?.moneda || 'EUR')
+  const [direccion, setDireccion] = useState('ars_a_divisa')
+
+  const cotiz = cotizaciones.find(c => c.moneda === moneda)
+  const esARS = direccion === 'ars_a_divisa'
+  const simbolo = MONEDA_SIMBOLO[moneda] || moneda
+  const bandera = MONEDA_BANDERA[moneda] || '🌐'
+  
+  function calcular() {
+    const val = parseFloat(monto)
+    if (isNaN(val) || !cotiz) return null
+    return esARS 
+      ? (cotiz.venta ? val / cotiz.venta : null)
+      : (cotiz.compra ? val * cotiz.compra : null)
+  }
+
+  const resultado = calcular()
+
+  return (
+    <Card>
+      <CardHeader titulo="🌍 Conversor de divisas" />
+      <div className="flex flex-col gap-3 mt-2">
+        {/* Moneda */}
+        <select
+          value={moneda}
+          onChange={e => setMoneda(e.target.value)}
+          className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
+            rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
+            text-zinc-900 dark:text-white appearance-none cursor-pointer"
+        >
+          {cotizaciones.map(c => (
+            <option key={c.moneda} value={c.moneda}>
+              {MONEDA_BANDERA[c.moneda] || '🌐'} {c.nombre} ({c.moneda})
+            </option>
+          ))}
+        </select>
+
+        {/* Campo de origen */}
+        <div>
+          <label className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mb-1 block px-1">
+            {esARS ? 'Tengo (ARS)' : `Tengo (${moneda})`}
+          </label>
+          <input
+            type="number"
+            value={monto}
+            onChange={e => setMonto(e.target.value)}
+            placeholder={esARS ? 'Ej: 50.000' : 'Ej: 200'}
+            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
+              rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
+              text-zinc-900 dark:text-white placeholder:text-zinc-400"
+          />
+        </div>
+
+        {/* Botón invertir */}
+        <div className="flex flex-col items-center gap-1">
+          <button onClick={() => setDireccion(d => d === 'ars_a_divisa' ? 'divisa_a_ars' : 'ars_a_divisa')}
+            className="w-10 h-10 rounded-full bg-[var(--cream)] dark:bg-zinc-800 
+              border border-[var(--mango)]/15 dark:border-zinc-700
+              flex items-center justify-center text-lg
+              hover:bg-[var(--mango)]/15 hover:scale-110 transition-all active:scale-95 cursor-pointer"
+            title="Invertir conversión">
+            ↕️
+          </button>
+          <span className="text-[10px] text-zinc-400">
+            {esARS ? `Pesos → ${moneda}` : `${moneda} → Pesos`}
+            <span className="text-zinc-300 dark:text-zinc-600"> · Tocá para invertir</span>
+          </span>
+        </div>
+
+        {/* Resultado */}
+        <div>
+          <label className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mb-1 block px-1">
+            {esARS ? `Recibís (${moneda})` : 'Recibís (ARS)'}
+          </label>
+          <div className="bg-[var(--mango)]/8 dark:bg-[var(--mango)]/5 rounded-xl px-4 py-3 
+            border border-[var(--mango)]/15 text-center min-h-[52px] flex items-center justify-center">
+            {resultado !== null ? (
+              <span className="text-xl font-bold text-[var(--mango-dark)] dark:text-[var(--mango)]">
+                {esARS ? simbolo : '$'} {fmtPrecio(resultado)}
+              </span>
+            ) : (
+              <span className="text-sm text-zinc-400">Ingresá un monto arriba</span>
+            )}
+          </div>
+        </div>
+
+        {/* Referencia */}
+        {cotiz && (
+          <p className="text-[10px] text-zinc-400 text-center">
+            {bandera} {cotiz.nombre}: compra ${fmtPrecio(cotiz.compra)} · venta ${fmtPrecio(cotiz.venta)}
           </p>
         )}
       </div>
@@ -271,40 +385,39 @@ export function CotizacionesPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Conversor — sidebar derecho */}
+        {/* ── Dólares + Conversor dólar ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-1 order-1 lg:order-2">
-            {dolares.length > 0 && <Conversor dolares={dolares} />}
+            {dolares.length > 0 && <ConversorDolar dolares={dolares} />}
           </div>
-
-          {/* Contenido principal */}
-          <div className="lg:col-span-2 order-2 lg:order-1 flex flex-col gap-6">
-            
-            {/* Sección: Dólares */}
-            <div>
-              <h2 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-3 px-1">
-                🇺🇸 Dólar en Argentina
-              </h2>
-              {cargando ? <SkeletonDolares /> : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {dolares.map(d => <TarjetaDolar key={d.casa} dolar={d} />)}
-                </div>
-              )}
-            </div>
-
-            {/* Sección: Otras monedas */}
-            {cotizaciones.length > 0 && (
-              <div>
-                <h2 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-3 px-1">
-                  🌍 Otras divisas
-                </h2>
-                <div className="flex flex-col gap-3">
-                  {cotizaciones.map(c => <TarjetaMoneda key={c.moneda} cotiz={c} />)}
-                </div>
+          <div className="lg:col-span-2 order-2 lg:order-1">
+            <h2 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-3 px-1">
+              🇺🇸 Dólar en Argentina
+            </h2>
+            {cargando ? <SkeletonDolares /> : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {dolares.map(d => <TarjetaDolar key={d.casa} dolar={d} />)}
               </div>
             )}
           </div>
         </div>
+
+        {/* ── Otras divisas + Conversor divisas ── */}
+        {cotizaciones.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 order-1 lg:order-2">
+              <ConversorDivisas cotizaciones={cotizaciones} />
+            </div>
+            <div className="lg:col-span-2 order-2 lg:order-1">
+              <h2 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-3 px-1">
+                🌍 Otras divisas
+              </h2>
+              <div className="flex flex-col gap-3">
+                {cotizaciones.map(c => <TarjetaMoneda key={c.moneda} cotiz={c} />)}
+              </div>
+            </div>
+          </div>
+        )}
 
         <p className="text-[10px] text-zinc-400 text-center mt-8 pb-4">
           Fuente: DolarAPI.com · Cotizaciones referenciales, no transaccionales.
