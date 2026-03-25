@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { PageWrapper, Sidebar, BottomNav } from '../../components/layout'
 import { Spinner } from '../../components/ui'
+import { supabase } from '../../lib/supabase'
 
 // ─── Prompt de sistema — define el comportamiento del bot ────
 const SYSTEM_PROMPT = `Sos ManguitoAI, el asistente financiero integrado en Manguito, una app de finanzas personales argentina.
@@ -123,26 +124,19 @@ export function ChatPage() {
         content: m.contenido,
       }))
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
+      // Llamamos al Edge Function en vez de directamente a Anthropic
+      const { data, error: fnError } = await supabase.functions.invoke('chat-proxy', {
+        body: {
           system: SYSTEM_PROMPT,
           messages: historialAPI,
-        }),
+          max_tokens: 1000,
+        },
       })
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err?.error?.message || `Error ${res.status}`)
-      }
+      if (fnError) throw new Error(fnError.message || 'Error al comunicar con el asistente')
+      if (!data?.text) throw new Error('Respuesta vacía del asistente')
 
-      const data = await res.json()
-      const respuesta = data.content?.find(b => b.type === 'text')?.text ?? '...'
-
-      setMensajes(prev => [...prev, { rol: 'asistente', contenido: respuesta }])
+      setMensajes(prev => [...prev, { rol: 'asistente', contenido: data.text }])
     } catch (err) {
       setError('Hubo un problema al conectar con el asistente. Intentá de nuevo.')
       console.error(err)
