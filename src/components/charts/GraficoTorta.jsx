@@ -21,10 +21,11 @@ function calcularSegmentos(datos) {
 export function GraficoTorta({ datos = [], moneda = 'ARS', cargando = false }) {
   const [activo, setActivo] = useState(null)
   const fmt = (n) => Number(n).toLocaleString('es-AR', { style: 'currency', currency: moneda, maximumFractionDigits: 0 })
-  if (cargando) return <div className="w-48 h-48 rounded-full bg-zinc-100 dark:bg-zinc-800 animate-pulse mx-auto" />
-  if (!datos.length) return <div className="flex items-center justify-center h-48 text-zinc-400 text-sm">Sin gastos en el período</div>
   const segmentos  = useMemo(() => calcularSegmentos(datos), [datos])
   const activoData = activo !== null ? segmentos[activo] : null
+
+  if (cargando) return <div className="w-48 h-48 rounded-full bg-zinc-100 dark:bg-zinc-800 animate-pulse mx-auto" />
+  if (!datos.length) return <div className="flex items-center justify-center h-48 text-zinc-400 text-sm">Sin gastos en el período</div>
   return (
     <div className="flex flex-col sm:flex-row items-center gap-6">
       <div className="relative flex-shrink-0">
