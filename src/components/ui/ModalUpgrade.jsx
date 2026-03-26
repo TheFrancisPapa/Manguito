@@ -3,37 +3,22 @@ import { useNavigate } from 'react-router-dom'
 import { Modal } from './Modal'
 import { Button } from './Button'
 import { useAuthContext } from '../../context/AuthContext'
+import { iniciarPago } from '../../lib/pagos'
 
 export function ModalUpgrade({ abierto, onCerrar, feature = 'Esta función' }) {
   const navigate = useNavigate()
   const { usuario } = useAuthContext()
   const [cargando, setCargando] = useState(false)
+  const [error, setError] = useState(null)
 
   const handlePagar = async () => {
-    if (!usuario?.id) return
     setCargando(true)
+    setError(null)
     try {
-      const response = await fetch('/api/pago/crear', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          userId: usuario.id,
-          email: usuario.email 
-        }), 
-      })
-
-      const data = await response.json()
-
-      if (data.init_point) {
-        window.location.href = data.init_point
-      } else {
-        console.error('Error: No se recibió el punto de inicio de pago', data)
-      }
-    } catch (error) {
-      console.error('Error al conectar con el servicio de pagos:', error)
-    } finally {
+      await iniciarPago({ userId: usuario?.id, email: usuario?.email })
+    } catch (err) {
+      console.error('Error al iniciar pago:', err)
+      setError('No se pudo conectar con el servicio de pagos. Intentá de nuevo.')
       setCargando(false)
     }
   }
@@ -48,21 +33,28 @@ export function ModalUpgrade({ abierto, onCerrar, feature = 'Esta función' }) {
           Pasate a Manguito Pro
         </h3>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8 leading-relaxed px-4">
-          {feature} es un beneficio exclusivo del plan Pro. Mejorá tu cuenta para desbloquear todo el potencial de la app y sacarle jugo a tus finanzas.
+          {feature} es un beneficio exclusivo del plan Pro. Mejorá tu cuenta para desbloquear todo el potencial de la app.
         </p>
-        
+
+        {error && (
+          <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-3 py-2 mb-4 border border-red-100 dark:border-red-900">
+            {error}
+          </p>
+        )}
+
         <div className="flex flex-col w-full gap-3">
-          <Button 
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
+          <Button
+            className="w-full"
             onClick={handlePagar}
-            disabled={cargando}
+            cargando={cargando}
           >
-            {cargando ? 'Cargando...' : 'Pasarme a Pro por $100'}
+            Pasarme a Pro por $100
           </Button>
-          <Button 
-            variante="ghost" 
-            className="w-full text-zinc-500" 
+          <Button
+            variante="ghost"
+            className="w-full text-zinc-500"
             onClick={() => navigate('/configuracion/planes')}
+            disabled={cargando}
           >
             Ver todos los planes
           </Button>

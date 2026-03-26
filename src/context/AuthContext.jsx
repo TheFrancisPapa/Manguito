@@ -15,25 +15,16 @@ export const AuthProvider = ({ children }) => {
       return
     }
     try {
-      let perfil = await getPerfil()
-      // Forzamos plan PRO para la cuenta del desarrollador
-      if (perfil?.email === 'urielrt2095@gmail.com') {
-        perfil.plan = 'pro'
-      }
+      const perfil = await getPerfil()
       setUsuario(perfil)
     } catch (err) {
       console.error("Error cargando perfil desde DB:", err)
       // Fallback a los metadatos de sesión si falla la DB
-      const dataFallback = {
+      setUsuario({
         id: currentSession.user.id,
         email: currentSession.user.email,
-        ...currentSession.user.user_metadata
-      }
-      // También aplicamos el forzado en el fallback
-      if (dataFallback.email === 'urielrt2095@gmail.com') {
-        dataFallback.plan = 'pro'
-      }
-      setUsuario(dataFallback)
+        ...currentSession.user.user_metadata,
+      })
     }
   }, [])
 
@@ -44,7 +35,6 @@ export const AuthProvider = ({ children }) => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
         if (error) throw error
-        
         if (montado && session) {
           setSession(session)
           await cargarPerfil(session)
@@ -58,12 +48,9 @@ export const AuthProvider = ({ children }) => {
 
     getInitialSession()
 
-    // Escuchamos los cambios de sesión (login, logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (montado) {
         setSession(newSession)
-        // Ejecutamos cargarPerfil de forma asíncrona pero sin retornar la promesa a Supabase
-        // para evitar que gotrue-js mantenga el "lock" interno por más de 5000ms.
         cargarPerfil(newSession).finally(() => {
           if (montado) setCargando(false)
         })
