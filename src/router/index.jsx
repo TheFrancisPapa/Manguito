@@ -14,6 +14,7 @@ import { ConfiguracionPage } from '../pages/Configuracion'
 import { ChatPage }          from '../pages/Chat'
 import { CotizacionesPage }  from '../pages/Cotizaciones'
 import { PlanesPage }        from '../pages/Configuracion/Planes'
+import { LandingPage }       from '../pages/Landing'
 
 function Root() {
   return <AuthProvider><Outlet /></AuthProvider>
@@ -23,7 +24,7 @@ export const router = createBrowserRouter([
   {
     element: <Root />,
     children: [
-      { path: '/', element: <Navigate to="/dashboard" replace /> },
+      { path: '/', element: <LandingPage /> },
       { path: '/login',              element: <PublicRoute><LoginPage /></PublicRoute> },
       { path: '/registro',           element: <PublicRoute><RegistroPage /></PublicRoute> },
       { path: '/recuperar-password', element: <PublicRoute><RecuperarPassword /></PublicRoute> },
