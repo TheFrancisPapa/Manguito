@@ -133,7 +133,7 @@ export function ConfiguracionPage() {
               <div className="relative flex-shrink-0">
                 <div className="w-20 h-20 rounded-2xl overflow-hidden bg-[var(--mango)]/15 dark:bg-[var(--mango)]/10
                   border-2 border-white dark:border-zinc-800 shadow-md">
-                  {preview ? (
+                   {preview ? (
                     <img src={preview} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center
@@ -277,34 +277,46 @@ export function ConfiguracionPage() {
             </div>
           </Card>
 
+          {/* ── Suscripción ── */}
+          <Card>
+            <h3 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-4">
+              Suscripción
+            </h3>
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <p className="text-sm font-medium">Plan Actual</p>
+                  <p className="text-xs text-zinc-400 capitalize">Plan {usuario?.plan || 'Básico'}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20
+                    text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-medium
+                    border border-emerald-200 dark:border-emerald-800/50">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Activa
+                  </span>
+                </div>
+              </div>
+              
+              <Button variante="secondary" className="w-full" onClick={() => navigate('/configuracion/planes')}>
+                🚀 Gestionar mi suscripción
+              </Button>
+            </div>
+          </Card>
+
           {/* ── Cuenta ── */}
           <Card>
             <h3 className="text-xs font-semibold text-[var(--mango-dark)] dark:text-[var(--mango)] uppercase tracking-wider mb-4">
               Cuenta
             </h3>
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <p className="text-sm font-medium">Estado</p>
-                  <p className="text-xs text-zinc-400">Plan gratuito</p>
-                </div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20
-                  text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-medium
-                  border border-emerald-200 dark:border-emerald-800/50">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Activa
-                </span>
-              </div>
-
-              <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3">
-                <Button
-                  variante="danger"
-                  className="w-full"
-                  onClick={handleLogout}
-                  icono="🚪">
-                  Cerrar sesión
-                </Button>
-              </div>
+              <Button
+                variante="danger"
+                className="w-full"
+                onClick={handleLogout}
+                icono="🚪">
+                Cerrar sesión
+              </Button>
             </div>
           </Card>
 

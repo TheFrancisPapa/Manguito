@@ -94,6 +94,32 @@ function parsearNegritas(texto) {
 // ─── Página principal ─────────────────────────────────────────
 export function ChatPage() {
   const { usuario } = useAuthContext()
+  const plan = usuario?.plan || 'basico'
+
+  // Si es básico, le mostramos el cartel de bloqueo
+  if (plan === 'basico') {
+    return (
+      <>
+        <Sidebar usuario={usuario} />
+        <BottomNav />
+        <div className="min-h-screen bg-[var(--cream-soft)] dark:bg-zinc-950 md:pl-[88px] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
+          <div className="w-20 h-20 bg-emerald-500/10 text-emerald-500 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-sm">
+            ⭐
+          </div>
+          <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-3">
+            ManguitoAI es una función Pro
+          </h2>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mb-8 leading-relaxed">
+            El asistente financiero con inteligencia artificial está disponible únicamente para usuarios de Manguito Pro. Mejorá tu plan para chatear sin límites.
+          </p>
+          <Button onClick={() => window.location.href = '/configuracion/planes'}>
+            Ver planes de suscripción
+          </Button>
+        </div>
+      </>
+    )
+  }
+
   const [mensajes, setMensajes] = useState([MSG_BIENVENIDA])
   const [input, setInput]       = useState('')
   const [cargando, setCargando] = useState(false)

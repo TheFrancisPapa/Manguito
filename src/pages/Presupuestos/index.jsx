@@ -109,9 +109,18 @@ export function PresupuestosPage() {
     desactivar 
   } = usePresupuestos()  
   const { gastos: categoriasGastos } = useCategorias()
+  const plan = usuario?.plan || 'basico'
   
   const [modalNuevo, setModalNuevo] = useState(false)
   const [errorLocal, setErrorLocal] = useState('')
+  const handleAbrirModalNuevo = () => {
+    if (plan === 'basico' && presupuestos.length >= 3) {
+      alert('Llegaste al límite de 3 presupuestos del Plan Básico. ¡Pasate a Pro para crear ilimitados!')
+      // Más adelante acá podés abrir un modal lindo o redirigir a /configuracion
+      return
+    }
+    setModalNuevo(true)
+  }
 
   async function handleGuardar(datos) {
     setErrorLocal('')
@@ -144,7 +153,7 @@ export function PresupuestosPage() {
         <PageHeader
           titulo="Mis Presupuestos"
           subtitulo={cargando ? 'Cargando...' : subtitulo}
-          accion={<Button icono="+" onClick={() => setModalNuevo(true)} className="shadow-sm shadow-amber-500/20">Nuevo Límite</Button>}
+          accion={<Button icono="+" onClick={handleAbrirModalNuevo} className="shadow-sm shadow-amber-500/20">Nuevo Límite</Button>}
         />
 
         {cargando ? (
@@ -157,7 +166,7 @@ export function PresupuestosPage() {
           <Card className="mt-6 py-12">
             <EmptyState 
               {...EMPTY_STATES.presupuestos} 
-              accion={<Button icono="+" onClick={() => setModalNuevo(true)}>Crear mi primer límite</Button>} 
+              accion={<Button icono="+" onClick={handleAbrirModalNuevo}>Crear mi primer límite</Button>} 
             />
           </Card>
         ) : (

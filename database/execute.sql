@@ -21,6 +21,7 @@ create table if not exists usuarios (
   nombre          text        not null,
   email           text        not null unique,
   moneda          text        not null default 'ARS',   -- ARS, USD, EUR…
+  plan            text        not null default 'basico' check (plan in ('basico', 'pro')), -- Acá está el campo nuevo
   avatar_url      text,
   onboarding_ok   boolean     not null default false,   -- ¿completó el tour inicial?
   created_at      timestamptz not null default now(),

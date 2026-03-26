@@ -14,6 +14,16 @@ export function MetasPage() {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [modalAporteAbierto, setModalAporteAbierto] = useState(false)
   const [metaSeleccionada, setMetaSeleccionada] = useState(null)
+  const plan = usuario?.plan || 'basico'
+
+  const handleAbrirModalNuevo = () => {
+    const metasActivas = metas.filter(m => m.estado === 'activa').length
+    if (plan === 'basico' && metasActivas >= 1) {
+      alert('Con el Plan Básico solo podés tener 1 meta activa a la vez. ¡Pasate a Pro para ir por más!')
+      return
+    }
+    setModalAbierto(true)
+  }
   
   // Estado para nueva meta
   const [formData, setFormData] = useState({
@@ -56,7 +66,7 @@ export function MetasPage() {
         <PageHeader
           titulo="Mis Metas"
           subtitulo="Ahorrar con propósito"
-          accion={<Button icono="+" onClick={() => setModalAbierto(true)} className="shadow-sm shadow-amber-500/20">Nueva Meta</Button>}
+          accion={<Button icono="+" onClick={handleAbrirModalNuevo} className="shadow-sm shadow-amber-500/20">Nueva Meta</Button>}
         />
 
         {cargando ? (
@@ -68,7 +78,7 @@ export function MetasPage() {
             <EmptyState 
               titulo="No tenés metas activas" 
               descripcion="Ponerle nombre a tu ahorro hace que sea más fácil alcanzarlo."
-              accion={<Button icono="+" onClick={() => setModalAbierto(true)}>Crear primera meta</Button>} 
+              accion={<Button icono="+" onClick={handleAbrirModalNuevo}>Crear primera meta</Button>} 
             />
           </Card>
         ) : (
