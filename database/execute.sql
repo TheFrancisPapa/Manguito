@@ -19,7 +19,7 @@ create table if not exists usuarios (
   id              uuid primary key references auth.users(id) on delete cascade,
 
   nombre          text        not null,
-  fecha_nacimiento date        not null,
+  fecha_nacimiento date,                          -- nullable: el registro no se rompe si falta
   email           text        not null unique,
   moneda          text        not null default 'ARS',   -- ARS, USD, EUR…
   plan            text        not null default 'basico' check (plan in ('basico', 'pro')), -- Acá está el campo nuevo
@@ -259,7 +259,7 @@ begin
     coalesce(new.raw_user_meta_data->>'nombre', 'Usuario'),
     new.email,
     coalesce(new.raw_user_meta_data->>'moneda', 'ARS'),
-    (new.raw_user_meta_data->>'fecha_nacimiento')::date
+    (nullif(new.raw_user_meta_data->>'fecha_nacimiento', ''))::date  -- null-safe
   );
   return new;
 end;

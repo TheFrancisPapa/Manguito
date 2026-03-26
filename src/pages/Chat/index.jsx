@@ -98,6 +98,19 @@ export function ChatPage() {
   const { usuario } = useAuthContext()
   const plan = usuario?.plan || 'basico'
 
+  // ─── Hooks (SIEMPRE antes de cualquier return condicional) ───
+  const [mensajes, setMensajes] = useState([MSG_BIENVENIDA])
+  const [input, setInput]       = useState('')
+  const [cargando, setCargando] = useState(false)
+  const [error, setError]       = useState(null)
+  const finRef = useRef(null)
+  const inputRef = useRef(null)
+
+  // Scroll automático al último mensaje
+  useEffect(() => {
+    finRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [mensajes, cargando])
+
   // Si es básico, le mostramos el cartel de bloqueo
   if (plan === 'basico') {
     return (
@@ -121,18 +134,6 @@ export function ChatPage() {
       </>
     )
   }
-
-  const [mensajes, setMensajes] = useState([MSG_BIENVENIDA])
-  const [input, setInput]       = useState('')
-  const [cargando, setCargando] = useState(false)
-  const [error, setError]       = useState(null)
-  const finRef = useRef(null)
-  const inputRef = useRef(null)
-
-  // Scroll automático al último mensaje
-  useEffect(() => {
-    finRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [mensajes, cargando])
 
   async function enviar(e) {
     e?.preventDefault()
