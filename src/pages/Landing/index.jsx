@@ -61,16 +61,16 @@ export function LandingPage() {
                 <img 
                   src="/app-mockup.png" 
                   alt="Manguito App Mockup" 
-                  className="w-full max-w-[500px] mx-auto drop-shadow-[0_35px_35px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_35px_35px_rgba(255,255,255,0.05)] rounded-[3rem] animate-float" 
+                  className="w-full max-w-[500px] mx-auto drop-shadow-[0_35px_35px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_35px_35px_rgba(255,255,255,0.05)] rounded-[3rem] animate-float relative" 
                 />
               </div>
-              {/* Elementos decorativos flotantes */}
-              <div className="absolute top-1/2 -left-10 lg:-left-20 bg-white dark:bg-zinc-800 p-6 rounded-3xl shadow-2xl border border-zinc-100 dark:border-zinc-700 animate-float animation-delay-1000 hidden md:block">
+              {/* Elementos decorativos flotantes - Elevados con z-20 */}
+              <div className="absolute top-1/2 -left-10 lg:-left-24 bg-white dark:bg-zinc-800 p-6 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(255,255,255,0.02)] border border-zinc-100 dark:border-zinc-700 animate-float animation-delay-1000 hidden md:block z-20 hover:scale-105 transition-transform cursor-default">
                 <div className="text-sm font-black text-zinc-400 mb-1 uppercase tracking-tighter">Ahorro Mensual</div>
                 <div className="text-3xl font-black text-[var(--leaf)]">$125.400</div>
               </div>
-              <div className="absolute bottom-10 -right-5 lg:-right-10 bg-[var(--primary-vibrant)] p-6 rounded-3xl shadow-2xl animate-float animation-delay-2000 hidden md:block">
-                <span className="text-3xl">🥭</span>
+              <div className="absolute bottom-10 -right-5 lg:-right-8 bg-[var(--primary-vibrant)] p-6 rounded-3xl shadow-2xl animate-float animation-delay-2000 hidden md:block z-20 hover:scale-110 transition-transform">
+                <span className="text-4xl">🥭</span>
               </div>
             </div>
           </div>
