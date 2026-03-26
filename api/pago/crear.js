@@ -24,6 +24,9 @@ export default async function handler(req, res) {
         ],
         // Le pasamos el ID del usuario para saber de quién es el pago cuando vuelva el aviso
         external_reference: req.body.userId,
+        payer: {
+          email: req.body.email
+        },
         back_urls: {
           success: 'https://manguito-xi.vercel.app/dashboard',
           failure: 'https://manguito-xi.vercel.app/configuracion',

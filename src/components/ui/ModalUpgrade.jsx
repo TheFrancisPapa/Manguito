@@ -18,7 +18,10 @@ export function ModalUpgrade({ abierto, onCerrar, feature = 'Esta función' }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: usuario.id }), 
+        body: JSON.stringify({ 
+          userId: usuario.id,
+          email: usuario.email 
+        }), 
       })
 
       const data = await response.json()
