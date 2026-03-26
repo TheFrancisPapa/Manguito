@@ -1,3 +1,4 @@
+// src/pages/Dashboard/index.jsx
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
@@ -15,19 +16,18 @@ function useRangoMes() {
   const [rango] = useState(() => {
     const hoy = new Date()
     const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
-    return { 
-      desde: primerDia.toLocaleDateString('sv-SE'), 
-      hasta: hoy.toLocaleDateString('sv-SE') 
+    return {
+      desde: primerDia.toLocaleDateString('sv-SE'),
+      hasta: hoy.toLocaleDateString('sv-SE'),
     }
   })
   return rango
 }
 
-function obtenerSaludoDinámico(nombre) {
+function obtenerSaludo(nombre) {
   const hora = new Date().getHours()
   const primerNombre = nombre?.split(' ')[0] || 'che'
-  
-  if (hora >= 5 && hora < 12) return { saludo: `Buenos días, ${primerNombre}`, emoji: '🌅' }
+  if (hora >= 5 && hora < 12)  return { saludo: `Buenos días, ${primerNombre}`, emoji: '🌅' }
   if (hora >= 12 && hora < 20) return { saludo: `Buenas tardes, ${primerNombre}`, emoji: '☀️' }
   return { saludo: `Buenas noches, ${primerNombre}`, emoji: '🌙' }
 }
@@ -35,23 +35,23 @@ function obtenerSaludoDinámico(nombre) {
 export function DashboardPage() {
   const { usuario } = useAuthContext()
   const navigate = useNavigate()
-  
+
   const { desde, hasta } = useRangoMes()
-  const { balance, cargando: cBal } = useBalance(desde, hasta)
+  const { balance, cargando: cBal }           = useBalance(desde, hasta)
   const { datos: gastosXCat, cargando: cTorta } = useGastosXCategoria(desde, hasta)
   const { movimientos, cargando: cMovs, recargar: recargarMovs } = useUltimosMovimientos(5)
-
   const { presupuestos, resumen, cargando: cPresup } = usePresupuestos()
-  const { metas, cargando: cMetas } = useMetas('activa')
-  
-  const [modalMovs, setModalMovs] = useState(false)
+  const { metas, cargando: cMetas }           = useMetas('activa')
+  const { datos: evolucion, cargando: cEvo }  = useEvolucionMensual(6)
 
-  const { datos: evolucion, cargando: cEvo } = useEvolucionMensual(6)
+  const [modalMovs, setModalMovs] = useState(false)
 
   const mesActual = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
   const mesCapitalizado = mesActual.charAt(0).toUpperCase() + mesActual.slice(1)
-  
-  const { saludo, emoji } = obtenerSaludoDinámico(usuario?.nombre)
+  const { saludo, emoji } = obtenerSaludo(usuario?.nombre)
+
+  const hoyStr = new Date().toLocaleDateString('sv-SE').slice(5)
+  const esCumple = usuario?.fecha_nacimiento?.slice(5) === hoyStr
 
   const handleGuardarMovimiento = async (datos) => {
     await crearMovimiento({ ...datos, usuario_id: usuario.id })
@@ -59,110 +59,156 @@ export function DashboardPage() {
     recargarMovs()
   }
 
-  // Chequeamos si hoy es su cumple
-  const hoyStr = new Date().toLocaleDateString('sv-SE').slice(5) // "MM-DD"
-  const esCumple = usuario?.fecha_nacimiento?.slice(5) === hoyStr
-
   return (
     <div className="animate-in fade-in duration-500">
       <ChangelogModal />
       <Sidebar usuario={usuario} />
       <BottomNav />
+
       <PageWrapper>
-        
+        {/* Banner cumpleaños */}
         {esCumple && (
-          <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white p-5 rounded-3xl mb-6 shadow-lg flex items-center gap-4 animate-in slide-in-from-top-4 duration-700">
-            <span className="text-5xl animate-bounce">🎂</span>
+          <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white p-4 rounded-2xl mb-5
+            shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-700">
+            <span className="text-4xl animate-bounce flex-shrink-0">🎂</span>
             <div>
-              <h3 className="font-extrabold text-xl">¡Feliz Cumpleaños, {usuario?.nombre}!</h3>
-              <p className="text-sm opacity-90 mt-1 leading-relaxed">
-                Que tengas un día espectacular. ¡Hoy date un gustito y no mires tanto el presupuesto! 😉
-              </p>
+              <h3 className="font-extrabold text-lg leading-tight">¡Feliz Cumple, {usuario?.nombre?.split(' ')[0]}!</h3>
+              <p className="text-sm opacity-90 mt-0.5">Date un gustito hoy 😉</p>
             </div>
           </div>
         )}
-        <PageHeader
-          titulo={`${saludo} ${emoji}`}
-          subtitulo={`Resumen de ${mesCapitalizado}`}
-          accion={<Button icono="+" onClick={() => setModalMovs(true)} className="shadow-sm">Nuevo</Button>}
-        />
 
-        <div className="mb-6 animate-in slide-in-from-bottom-4 fade-in duration-700" style={{ animationFillMode: 'both' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-xl font-bold text-zinc-900 dark:text-white leading-tight">
+              {saludo} {emoji}
+            </h1>
+            <p className="text-sm text-zinc-400 mt-0.5">Resumen de {mesCapitalizado}</p>
+          </div>
+          <Button icono="+" onClick={() => setModalMovs(true)} tamaño="md">
+            Nuevo
+          </Button>
+        </div>
+
+        {/* Balance */}
+        <div className="mb-4">
           <ResumenBalance balance={balance} moneda={usuario?.moneda} cargando={cBal} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-          <Card className="flex flex-col h-full animate-in slide-in-from-bottom-4 fade-in duration-700" style={{ animationDelay: '100ms', animationFillMode: 'both' }}>
-            <CardHeader titulo="Gastos por categoría" />
-            <div className="flex-1 flex items-center justify-center min-h-[250px]">
-              <GraficoTorta datos={gastosXCat} moneda={usuario?.moneda} cargando={cTorta} />
-            </div>
-          </Card>
-          
-          <Card className="flex flex-col h-full animate-in slide-in-from-bottom-4 fade-in duration-700" style={{ animationDelay: '200ms', animationFillMode: 'both' }}>
-            <CardHeader
-              titulo="Tus Límites"
-              subtitulo={resumen.excedidos > 0 ? `${resumen.excedidos} excedidos 🚨` : 'Todo bajo control'}
-              accion={<Link to="/presupuestos" className="text-xs font-medium text-[var(--mango-dark)] hover:text-[var(--mango)]">Ver todos</Link>}
-            />
-            <div className="flex flex-col gap-1 flex-1 justify-center mt-2">
-              {cPresup ? (
-                [0,1,2].map(i => <div key={i} className="h-16 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse mb-2" />)
-              ) : presupuestos.length === 0 ? (
-                <EmptyState {...EMPTY_STATES.presupuestos} accion={<Button variante="secondary" onClick={() => navigate('/presupuestos')}>Crear límite</Button>} />
-              ) : (
-                presupuestos.slice(0, 3).map(p => <PresupCard key={p.id} presupuesto={p} onClick={() => navigate('/presupuestos')} />)
-              )}
-            </div>
-          </Card>
-        </div>
-        
-        <Card className="mt-4 animate-in slide-in-from-bottom-4 fade-in duration-700"
-          style={{ animationDelay: '250ms', animationFillMode: 'both' }}>
-          <CardHeader
-            titulo="Evolución mensual"
-            subtitulo="Últimos 6 meses"
-          />
+        {/* Gastos por categoría — ocupa todo el ancho en mobile */}
+        <Card className="mb-4">
+          <CardHeader titulo="Gastos por categoría" />
+          <div className="mt-2 min-h-[200px] flex items-center justify-center">
+            <GraficoTorta datos={gastosXCat} moneda={usuario?.moneda} cargando={cTorta} />
+          </div>
+        </Card>
+
+        {/* Evolución mensual */}
+        <Card className="mb-4">
+          <CardHeader titulo="Evolución mensual" subtitulo="Últimos 6 meses" />
           <div className="mt-2">
             <LineaTemporal datos={evolucion} moneda={usuario?.moneda} cargando={cEvo} />
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-          <Card className="lg:col-span-2 animate-in slide-in-from-bottom-4 fade-in duration-700" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
-            <CardHeader titulo="Últimos movimientos" accion={<Link to="/movimientos" className="text-xs font-medium text-[var(--mango-dark)]">Historial</Link>} />
-            <div className="mt-4">
-              {cMovs ? (
-                [0,1,2,3].map(i => <div key={i} className="h-14 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse mb-2" />)
-              ) : movimientos.length === 0 ? (
-                <EmptyState {...EMPTY_STATES.movimientos} accion={<Button icono="+" onClick={() => setModalMovs(true)}>Registrar ahora</Button>} />
-              ) : (
-                movimientos.map(m => <MovCard key={m.id} movimiento={m} />)
-              )}
-            </div>
-          </Card>
-
-          <div className="flex flex-col gap-4 animate-in slide-in-from-bottom-4 fade-in duration-700" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
-            {!cMetas && metas.length > 0 && (
-              <>
-                <div className="flex items-center justify-between px-1">
-                  <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Tus Objetivos</h2>
-                  <Link to="/metas" className="text-xs font-medium text-[var(--mango-dark)]">Ver más</Link>
-                </div>
-                {metas.slice(0, 2).map(m => <BarraMeta key={m.id} meta={m} moneda={usuario?.moneda} />)}
-              </>
-            )}
-            
-            {!cMetas && metas.length === 0 && (
-                <Card className="bg-[var(--mango)]/8 dark:bg-[var(--mango)]/5 border-[var(--mango)]/15 dark:border-[var(--mango)]/10 text-center py-8">
-                 <span className="text-4xl mb-3 block animate-bounce">🎯</span>
-                 <h3 className="font-semibold text-zinc-900 dark:text-white mb-1">Ponete una meta</h3>
-                 <p className="text-xs text-zinc-500 mb-4 px-4">Ahorrar es más fácil cuando sabés para qué.</p>
-                 <Button variante="secondary" onClick={() => navigate('/metas')} className="bg-white dark:bg-zinc-900 shadow-sm">Crear primera meta</Button>
-               </Card>
+        {/* Últimos movimientos */}
+        <Card className="mb-4">
+          <CardHeader
+            titulo="Últimos movimientos"
+            accion={
+              <Link to="/movimientos"
+                className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700">
+                Ver todo →
+              </Link>
+            }
+          />
+          <div className="mt-2">
+            {cMovs ? (
+              [0, 1, 2, 3].map(i => (
+                <div key={i} className="h-14 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse mb-2" />
+              ))
+            ) : movimientos.length === 0 ? (
+              <EmptyState
+                {...EMPTY_STATES.movimientos}
+                accion={<Button icono="+" onClick={() => setModalMovs(true)}>Registrar ahora</Button>}
+              />
+            ) : (
+              movimientos.map(m => (
+                <MovCard key={m.id} movimiento={m} />
+              ))
             )}
           </div>
-        </div>
+        </Card>
+
+        {/* Presupuestos — en desktop va al lado del gráfico */}
+        <Card className="mb-4">
+          <CardHeader
+            titulo="Tus Límites"
+            subtitulo={
+              resumen.excedidos > 0
+                ? `${resumen.excedidos} excedido${resumen.excedidos > 1 ? 's' : ''} 🚨`
+                : 'Todo bajo control'
+            }
+            accion={
+              <Link to="/presupuestos"
+                className="text-xs font-semibold text-amber-600 dark:text-amber-400 hover:text-amber-700">
+                Ver todos →
+              </Link>
+            }
+          />
+          <div className="mt-2">
+            {cPresup ? (
+              [0, 1, 2].map(i => (
+                <div key={i} className="h-14 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse mb-2" />
+              ))
+            ) : presupuestos.length === 0 ? (
+              <EmptyState
+                {...EMPTY_STATES.presupuestos}
+                accion={
+                  <Button variante="secondary" onClick={() => navigate('/presupuestos')}>
+                    Crear límite
+                  </Button>
+                }
+              />
+            ) : (
+              presupuestos.slice(0, 3).map(p => (
+                <PresupCard key={p.id} presupuesto={p} onClick={() => navigate('/presupuestos')} />
+              ))
+            )}
+          </div>
+        </Card>
+
+        {/* Metas */}
+        {!cMetas && metas.length > 0 ? (
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h2 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                Tus Objetivos
+              </h2>
+              <Link to="/metas"
+                className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                Ver más →
+              </Link>
+            </div>
+            <div className="flex flex-col gap-3">
+              {metas.slice(0, 2).map(m => (
+                <BarraMeta key={m.id} meta={m} moneda={usuario?.moneda} />
+              ))}
+            </div>
+          </div>
+        ) : !cMetas && metas.length === 0 ? (
+          <Card className="mb-4 bg-amber-50/50 dark:bg-amber-900/5 border-amber-100 dark:border-amber-900/20 text-center py-8">
+            <span className="text-4xl mb-3 block">🎯</span>
+            <h3 className="font-semibold text-zinc-900 dark:text-white mb-1 text-sm">Ponete una meta</h3>
+            <p className="text-xs text-zinc-500 mb-4 px-4">
+              Ahorrar es más fácil cuando sabés para qué.
+            </p>
+            <Button variante="secondary" onClick={() => navigate('/metas')}>
+              Crear primera meta
+            </Button>
+          </Card>
+        ) : null}
 
       </PageWrapper>
 
