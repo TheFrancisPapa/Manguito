@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-;
+
 function calcularSegmentos(datos) {
   const total = datos.reduce((s, d) => s + d.monto, 0)
   if (total === 0) return []
@@ -37,7 +37,7 @@ export function GraficoTorta({ datos = [], moneda = 'ARS', cargando = false }) {
               onMouseEnter={() => setActivo(i)} onMouseLeave={() => setActivo(null)} />
           ))}
           <circle cx="100" cy="100" r="52" className="fill-white dark:fill-zinc-900" />
-          {activoData ? (
+          {activoData && (
             <>
               <text x="100" y="96" textAnchor="middle" fontSize="11" style={{ fill: 'var(--color-text-secondary, #71717a)' }}>
                 {activoData.nombre.length > 12 ? activoData.nombre.slice(0, 11) + '…' : activoData.nombre}
@@ -46,8 +46,6 @@ export function GraficoTorta({ datos = [], moneda = 'ARS', cargando = false }) {
                 {(activoData.pct * 100).toFixed(0)}%
               </text>
             </>
-          ) : (
-            <text x="100" y="107" textAnchor="middle" fontSize="11" style={{ fill: 'var(--color-text-tertiary, #a1a1aa)' }}>gastos</text>
           )}
         </svg>
       </div>

@@ -6,6 +6,7 @@ import { useBalance, useGastosXCategoria, useUltimosMovimientos, useEvolucionMen
 import { crearMovimiento } from '../../api/movimientos'
 import { usePresupuestos } from '../../hooks/usePresupuestos'
 import { useMetas } from '../../hooks/useMetas'
+import { useInversiones } from '../../hooks/useInversiones'
 import { PageWrapper, PageHeader, Sidebar, BottomNav, MovCard, PresupCard } from '../../components/layout'
 import { Card, CardHeader, Button, EmptyState, EMPTY_STATES, Modal } from '../../components/ui'
 import { ResumenBalance, GraficoTorta, BarraMeta, LineaTemporal } from '../../components/charts'
@@ -32,17 +33,73 @@ function obtenerSaludo(nombre) {
   return { saludo: `Buenas noches, ${primerNombre}`, emoji: '🌙' }
 }
 
+// Mini card de inversiones para el Dashboard
+function MiniInversiones({ portfolio, dolarRate, cargando, navigate }) {
+  if (cargando) {
+    return <div className="h-20 bg-zinc-100 dark:bg-zinc-800 rounded-2xl animate-pulse" />
+  }
+
+  const fmtARS = (n) => n == null ? '—' : `$\u00A0${Number(n).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`
+  const fmtUSD = (n) => n == null ? '—' : `U$D\u00A0${Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+  const positivo = (portfolio?.gananciaARS ?? 0) >= 0
+  const tienePortfolio = portfolio && portfolio.totalValorARS > 0
+
+  if (!tienePortfolio) {
+    return (
+      <div
+        onClick={() => navigate('/inversiones')}
+        className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-dashed border-zinc-200 dark:border-zinc-700 rounded-2xl cursor-pointer hover:border-[var(--mango)]/50 transition-colors">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">📈</span>
+          <div>
+            <p className="text-sm font-semibold text-zinc-600 dark:text-zinc-400">Registrá tus inversiones</p>
+            <p className="text-xs text-zinc-400">Acciones, cripto, CEDEARs y más</p>
+          </div>
+        </div>
+        <span className="text-zinc-300 dark:text-zinc-600 text-lg">→</span>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      onClick={() => navigate('/inversiones')}
+      className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl cursor-pointer hover:border-[var(--mango)]/40 transition-all group">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-[var(--mango)]/10 flex items-center justify-center text-lg">📈</div>
+        <div>
+          <p className="text-xs text-zinc-400 uppercase tracking-wider font-medium">Cartera</p>
+          <p className="text-base font-black text-zinc-900 dark:text-white">{fmtARS(portfolio.totalValorARS)}</p>
+          <p className="text-xs text-zinc-400">{fmtUSD(portfolio.totalValorUSD)}</p>
+        </div>
+      </div>
+      <div className="text-right">
+        <div className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold ${
+          positivo
+            ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+            : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+        }`}>
+          {positivo ? '▲' : '▼'} {Math.abs(portfolio.gananciaTotalPct ?? 0).toFixed(2)}%
+        </div>
+        <p className="text-xs text-zinc-400 mt-1 group-hover:text-[var(--mango-dark)] transition-colors">Ver cartera →</p>
+      </div>
+    </div>
+  )
+}
+
 export function DashboardPage() {
-  const { usuario } = useAuthContext()
-  const navigate = useNavigate()
+  const { usuario }   = useAuthContext()
+  const navigate      = useNavigate()
 
   const { desde, hasta } = useRangoMes()
-  const { balance, cargando: cBal }           = useBalance(desde, hasta)
-  const { datos: gastosXCat, cargando: cTorta } = useGastosXCategoria(desde, hasta)
+  const { balance, cargando: cBal }                    = useBalance(desde, hasta)
+  const { datos: gastosXCat, cargando: cTorta }        = useGastosXCategoria(desde, hasta)
   const { movimientos, cargando: cMovs, recargar: recargarMovs } = useUltimosMovimientos(5)
-  const { presupuestos, resumen, cargando: cPresup } = usePresupuestos()
-  const { metas, cargando: cMetas }           = useMetas('activa')
-  const { datos: evolucion, cargando: cEvo }  = useEvolucionMensual(6)
+  const { presupuestos, resumen, cargando: cPresup }   = usePresupuestos()
+  const { metas, cargando: cMetas }                    = useMetas('activa')
+  const { datos: evolucion, cargando: cEvo }           = useEvolucionMensual(6)
+  const { portfolio, dolarRate, cargando: cInv }       = useInversiones()
 
   const [modalMovs, setModalMovs] = useState(false)
 
@@ -96,7 +153,17 @@ export function DashboardPage() {
           <ResumenBalance balance={balance} moneda={usuario?.moneda} cargando={cBal} />
         </div>
 
-        {/* Gastos por categoría — ocupa todo el ancho en mobile */}
+        {/* Mini cartera de inversiones */}
+        <div className="mb-4">
+          <MiniInversiones
+            portfolio={portfolio}
+            dolarRate={dolarRate}
+            cargando={cInv}
+            navigate={navigate}
+          />
+        </div>
+
+        {/* Gastos por categoría */}
         <Card className="mb-4">
           <CardHeader titulo="Gastos por categoría" />
           <div className="mt-2 min-h-[200px] flex items-center justify-center">
@@ -134,14 +201,12 @@ export function DashboardPage() {
                 accion={<Button icono="+" onClick={() => setModalMovs(true)}>Registrar ahora</Button>}
               />
             ) : (
-              movimientos.map(m => (
-                <MovCard key={m.id} movimiento={m} />
-              ))
+              movimientos.map(m => <MovCard key={m.id} movimiento={m} />)
             )}
           </div>
         </Card>
 
-        {/* Presupuestos — en desktop va al lado del gráfico */}
+        {/* Presupuestos */}
         <Card className="mb-4">
           <CardHeader
             titulo="Tus Límites"
@@ -186,8 +251,7 @@ export function DashboardPage() {
               <h2 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                 Tus Objetivos
               </h2>
-              <Link to="/metas"
-                className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+              <Link to="/metas" className="text-xs font-semibold text-amber-600 dark:text-amber-400">
                 Ver más →
               </Link>
             </div>
@@ -201,9 +265,7 @@ export function DashboardPage() {
           <Card className="mb-4 bg-amber-50/50 dark:bg-amber-900/5 border-amber-100 dark:border-amber-900/20 text-center py-8">
             <span className="text-4xl mb-3 block">🎯</span>
             <h3 className="font-semibold text-zinc-900 dark:text-white mb-1 text-sm">Ponete una meta</h3>
-            <p className="text-xs text-zinc-500 mb-4 px-4">
-              Ahorrar es más fácil cuando sabés para qué.
-            </p>
+            <p className="text-xs text-zinc-500 mb-4 px-4">Ahorrar es más fácil cuando sabés para qué.</p>
             <Button variante="secondary" onClick={() => navigate('/metas')}>
               Crear primera meta
             </Button>

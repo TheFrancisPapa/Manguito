@@ -6,13 +6,14 @@ export function Sidebar({ usuario }) {
   const [expandido, setExpandido] = useState(false)
   
   const menu = [
-    { path: '/dashboard', icono: '🏠', label: 'Panel' },
-    { path: '/movimientos', icono: '💸', label: 'Movimientos' },
+    { path: '/dashboard',    icono: '🏠', label: 'Panel' },
+    { path: '/movimientos',  icono: '💸', label: 'Movimientos' },
     { path: '/presupuestos', icono: '📊', label: 'Límites' },
-    { path: '/metas', icono: '🎯', label: 'Metas' },
+    { path: '/metas',        icono: '🎯', label: 'Metas' },
+    { path: '/inversiones',  icono: '📈', label: 'Inversiones' },
     { path: '/cotizaciones', icono: '💱', label: 'Cotizaciones' },
-    { path: '/chat', icono: '🤖', label: 'Asesor IA' },
-    { path: '/configuracion', icono: '⚙️', label: 'Perfil' },
+    { path: '/chat',         icono: '🤖', label: 'Asesor IA' },
+    { path: '/configuracion',icono: '⚙️', label: 'Perfil' },
   ]
 
   return (
@@ -26,15 +27,11 @@ export function Sidebar({ usuario }) {
         ${expandido ? 'w-64' : 'w-[72px]'}`}
     >
       <div className="p-4 flex flex-col h-full w-64">
-        {/* Logo Manguito */}
+        {/* Logo */}
         <div className="flex items-center gap-3 mb-8 px-2">
           <div className="relative flex-shrink-0">
             <div className="absolute inset-0 bg-[var(--mango)] blur-md opacity-30 rounded-full animate-pulse"></div>
-            <img 
-              src="/Mango.png" 
-              alt="Logo Manguito" 
-              className="relative w-10 h-10 object-contain" 
-            />
+            <img src="/Mango.png" alt="Logo Manguito" className="relative w-10 h-10 object-contain" />
           </div>
           <span className={`text-2xl font-extrabold bg-gradient-to-br from-[var(--mango)] to-[var(--mango-dark)] bg-clip-text text-transparent tracking-tight 
             transition-opacity duration-300 whitespace-nowrap
@@ -43,7 +40,7 @@ export function Sidebar({ usuario }) {
           </span>
         </div>
 
-        <nav className="flex flex-col gap-1.5 flex-1">
+        <nav className="flex flex-col gap-1.5 flex-1 overflow-y-auto">
           {menu.map(item => {
             const activo = location.pathname === item.path
             return (
@@ -79,7 +76,7 @@ export function Sidebar({ usuario }) {
             <div className={`flex-1 min-w-0 transition-opacity duration-300 whitespace-nowrap
               ${expandido ? 'opacity-100' : 'opacity-0'}`}>
               <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">{usuario?.nombre}</p>
-              <p className="text-xs text-[var(--mango-dark)] dark:text-[var(--mango)] truncate">Plan Gratuito</p>
+              <p className="text-xs text-[var(--mango-dark)] dark:text-[var(--mango)] truncate capitalize">Plan {usuario?.plan || 'Básico'}</p>
             </div>
           </div>
         </div>
