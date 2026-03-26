@@ -63,8 +63,9 @@ export function useInversiones() {
   }, [inversiones, cargando, actualizarPrecios])
 
   // ── CRUD ─────────────────────────────────────
-  const crear = async (datos) => {
-    const nueva = await crearInversion(datos)
+  const crear = async (datos, usuario_id) => {
+    if (!usuario_id) throw new Error('No se encontró sesión de usuario')
+    const nueva = await crearInversion({ ...datos, usuario_id })
     const nuevaLista = [nueva, ...inversiones]
     setInversiones(nuevaLista)
     actualizarPrecios(nuevaLista)

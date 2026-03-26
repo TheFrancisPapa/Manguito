@@ -419,7 +419,8 @@ export function InversionesPage() {
   }
 
   const handleGuardar = async (datos) => {
-    await crear(datos)
+    if (!usuario?.id) return
+    await crear(datos, usuario.id)
     setModalNuevo(false)
   }
 
