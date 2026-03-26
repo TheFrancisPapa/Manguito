@@ -3,7 +3,7 @@ import { useAuthContext } from '../../context/AuthContext'
 import { usePresupuestos } from '../../hooks/usePresupuestos'
 import { useCategorias } from '../../hooks/useCategorias'
 import { PageWrapper, PageHeader, Sidebar, BottomNav, PresupCard } from '../../components/layout'
-import { Card, Button, EmptyState, Modal, Input, Select, EMPTY_STATES } from '../../components/ui'
+import { Card, Button, EmptyState, Modal, Input, Select, EMPTY_STATES, ModalUpgrade } from '../../components/ui'
 
 // ─── Formulario para crear / editar ─────────────────────────
 function FormPresupuesto({ categorias, onSubmit, onCancel, inicial = null }) {
@@ -112,11 +112,11 @@ export function PresupuestosPage() {
   const plan = usuario?.plan || 'basico'
   
   const [modalNuevo, setModalNuevo] = useState(false)
+  const [modalUpgrade, setModalUpgrade] = useState(false)
   const [errorLocal, setErrorLocal] = useState('')
   const handleAbrirModalNuevo = () => {
     if (plan === 'basico' && presupuestos.length >= 3) {
-      alert('Llegaste al límite de 3 presupuestos del Plan Básico. ¡Pasate a Pro para crear ilimitados!')
-      // Más adelante acá podés abrir un modal lindo o redirigir a /configuracion
+      setModalUpgrade(true)
       return
     }
     setModalNuevo(true)
@@ -205,6 +205,11 @@ export function PresupuestosPage() {
           onCancel={() => setModalNuevo(false)} 
         />
       </Modal>
+      <ModalUpgrade 
+        abierto={modalUpgrade} 
+        onCerrar={() => setModalUpgrade(false)} 
+        feature="Crear presupuestos ilimitados"
+      />
     </div>
   )
 }

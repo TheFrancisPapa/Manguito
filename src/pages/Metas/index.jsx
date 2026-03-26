@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { useMetas } from '../../hooks/useMetas'
 import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout'
-import { Card, Button, EmptyState, Modal, Input } from '../../components/ui'
+import { Card, Button, EmptyState, Modal, Input, ModalUpgrade } from '../../components/ui'
 import { BarraMeta } from '../../components/charts'
 
 
@@ -14,12 +14,13 @@ export function MetasPage() {
   const [modalAbierto, setModalAbierto] = useState(false)
   const [modalAporteAbierto, setModalAporteAbierto] = useState(false)
   const [metaSeleccionada, setMetaSeleccionada] = useState(null)
+  const [modalUpgrade, setModalUpgrade] = useState(false)
   const plan = usuario?.plan || 'basico'
 
   const handleAbrirModalNuevo = () => {
     const metasActivas = metas.filter(m => m.estado === 'activa').length
     if (plan === 'basico' && metasActivas >= 1) {
-      alert('Con el Plan Básico solo podés tener 1 meta activa a la vez. ¡Pasate a Pro para ir por más!')
+      setModalUpgrade(true)
       return
     }
     setModalAbierto(true)
@@ -168,6 +169,11 @@ export function MetasPage() {
           </div>
         </form>
       </Modal>
+      <ModalUpgrade 
+        abierto={modalUpgrade} 
+        onCerrar={() => setModalUpgrade(false)} 
+        feature="Tener múltiples metas activas al mismo tiempo"
+      />
     </div>
   )
 }
