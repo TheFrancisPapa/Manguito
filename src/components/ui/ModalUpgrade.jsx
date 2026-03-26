@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom'
 import { Modal } from './Modal'
 import { Button } from './Button'
 
 export function ModalUpgrade({ abierto, onCerrar, feature = 'Esta función' }) {
+  const navigate = useNavigate()
   return (
     <Modal abierto={abierto} onCerrar={onCerrar} titulo="Función Premium">
       <div className="flex flex-col items-center text-center px-2 py-4">
@@ -25,7 +27,7 @@ export function ModalUpgrade({ abierto, onCerrar, feature = 'Esta función' }) {
           </Button>
           <Button 
             className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
-            onClick={() => window.location.href = '/configuracion/planes'}
+            onClick={() => navigate('/configuracion/planes')}
           >
             Ver planes
           </Button>

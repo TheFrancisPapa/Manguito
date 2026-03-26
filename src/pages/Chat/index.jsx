@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
 import { PageWrapper, Sidebar, BottomNav } from '../../components/layout'
 import { Spinner, Button } from '../../components/ui'
@@ -93,6 +94,7 @@ function parsearNegritas(texto) {
 
 // ─── Página principal ─────────────────────────────────────────
 export function ChatPage() {
+  const navigate = useNavigate()
   const { usuario } = useAuthContext()
   const plan = usuario?.plan || 'basico'
 
@@ -112,7 +114,7 @@ export function ChatPage() {
           <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mb-8 leading-relaxed">
             El asistente financiero con inteligencia artificial está disponible únicamente para usuarios de Manguito Pro. Mejorá tu plan para chatear sin límites.
           </p>
-          <Button onClick={() => window.location.href = '/configuracion/planes'}>
+          <Button onClick={() => navigate('/configuracion/planes')}>
             Ver planes de suscripción
           </Button>
         </div>
