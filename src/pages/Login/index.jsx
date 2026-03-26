@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../../api/auth'
 import { Button, Input } from '../../components/ui'
+import { useTheme } from '../../hooks/useTheme'
 
 const PALABRAS_CLAVE = ['tus gastos', 'tus ahorros', 'tu futuro', 'tu plata']
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const { theme } = useTheme()
   const [formData, setFormData] = useState({ email: '', password: '' })
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
@@ -56,7 +58,7 @@ export function LoginPage() {
         
         <div className="relative z-10 text-center">
           <img 
-            src="/money-plant.png" 
+            src={theme === 'dark' ? '/money-plant-dark.png' : '/money-plant.png'} 
             alt="Manguito Money Plant" 
             className="w-full max-w-sm mx-auto mb-8 drop-shadow-2xl animate-float"
           />
