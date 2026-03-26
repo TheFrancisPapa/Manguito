@@ -57,11 +57,14 @@ export function LoginPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-[var(--primary-vibrant)]/10 rounded-full blur-[100px] animate-blob animation-delay-2000" />
         
         <div className="relative z-10 text-center">
-          <img 
-            src={theme === 'dark' ? '/money-plant-dark.png' : '/money-plant.png'} 
-            alt="Manguito Money Plant" 
-            className="w-full max-w-sm mx-auto mb-8 drop-shadow-2xl animate-float"
-          />
+          <div className="relative inline-block mb-8">
+            <div className="absolute inset-0 bg-[var(--mango)] blur-3xl opacity-20 dark:opacity-30 rounded-full animate-pulse" />
+            <img 
+              src="/Mango.png" 
+              alt="Logo Manguito" 
+              className="relative w-40 h-40 lg:w-48 lg:h-48 object-contain drop-shadow-2xl animate-float"
+            />
+          </div>
           <h2 className="text-4xl font-bold text-[var(--charcoal)] dark:text-white mb-4 tracking-tight">
             Hace que tu plata <span className="text-[var(--leaf)] dark:text-[var(--primary-vibrant)]">crezca</span>
           </h2>
