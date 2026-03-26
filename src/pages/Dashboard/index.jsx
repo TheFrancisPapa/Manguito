@@ -7,6 +7,7 @@ import { PageWrapper, PageHeader, Sidebar, BottomNav, MovCard, PresupCard } from
 import { Card, CardHeader, Button, EmptyState, EMPTY_STATES, Modal } from '../../components/ui'
 import { ResumenBalance, GraficoTorta, BarraMeta, LineaTemporal } from '../../components/charts'
 import { FormMovimiento } from '../../components/forms/FormMovimiento'
+import { ChangelogModal } from '../../components/ui/ChangelogModal'
 
 function rangoMes() {
   const hoy = new Date()
@@ -54,6 +55,7 @@ export function DashboardPage() {
 
   return (
     <div className="animate-in fade-in duration-500">
+      <ChangelogModal />
       <Sidebar usuario={usuario} />
       <BottomNav />
       <PageWrapper>
