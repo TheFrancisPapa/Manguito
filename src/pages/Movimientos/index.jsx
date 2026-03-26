@@ -32,18 +32,19 @@ export function MovimientosPage() {
     return grupos
   }, {})
 
-  const handleGuardar = async (datos) => {
-    await agregar({ ...datos, usuario_id: usuario.id })
-    await recargar() // Aseguramos que el estado local esté al día
-    setModalNuevo(false)
-  }
-
   const handleEliminar = async () => {
     if (window.confirm(`¿Eliminás "${movSeleccionado.descripcion}"? Esta acción no se puede deshacer.`)) {
       await borrar(movSeleccionado.id)
       await recargar()
       setMovSeleccionado(null)
+      setModalEditar(false) // Por si acaso
     }
+  }
+
+  const handleGuardar = async (datos) => {
+    await agregar({ ...datos, usuario_id: usuario.id })
+    await recargar()
+    setModalNuevo(false)
   }
 
   const handleEditarSubmit = async (datos) => {
@@ -110,25 +111,29 @@ export function MovimientosPage() {
         )}
       </PageWrapper>
 
-      {/* Modal Nuevo */}
-      <Modal abierto={modalNuevo} onCerrar={() => setModalNuevo(false)} titulo="Nuevo movimiento">
-        <FormMovimiento onSubmit={handleGuardar} onCancel={() => setModalNuevo(false)} />
-      </Modal>
+      {/* MODALES CONSOLIDADOS - Evita Error 310 por renders competitivos */}
+      
+      {/* 1. Modal Nuevo */}
+      {modalNuevo && (
+        <Modal abierto={modalNuevo} onCerrar={() => setModalNuevo(false)} titulo="Nuevo movimiento">
+          <FormMovimiento onSubmit={handleGuardar} onCancel={() => setModalNuevo(false)} />
+        </Modal>
+      )}
 
-      {/* Modal Editar */}
-      <Modal abierto={modalEditar} onCerrar={() => setModalEditar(false)} titulo="Editar movimiento">
-        {movSeleccionado && (
+      {/* 2. Modal Editar */}
+      {modalEditar && movSeleccionado && (
+        <Modal abierto={modalEditar} onCerrar={() => setModalEditar(false)} titulo="Editar movimiento">
           <FormMovimiento 
             valoresIniciales={movSeleccionado} 
             onSubmit={handleEditarSubmit} 
             onCancel={() => setModalEditar(false)} 
           />
-        )}
-      </Modal>
+        </Modal>
+      )}
 
-      {/* Modal Detalle */}
-      <Modal abierto={!!movSeleccionado && !modalEditar} onCerrar={() => setMovSeleccionado(null)} titulo="Detalle del movimiento">
-        {movSeleccionado && (
+      {/* 3. Modal Detalle (Solo si NO estamos editando) */}
+      {!modalEditar && movSeleccionado && (
+        <Modal abierto={true} onCerrar={() => setMovSeleccionado(null)} titulo="Detalle del movimiento">
           <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4 fade-in duration-300">
             <div className="text-center p-6 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50">
               <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-sm"
@@ -171,8 +176,9 @@ export function MovimientosPage() {
               </Button>
             </div>
           </div>
-        )}
-      </Modal>
+        </Modal>
+      )}
+
     </div>
   )
 }

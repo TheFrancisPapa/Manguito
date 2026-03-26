@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { getMovimientos, getUltimosMovimientos, getBalance,
          getGastosXCategoria, crearMovimiento, editarMovimiento, borrarMovimiento, getEvolucionMensual } from '../api/movimientos'
 
-export function useMovimientos(filtros = {}) {
+const FILTRO_VACIO = {}
+export function useMovimientos(filtros = FILTRO_VACIO) {
   const [movimientos, setMovimientos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError]       = useState(null)
