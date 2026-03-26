@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { useMovimientos } from '../../hooks/useMovimientos'
 import { PageWrapper, PageHeader, Sidebar, BottomNav, MovCard } from '../../components/layout'
@@ -22,21 +22,23 @@ export function MovimientosPage() {
     return m.tipo === filtroActivo
   })
 
-  const movimientosAgrupados = movimientosFiltrados.reduce((grupos, mov) => {
-    const [anio, mes] = mov.fecha.split('-')
-    const fechaObj    = new Date(anio, mes - 1)
-    const claveMes    = fechaObj.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
-    const claveMesCap = claveMes.charAt(0).toUpperCase() + claveMes.slice(1)
-    if (!grupos[claveMesCap]) grupos[claveMesCap] = []
-    grupos[claveMesCap].push(mov)
-    return grupos
-  }, {})
+  const movimientosAgrupados = useMemo(() => {
+    return movimientosFiltrados.reduce((grupos, mov) => {
+      const [anio, mes] = mov.fecha.split('-')
+      const fechaObj    = new Date(anio, mes - 1)
+      const claveMes    = fechaObj.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+      const claveMesCap = claveMes.charAt(0).toUpperCase() + claveMes.slice(1)
+      if (!grupos[claveMesCap]) grupos[claveMesCap] = []
+      grupos[claveMesCap].push(mov)
+      return grupos
+    }, {})
+  }, [movimientosFiltrados])
 
-  const resetModals = () => {
+  const resetModals = useCallback(() => {
     setModalNuevo(false)
     setModalEditar(false)
     setMovSeleccionado(null)
-  }
+  }, [])
 
   const handleEliminar = async () => {
     if (!movSeleccionado) return

@@ -91,7 +91,6 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
           value={monto}
           onChange={(e) => setMonto(e.target.value)}
           required
-          autoFocus // Hace que apenas abrís el modal, el cursor ya esté acá listo para escribir
         />
         <Input
           label="Fecha"
