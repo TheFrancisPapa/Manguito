@@ -135,9 +135,9 @@ export function ChatPage() {
     )
   }
 
-  async function enviar(e) {
-    e?.preventDefault()
-    const texto = input.trim()
+  async function enviar(e, textoSugerencia = null) {
+    if (e) e.preventDefault()
+    const texto = textoSugerencia || input.trim()
     if (!texto || cargando) return
 
     const msgUsuario = { rol: 'usuario', contenido: texto }
@@ -257,7 +257,7 @@ export function ChatPage() {
                 <p className="text-xs text-zinc-400 text-center mb-3">Algunas preguntas para empezar</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {SUGERENCIAS.map(s => (
-                    <button key={s} onClick={() => { setInput(s); setTimeout(() => enviar(), 50) }}
+                    <button key={s} onClick={() => enviar(null, s)}
                       className="text-left text-xs px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700
                         bg-white dark:bg-zinc-900 hover:border-[var(--mango)] hover:bg-[var(--cream)] dark:hover:bg-[var(--mango)]/10
                         text-zinc-600 dark:text-zinc-400 hover:text-[var(--mango-dark)] dark:hover:text-[var(--mango)]

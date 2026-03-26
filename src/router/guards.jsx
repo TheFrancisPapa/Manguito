@@ -58,6 +58,11 @@ export function PublicRoute({ children }) {
   if (cargando) return <LoadingScreen />
 
   if (session) {
+    // Si la ruta actual es /reset-password, permitimos el paso a pesar de tener sesión
+    // porque el recovery de password inicia una sesión temporal.
+    if (location.pathname === '/reset-password') {
+      return children
+    }
     const destino = location.state?.from?.pathname || '/dashboard'
     return <Navigate to={destino} replace />
   }

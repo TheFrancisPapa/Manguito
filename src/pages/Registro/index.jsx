@@ -2,7 +2,6 @@ import { supabase } from '../../lib/supabase'
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { registrarUsuario } from '../../api/auth'
-import { useMetas } from '../../hooks/useMetas'
 import { Button, Input, Spinner } from '../../components/ui'
 
 const OBJETIVOS = [
@@ -26,9 +25,6 @@ export function RegistroPage() {
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
   const [fraseIndex, setFraseIndex] = useState(0)
-
-  // Hook de metas (lo usamos al final si creó una)
-  const { agregar: agregarMeta } = useMetas()
 
   // Estado del formulario
   const [formData, setFormData] = useState({

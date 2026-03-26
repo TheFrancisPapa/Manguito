@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
-import { useBalance, useGastosXCategoria, useUltimosMovimientos, useMovimientos, useEvolucionMensual } from '../../hooks/useMovimientos'
+import { useBalance, useGastosXCategoria, useUltimosMovimientos, useEvolucionMensual } from '../../hooks/useMovimientos'
+import { crearMovimiento } from '../../api/movimientos'
 import { usePresupuestos } from '../../hooks/usePresupuestos'
 import { useMetas } from '../../hooks/useMetas'
 import { PageWrapper, PageHeader, Sidebar, BottomNav, MovCard, PresupCard } from '../../components/layout'
@@ -10,13 +11,16 @@ import { ResumenBalance, GraficoTorta, BarraMeta, LineaTemporal } from '../../co
 import { FormMovimiento } from '../../components/forms/FormMovimiento'
 import { ChangelogModal } from '../../components/ui/ChangelogModal'
 
-function rangoMes() {
-  const hoy = new Date()
-  const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
-  return { 
-    desde: primerDia.toLocaleDateString('sv-SE'), 
-    hasta: hoy.toLocaleDateString('sv-SE') 
-  }
+function useRangoMes() {
+  const [rango] = useState(() => {
+    const hoy = new Date()
+    const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+    return { 
+      desde: primerDia.toLocaleDateString('sv-SE'), 
+      hasta: hoy.toLocaleDateString('sv-SE') 
+    }
+  })
+  return rango
 }
 
 function obtenerSaludoDinámico(nombre) {
@@ -31,15 +35,15 @@ function obtenerSaludoDinámico(nombre) {
 export function DashboardPage() {
   const { usuario } = useAuthContext()
   const navigate = useNavigate()
-  const { desde, hasta } = rangoMes()
   
+  const { desde, hasta } = useRangoMes()
   const { balance, cargando: cBal } = useBalance(desde, hasta)
   const { datos: gastosXCat, cargando: cTorta } = useGastosXCategoria(desde, hasta)
   const { movimientos, cargando: cMovs, recargar: recargarMovs } = useUltimosMovimientos(5)
+
   const { presupuestos, resumen, cargando: cPresup } = usePresupuestos()
   const { metas, cargando: cMetas } = useMetas('activa')
   
-  const { agregar: agregarMovimiento } = useMovimientos()
   const [modalMovs, setModalMovs] = useState(false)
 
   const { datos: evolucion, cargando: cEvo } = useEvolucionMensual(6)
@@ -50,7 +54,7 @@ export function DashboardPage() {
   const { saludo, emoji } = obtenerSaludoDinámico(usuario?.nombre)
 
   const handleGuardarMovimiento = async (datos) => {
-    await agregarMovimiento({ ...datos, usuario_id: usuario.id })
+    await crearMovimiento({ ...datos, usuario_id: usuario.id })
     setModalMovs(false)
     recargarMovs()
   }

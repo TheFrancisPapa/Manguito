@@ -304,6 +304,81 @@ language sql security definer as $$
 $$;
 
 
+-- ─────────────────────────────────────────────
+--  RPC: evolucion_mensual
+--  Devuelve ingresos y gastos agrupados por mes.
+-- ─────────────────────────────────────────────
+create or replace function evolucion_mensual(p_meses integer default 6)
+returns table (
+  mes      text,
+  ingresos numeric,
+  gastos   numeric
+)
+language sql security definer set search_path = public as $$
+  with meses as (
+    select to_char(date_trunc('month', current_date - (i || ' months')::interval), 'YYYY-MM') as mes
+    from generate_series(0, p_meses - 1) as i
+  )
+  select
+    m.mes,
+    coalesce(sum(case when mov.tipo = 'ingreso' then mov.monto end), 0) as ingresos,
+    coalesce(sum(case when mov.tipo = 'gasto'   then mov.monto end), 0) as gastos
+  from meses m
+  left join movimientos mov
+    on to_char(date_trunc('month', mov.fecha), 'YYYY-MM') = m.mes
+   and mov.usuario_id = auth.uid()
+  group by m.mes
+  order by m.mes asc;
+$$;
+
+
+-- ─────────────────────────────────────────────
+--  RPC: presupuestos_mes_actual
+--  Devuelve el límite y cuánto se gastó en el mes
+--  en curso para las categorías con presupuesto activo.
+-- ─────────────────────────────────────────────
+create or replace function presupuestos_mes_actual()
+returns table (
+  id           uuid,
+  categoria_id uuid,
+  nombre       text,
+  icono        text,
+  color        text,
+  limite_monto numeric,
+  alerta_pct   smallint,
+  gastado      numeric
+)
+language sql security definer set search_path = public as $$
+  select
+    p.id,
+    c.id as categoria_id,
+    c.nombre,
+    c.icono,
+    c.color,
+    p.limite_monto,
+    p.alerta_pct,
+    coalesce(sum(m.monto), 0) as gastado
+  from presupuestos p
+  join categorias c on c.id = p.categoria_id
+  left join movimientos m
+    on m.categoria_id = p.categoria_id
+   and m.usuario_id = p.usuario_id
+   and m.tipo = 'gasto'
+   and m.fecha >= date_trunc('month', current_date)
+   and m.fecha <  date_trunc('month', current_date) + interval '1 month'
+  where p.usuario_id = auth.uid()
+    and p.activo = true
+    -- Mensual del mes activo, o anual del año activo.
+    and (
+      (p.periodo = 'mensual' and p.mes = extract(month from current_date) and p.anio = extract(year from current_date))
+      or
+      (p.periodo = 'anual' and p.anio = extract(year from current_date))
+    )
+  group by p.id, c.id, c.nombre, c.icono, c.color, p.limite_monto, p.alerta_pct
+  order by (coalesce(sum(m.monto), 0) / p.limite_monto) desc;
+$$;
+
+
 -- ══════════════════════════════════════════════
 --  9. SEED — categorías default
 --  Se llama desde database/seed/run_seed.js
