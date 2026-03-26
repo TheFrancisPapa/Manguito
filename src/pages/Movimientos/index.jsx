@@ -15,7 +15,7 @@ export function MovimientosPage() {
   const [movSeleccionado, setMovSeleccionado] = useState(null)
 
   // FIX: el hook exporta `borrar`, no `eliminar`
-  const { movimientos, cargando, agregar, borrar, recargar } = useMovimientos()
+  const { movimientos, cargando, agregar, editar, borrar } = useMovimientos()
 
   const movimientosFiltrados = movimientos.filter(m => {
     if (filtroActivo === 'todos') return true
@@ -32,26 +32,28 @@ export function MovimientosPage() {
     return grupos
   }, {})
 
+  const resetModals = () => {
+    setModalNuevo(false)
+    setModalEditar(false)
+    setMovSeleccionado(null)
+  }
+
   const handleEliminar = async () => {
-    if (window.confirm(`¿Eliminás "${movSeleccionado.descripcion}"? Esta acción no se puede deshacer.`)) {
+    if (!movSeleccionado) return
+    if (window.confirm(`¿Eliminás "${movSeleccionado.descripcion || movSeleccionado.categorias?.nombre}"? Esta acción no se puede deshacer.`)) {
       await borrar(movSeleccionado.id)
-      await recargar()
-      setMovSeleccionado(null)
-      setModalEditar(false) // Por si acaso
+      resetModals()
     }
   }
 
   const handleGuardar = async (datos) => {
     await agregar({ ...datos, usuario_id: usuario.id })
-    await recargar()
     setModalNuevo(false)
   }
 
   const handleEditarSubmit = async (datos) => {
     await editar(movSeleccionado.id, datos)
-    await recargar()
-    setModalEditar(false)
-    setMovSeleccionado(null)
+    resetModals()
   }
 
   return (
@@ -111,29 +113,28 @@ export function MovimientosPage() {
         )}
       </PageWrapper>
 
-      {/* MODALES CONSOLIDADOS - Evita Error 310 por renders competitivos */}
-      
-      {/* 1. Modal Nuevo */}
-      {modalNuevo && (
-        <Modal abierto={modalNuevo} onCerrar={() => setModalNuevo(false)} titulo="Nuevo movimiento">
+      {/* 
+          MODAL UNIFICADO (Portal Estable) 
+          Mantenemos un único nodo de Modal para evitar Error 310.
+      */}
+      <Modal 
+        abierto={modalNuevo || modalEditar || !!movSeleccionado} 
+        onCerrar={resetModals} 
+        titulo={modalNuevo ? "Nuevo movimiento" : modalEditar ? "Editar movimiento" : "Detalle del movimiento"}
+      >
+        {modalNuevo && (
           <FormMovimiento onSubmit={handleGuardar} onCancel={() => setModalNuevo(false)} />
-        </Modal>
-      )}
-
-      {/* 2. Modal Editar */}
-      {modalEditar && movSeleccionado && (
-        <Modal abierto={modalEditar} onCerrar={() => setModalEditar(false)} titulo="Editar movimiento">
+        )}
+        
+        {modalEditar && movSeleccionado && (
           <FormMovimiento 
             valoresIniciales={movSeleccionado} 
             onSubmit={handleEditarSubmit} 
             onCancel={() => setModalEditar(false)} 
           />
-        </Modal>
-      )}
-
-      {/* 3. Modal Detalle (Solo si NO estamos editando) */}
-      {!modalEditar && movSeleccionado && (
-        <Modal abierto={true} onCerrar={() => setMovSeleccionado(null)} titulo="Detalle del movimiento">
+        )}
+        
+        {(!modalNuevo && !modalEditar && movSeleccionado) && (
           <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4 fade-in duration-300">
             <div className="text-center p-6 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50">
               <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-sm"
@@ -176,8 +177,8 @@ export function MovimientosPage() {
               </Button>
             </div>
           </div>
-        </Modal>
-      )}
+        )}
+      </Modal>
 
     </div>
   )
