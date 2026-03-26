@@ -1,12 +1,40 @@
+import { useState } from 'react'
 import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout'
 import { Card, Button } from '../../components/ui'
 import { useAuthContext } from '../../context/AuthContext'
 
 export function PlanesPage() {
   const { usuario } = useAuthContext()
+  const [cargando, setCargando] = useState(false)
 
   // Asumimos que por ahora el usuario es 'basico' si no tiene plan
   const planActual = usuario?.plan || 'basico'
+
+  const handlePagar = async () => {
+    if (!usuario?.id) return
+    setCargando(true)
+    try {
+      const response = await fetch('/api/pago/crear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: usuario.id }), 
+      })
+
+      const data = await response.json()
+
+      if (data.init_point) {
+        window.location.href = data.init_point
+      } else {
+        console.error('Error: No se recibió el punto de inicio de pago', data)
+      }
+    } catch (error) {
+      console.error('Error al conectar con el servicio de pagos:', error)
+    } finally {
+      setCargando(false)
+    }
+  }
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -60,7 +88,7 @@ export function PlanesPage() {
             <div className="text-center mb-6">
               <h3 className="text-xl font-bold text-emerald-600 dark:text-emerald-400">Manguito Pro</h3>
               <p className="text-sm text-zinc-500 mt-2">Herramientas avanzadas e Inteligencia Artificial</p>
-              <div className="text-4xl font-extrabold mt-4 mb-1">$3.500<span className="text-lg font-normal text-zinc-400">/mes</span></div>
+              <div className="text-4xl font-extrabold mt-4 mb-1">$100<span className="text-lg font-normal text-zinc-400">/mes</span></div>
             </div>
 
             <ul className="flex-1 space-y-4 mb-8 text-sm text-zinc-600 dark:text-zinc-300">
@@ -72,9 +100,10 @@ export function PlanesPage() {
 
             <Button 
               className="w-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
-              disabled={planActual === 'pro'}
+              onClick={handlePagar}
+              disabled={cargando || planActual === 'pro'}
             >
-              {planActual === 'pro' ? 'Es tu plan actual' : 'Pasarme a Pro'}
+              {cargando ? 'Cargando...' : (planActual === 'pro' ? 'Es tu plan actual' : 'Pasarme a Pro por $100')}
             </Button>
           </Card>
 
