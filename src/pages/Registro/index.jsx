@@ -1,3 +1,4 @@
+import { supabase } from '../../lib/supabase'
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { registrarUsuario } from '../../api/auth'
@@ -25,7 +26,7 @@ export function RegistroPage() {
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState('')
   const [fraseIndex, setFraseIndex] = useState(0)
-  
+
   // Hook de metas (lo usamos al final si creó una)
   const { agregar: agregarMeta } = useMetas()
 
@@ -86,23 +87,23 @@ export function RegistroPage() {
     try {
       // 1. Registramos al usuario en Supabase
       const user = await registrarUsuario(formData)
-      
+
       // 2. Si armó una meta inicial, la guardamos
       if (formData.metaActiva && formData.metaNombre && formData.metaMonto) {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           await supabase.from('metas').insert({
-            usuario_id:     session.user.id,
-            nombre:         formData.metaNombre,
+            usuario_id: session.user.id,
+            nombre: formData.metaNombre,
             monto_objetivo: Number(formData.metaMonto),
-            monto_actual:   0,
-            icono:          formData.metaEmoji || '🎯',
-            color:          '#F59E0B',
-            estado:         'activa',
-            prioridad:      1,
+            monto_actual: 0,
+            icono: formData.metaEmoji || '🎯',
+            color: '#F59E0B',
+            estado: 'activa',
+            prioridad: 1,
           })
         }
-}
+      }
 
       // 3. Después de unos segundos de animación, lo mandamos al dashboard
       setTimeout(() => {
@@ -118,15 +119,14 @@ export function RegistroPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center p-4">
-      
+
       {/* Indicador de progreso (solo se muestra en pasos 1 al 4) */}
       {paso < 5 && (
         <div className="w-full max-w-md mb-8">
           <div className="flex justify-between mb-2">
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className={`h-1.5 flex-1 mx-1 rounded-full transition-all duration-500 ${
-                paso >= i ? 'bg-amber-500' : 'bg-zinc-200 dark:bg-zinc-800'
-              }`} />
+              <div key={i} className={`h-1.5 flex-1 mx-1 rounded-full transition-all duration-500 ${paso >= i ? 'bg-amber-500' : 'bg-zinc-200 dark:bg-zinc-800'
+                }`} />
             ))}
           </div>
           <p className="text-xs text-center text-zinc-500 font-medium">Paso {paso} de 4</p>
@@ -134,7 +134,7 @@ export function RegistroPage() {
       )}
 
       <div className="w-full max-w-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 rounded-3xl shadow-sm border border-zinc-100 dark:border-zinc-800 p-6 md:p-8 overflow-hidden relative min-h-[400px] flex flex-col justify-center">
-        
+
         {error && (
           <div className="absolute top-4 left-6 right-6 bg-red-50 dark:bg-red-900/20 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100 dark:border-red-900/50 animate-in slide-in-from-top-4">
             {error}
@@ -172,7 +172,7 @@ export function RegistroPage() {
             <Input label="Fecha de nacimiento" type="date"
               value={formData.fechaNacimiento} onChange={e => handleChange('fechaNacimiento', e.target.value)} />
             <p className="text-xs text-zinc-400 text-center -mt-2">Prometemos saludarte en tu cumple 🎂</p>
-            
+
             <div className="flex gap-3 mt-4">
               <Button onClick={() => setPaso(1)} variante="secondary" className="px-4">Atrás</Button>
               <Button onClick={avanzar} className="flex-1">Siguiente</Button>
@@ -189,13 +189,12 @@ export function RegistroPage() {
             </div>
             <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto px-1 pb-2">
               {OBJETIVOS.map(obj => (
-                <div key={obj.id} 
+                <div key={obj.id}
                   onClick={() => handleChange('objetivo', obj.id)}
-                  className={`flex items-start gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${
-                    formData.objetivo === obj.id 
-                      ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20' 
+                  className={`flex items-start gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${formData.objetivo === obj.id
+                      ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
                       : 'border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700'
-                  }`}>
+                    }`}>
                   <span className="text-2xl mt-0.5">{obj.icono}</span>
                   <div>
                     <h3 className="font-semibold text-sm">{obj.titulo}</h3>
@@ -218,7 +217,7 @@ export function RegistroPage() {
               <h2 className="text-2xl font-bold">Tu primera meta</h2>
               <p className="text-zinc-500 text-sm mt-1">Las metas te ayudan a mantener el foco. ¿Armamos una rápida?</p>
             </div>
-            
+
             {!formData.metaActiva ? (
               <div className="flex flex-col gap-3 my-4 mt-auto">
                 <Button onClick={() => handleChange('metaActiva', true)} className="py-4 text-base" icono="🎯">
@@ -238,7 +237,7 @@ export function RegistroPage() {
                 <div className="flex flex-col gap-4 bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 animate-in fade-in zoom-in-95">
                   <div className="flex gap-3">
                     <div className="w-16">
-                      <Input label="Emoji" value={formData.metaEmoji} 
+                      <Input label="Emoji" value={formData.metaEmoji}
                         onChange={e => handleChange('metaEmoji', e.target.value)} maxLength={2} className="text-center text-xl" />
                     </div>
                     <div className="flex-1">
@@ -249,7 +248,7 @@ export function RegistroPage() {
                   <Input label="¿Cuánta plata necesitás?" type="number" prefijo="$" placeholder="0.00"
                     value={formData.metaMonto} onChange={e => handleChange('metaMonto', e.target.value)} />
                 </div>
-                
+
                 <div className="flex gap-3 mt-auto">
                   <Button onClick={() => handleChange('metaActiva', false)} variante="secondary" className="px-4">
                     Atrás

@@ -9,23 +9,22 @@ import { formatMoneda } from '../../lib/utils'
 export function MovimientosPage() {
   const { usuario } = useAuthContext()
   const [filtroActivo, setFiltroActivo] = useState('todos')
-  
-  // Modales
-  const [modalNuevo, setModalNuevo] = useState(false)
+
+  const [modalNuevo, setModalNuevo]         = useState(false)
   const [movSeleccionado, setMovSeleccionado] = useState(null)
-  
-  const { movimientos, cargando, agregar, eliminar } = useMovimientos()
+
+  // FIX: el hook exporta `borrar`, no `eliminar`
+  const { movimientos, cargando, agregar, borrar } = useMovimientos()
 
   const movimientosFiltrados = movimientos.filter(m => {
     if (filtroActivo === 'todos') return true
     return m.tipo === filtroActivo
   })
 
-  // Agrupamos por mes y año para la vista
   const movimientosAgrupados = movimientosFiltrados.reduce((grupos, mov) => {
     const [anio, mes] = mov.fecha.split('-')
-    const fechaObj = new Date(anio, mes - 1)
-    const claveMes = fechaObj.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+    const fechaObj    = new Date(anio, mes - 1)
+    const claveMes    = fechaObj.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
     const claveMesCap = claveMes.charAt(0).toUpperCase() + claveMes.slice(1)
     if (!grupos[claveMesCap]) grupos[claveMesCap] = []
     grupos[claveMesCap].push(mov)
@@ -39,7 +38,7 @@ export function MovimientosPage() {
 
   const handleEliminar = async () => {
     if (window.confirm(`¿Eliminás "${movSeleccionado.descripcion}"? Esta acción no se puede deshacer.`)) {
-      await eliminar(movSeleccionado.id)
+      await borrar(movSeleccionado.id)   // FIX: era eliminar(), ahora borrar()
       setMovSeleccionado(null)
     }
   }
@@ -62,8 +61,8 @@ export function MovimientosPage() {
               key={f}
               onClick={() => setFiltroActivo(f)}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
-                filtroActivo === f 
-                  ? 'bg-white dark:bg-zinc-900 shadow-sm text-zinc-900 dark:text-white' 
+                filtroActivo === f
+                  ? 'bg-white dark:bg-zinc-900 shadow-sm text-zinc-900 dark:text-white'
                   : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
               }`}
             >
@@ -72,18 +71,18 @@ export function MovimientosPage() {
           ))}
         </div>
 
-        {/* Lista de Movimientos */}
+        {/* Lista */}
         {cargando ? (
           <Card className="mt-4">
-             {[0,1,2,3,4].map(i => <div key={i} className="h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse mb-2" />)}
+            {[0,1,2,3,4].map(i => <div key={i} className="h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse mb-2" />)}
           </Card>
         ) : movimientosFiltrados.length === 0 ? (
           <Card className="mt-4 py-8">
-             <EmptyState 
-               {...EMPTY_STATES.movimientos} 
-               accion={filtroActivo === 'todos' ? <Button icono="+" onClick={() => setModalNuevo(true)}>Registrar movimiento</Button> : null} 
-               titulo={filtroActivo !== 'todos' ? `No hay ${filtroActivo}s registrados` : EMPTY_STATES.movimientos.titulo}
-             />
+            <EmptyState
+              {...EMPTY_STATES.movimientos}
+              accion={filtroActivo === 'todos' ? <Button icono="+" onClick={() => setModalNuevo(true)}>Registrar movimiento</Button> : null}
+              titulo={filtroActivo !== 'todos' ? `No hay ${filtroActivo}s registrados` : EMPTY_STATES.movimientos.titulo}
+            />
           </Card>
         ) : (
           <div className="flex flex-col gap-6">
@@ -93,11 +92,7 @@ export function MovimientosPage() {
                   {mes}
                 </h3>
                 {movs.map(m => (
-                  <MovCard 
-                    key={m.id} 
-                    movimiento={m} 
-                    onClick={() => setMovSeleccionado(m)} 
-                  />
+                  <MovCard key={m.id} movimiento={m} onClick={() => setMovSeleccionado(m)} />
                 ))}
               </Card>
             ))}
@@ -105,46 +100,55 @@ export function MovimientosPage() {
         )}
       </PageWrapper>
 
-      {/* Modal de Nuevo Movimiento */}
+      {/* Modal Nuevo */}
       <Modal abierto={modalNuevo} onCerrar={() => setModalNuevo(false)} titulo="Nuevo movimiento">
         <FormMovimiento onSubmit={handleGuardar} onCancel={() => setModalNuevo(false)} />
       </Modal>
 
-      {/* Modal de Detalle del Movimiento Mejorado */}
+      {/* Modal Detalle */}
       <Modal abierto={!!movSeleccionado} onCerrar={() => setMovSeleccionado(null)} titulo="Detalle del movimiento">
         {movSeleccionado && (
           <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4 fade-in duration-300">
-            {/* Cabecera del Detalle (Impactante visualmente) */}
             <div className="text-center p-6 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50">
-               <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-sm" style={{ background: (movSeleccionado.categorias?.color ?? '#6B7280') + '22' }}>
-                 <span className="text-3xl">{movSeleccionado.categorias?.icono ?? '📦'}</span>
-               </div>
-               <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">{movSeleccionado.categorias?.nombre}</p>
-               <h2 className={`text-4xl font-extrabold mt-2 tracking-tight ${movSeleccionado.tipo === 'ingreso' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'}`}>
-                 {movSeleccionado.tipo === 'ingreso' ? '+' : '-'}{formatMoneda(movSeleccionado.monto, usuario?.moneda, true)}
-               </h2>
-               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-3 font-medium">
-                 {new Date(movSeleccionado.fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-               </p>
+              <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-sm"
+                style={{ background: (movSeleccionado.categorias?.color ?? '#6B7280') + '22' }}>
+                <span className="text-3xl">{movSeleccionado.categorias?.icono ?? '📦'}</span>
+              </div>
+              <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                {movSeleccionado.categorias?.nombre}
+              </p>
+              <h2 className={`text-4xl font-extrabold mt-2 tracking-tight ${
+                movSeleccionado.tipo === 'ingreso' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'
+              }`}>
+                {movSeleccionado.tipo === 'ingreso' ? '+' : '-'}{formatMoneda(movSeleccionado.monto, usuario?.moneda, true)}
+              </h2>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-3 font-medium">
+                {new Date(movSeleccionado.fecha + 'T00:00:00').toLocaleDateString('es-AR', {
+                  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+                })}
+              </p>
             </div>
 
-            {/* Detalles Adicionales */}
             {movSeleccionado.descripcion && (
               <div className="px-2">
                 <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Nota</p>
-                <p className="text-sm text-zinc-800 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-2xl leading-relaxed">{movSeleccionado.descripcion}</p>
+                <p className="text-sm text-zinc-800 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-2xl leading-relaxed">
+                  {movSeleccionado.descripcion}
+                </p>
               </div>
             )}
 
-            {/* Acciones */}
             <div className="flex gap-3 mt-4">
-              <Button variante="secondary" className="flex-1 py-3 text-base" onClick={() => setMovSeleccionado(null)}>Cerrar</Button>
-              <Button variante="danger" className="flex-1 py-3 text-base font-semibold shadow-md shadow-red-500/20 hover:shadow-red-500/30" onClick={handleEliminar}>Eliminar Movimiento</Button>
+              <Button variante="secondary" className="flex-1 py-3 text-base" onClick={() => setMovSeleccionado(null)}>
+                Cerrar
+              </Button>
+              <Button variante="danger" className="flex-1 py-3 text-base font-semibold" onClick={handleEliminar}>
+                Eliminar Movimiento
+              </Button>
             </div>
           </div>
         )}
       </Modal>
-
     </div>
   )
 }
