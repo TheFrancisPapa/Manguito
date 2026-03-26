@@ -5,9 +5,6 @@ import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/la
 import { Card, Button, EmptyState, Modal, Input } from '../../components/ui'
 import { BarraMeta } from '../../components/charts'
 
-const ICONOS_SUGERIDOS = ['🎯','✈️','🛡️','💻','🚗','🏠','📚','💍','🎸','🐶','🌍','💪']
-const COLORES_SUGERIDOS = ['#10B981','#3B82F6','#8B5CF6','#F59E0B','#EF4444','#EC4899','#06B6D4','#F97316']
-
 
 
 // ─── Página principal ────────────────────────────────────────
