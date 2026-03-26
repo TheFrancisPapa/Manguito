@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { PageWrapper, Sidebar, BottomNav } from '../../components/layout'
-import { Spinner } from '../../components/ui'
+import { Spinner, Button } from '../../components/ui'
 import { supabase } from '../../lib/supabase'
 
 // ─── Prompt de sistema — define el comportamiento del bot ────
