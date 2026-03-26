@@ -131,7 +131,7 @@ export function PresupuestosPage() {
       })
       setModalAbierto(false)
       setFormData({ categoria_id: '', limite_monto: '', alerta_pct: 80 })
-      window.location.reload()
+      recargar()
     } catch (error) {
       console.error(error)
       setErrorLocal('Hubo un error al guardar el presupuesto.')

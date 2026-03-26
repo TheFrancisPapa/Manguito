@@ -3,7 +3,7 @@ import { useAuthContext }       from '../../context/AuthContext.jsx'
 import { logout, actualizarPerfil } from '../../api/auth.js'
 import { supabase }             from '../../lib/supabase.js'
 import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout/index.js'
-import { Card, Button, Select, Spinner } from '../../components/ui/index.js'
+import { Card, Button, Spinner } from '../../components/ui/index.js'
 
 // ─── Monedas disponibles ─────────────────────────────────────
 const MONEDAS = [

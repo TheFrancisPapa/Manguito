@@ -89,11 +89,20 @@ export function RegistroPage() {
       
       // 2. Si armó una meta inicial, la guardamos
       if (formData.metaActiva && formData.metaNombre && formData.metaMonto) {
-        // En una app real, acá esperaríamos a que la sesión esté lista.
-        // Como el hook useMetas requiere usuario logueado, lo ideal sería 
-        // hacer el insert directo usando el user.id que nos devuelve signUp.
-        // Pero para mantenerlo simple, simulamos el delay.
-      }
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          await supabase.from('metas').insert({
+            usuario_id:     session.user.id,
+            nombre:         formData.metaNombre,
+            monto_objetivo: Number(formData.metaMonto),
+            monto_actual:   0,
+            icono:          formData.metaEmoji || '🎯',
+            color:          '#F59E0B',
+            estado:         'activa',
+            prioridad:      1,
+          })
+        }
+}
 
       // 3. Después de unos segundos de animación, lo mandamos al dashboard
       setTimeout(() => {

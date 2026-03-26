@@ -32,19 +32,15 @@ export function MovimientosPage() {
     return grupos
   }, {})
 
-  // ✅ handleGuardar
   const handleGuardar = async (datos) => {
     await agregar({ ...datos, usuario_id: usuario.id })
     setModalNuevo(false)
-    // agregar() ya actualiza el estado local — no hace falta nada más
   }
 
-  // ✅ handleEliminar
   const handleEliminar = async () => {
-    if (window.confirm('...')) {
+    if (window.confirm(`¿Eliminás "${movSeleccionado.descripcion}"? Esta acción no se puede deshacer.`)) {
       await eliminar(movSeleccionado.id)
       setMovSeleccionado(null)
-      // eliminar() ya filtra el array local
     }
   }
 
