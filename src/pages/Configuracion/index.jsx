@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuthContext }       from '../../context/AuthContext.jsx'
 import { logout, actualizarPerfil } from '../../api/auth.js'
 import { supabase }             from '../../lib/supabase.js'
@@ -33,6 +34,7 @@ async function subirFoto(archivo, usuarioId) {
 }
 
 export function ConfiguracionPage() {
+  const navigate = useNavigate()
   const { usuario, session, recargarPerfil } = useAuthContext()
   const inputFotoRef = useRef(null)
 
@@ -106,7 +108,7 @@ export function ConfiguracionPage() {
   // ── cerrar sesión ────────────────────────────────────────────
   async function handleLogout() {
     await logout()
-    window.location.href = '/login'
+    navigate('/login')
   }
 
   const inicial = nombre?.[0]?.toUpperCase() ?? '🥭'

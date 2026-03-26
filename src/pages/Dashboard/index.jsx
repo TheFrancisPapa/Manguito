@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
 import { useBalance, useGastosXCategoria, useUltimosMovimientos, useMovimientos, useEvolucionMensual } from '../../hooks/useMovimientos'
 import { usePresupuestos } from '../../hooks/usePresupuestos'
@@ -29,6 +30,7 @@ function obtenerSaludoDinámico(nombre) {
 
 export function DashboardPage() {
   const { usuario } = useAuthContext()
+  const navigate = useNavigate()
   const { desde, hasta } = rangoMes()
   
   const { balance, cargando: cBal } = useBalance(desde, hasta)
@@ -82,15 +84,15 @@ export function DashboardPage() {
             <CardHeader
               titulo="Tus Límites"
               subtitulo={resumen.excedidos > 0 ? `${resumen.excedidos} excedidos 🚨` : 'Todo bajo control'}
-              accion={<a href="/presupuestos" className="text-xs font-medium text-[var(--mango-dark)] hover:text-[var(--mango)]">Ver todos</a>}
+              accion={<Link to="/presupuestos" className="text-xs font-medium text-[var(--mango-dark)] hover:text-[var(--mango)]">Ver todos</Link>}
             />
             <div className="flex flex-col gap-1 flex-1 justify-center mt-2">
               {cPresup ? (
                 [0,1,2].map(i => <div key={i} className="h-16 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse mb-2" />)
               ) : presupuestos.length === 0 ? (
-                <EmptyState {...EMPTY_STATES.presupuestos} accion={<Button variante="secondary" onClick={() => window.location.href='/presupuestos'}>Crear límite</Button>} />
+                <EmptyState {...EMPTY_STATES.presupuestos} accion={<Button variante="secondary" onClick={() => navigate('/presupuestos')}>Crear límite</Button>} />
               ) : (
-                presupuestos.slice(0, 3).map(p => <PresupCard key={p.id} presupuesto={p} onClick={() => window.location.href='/presupuestos'} />)
+                presupuestos.slice(0, 3).map(p => <PresupCard key={p.id} presupuesto={p} onClick={() => navigate('/presupuestos')} />)
               )}
             </div>
           </Card>
@@ -109,7 +111,7 @@ export function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
           <Card className="lg:col-span-2 animate-in slide-in-from-bottom-4 fade-in duration-700" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
-            <CardHeader titulo="Últimos movimientos" accion={<a href="/movimientos" className="text-xs font-medium text-[var(--mango-dark)]">Historial</a>} />
+            <CardHeader titulo="Últimos movimientos" accion={<Link to="/movimientos" className="text-xs font-medium text-[var(--mango-dark)]">Historial</Link>} />
             <div className="mt-4">
               {cMovs ? (
                 [0,1,2,3].map(i => <div key={i} className="h-14 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse mb-2" />)
@@ -126,7 +128,7 @@ export function DashboardPage() {
               <>
                 <div className="flex items-center justify-between px-1">
                   <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Tus Objetivos</h2>
-                  <a href="/metas" className="text-xs font-medium text-[var(--mango-dark)]">Ver más</a>
+                  <Link to="/metas" className="text-xs font-medium text-[var(--mango-dark)]">Ver más</Link>
                 </div>
                 {metas.slice(0, 2).map(m => <BarraMeta key={m.id} meta={m} moneda={usuario?.moneda} />)}
               </>
@@ -137,7 +139,7 @@ export function DashboardPage() {
                  <span className="text-4xl mb-3 block animate-bounce">🎯</span>
                  <h3 className="font-semibold text-zinc-900 dark:text-white mb-1">Ponete una meta</h3>
                  <p className="text-xs text-zinc-500 mb-4 px-4">Ahorrar es más fácil cuando sabés para qué.</p>
-                 <Button variante="secondary" onClick={() => window.location.href='/metas'} className="bg-white dark:bg-zinc-900 shadow-sm">Crear primera meta</Button>
+                 <Button variante="secondary" onClick={() => navigate('/metas')} className="bg-white dark:bg-zinc-900 shadow-sm">Crear primera meta</Button>
                </Card>
             )}
           </div>
