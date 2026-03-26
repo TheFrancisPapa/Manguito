@@ -200,6 +200,28 @@ export function ConfiguracionPage() {
                 />
               </div>
 
+              {/* Fecha de Nacimiento */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Fecha de nacimiento</label>
+                <input
+                  type="date"
+                  value={usuario?.fecha_nacimiento ?? ''}
+                  onChange={async (e) => {
+                    try {
+                      setFeedback(null)
+                      await actualizarPerfil({ fecha_nacimiento: e.target.value })
+                      if (recargarPerfil) await recargarPerfil()
+                      setFeedback({ tipo: 'ok', msg: 'Fecha actualizada ✓' })
+                    } catch (err) {
+                      setFeedback({ tipo: 'error', msg: 'No se pudo actualizar la fecha.' })
+                    }
+                  }}
+                  className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
+                    rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
+                    text-zinc-900 dark:text-white"
+                />
+              </div>
+
               {/* Email (solo lectura) */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Email</label>

@@ -55,6 +55,10 @@ export function DashboardPage() {
     recargarMovs()
   }
 
+  // Chequeamos si hoy es su cumple
+  const hoyStr = new Date().toLocaleDateString('sv-SE').slice(5) // "MM-DD"
+  const esCumple = usuario?.fecha_nacimiento?.slice(5) === hoyStr
+
   return (
     <div className="animate-in fade-in duration-500">
       <ChangelogModal />
@@ -62,6 +66,17 @@ export function DashboardPage() {
       <BottomNav />
       <PageWrapper>
         
+        {esCumple && (
+          <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white p-5 rounded-3xl mb-6 shadow-lg flex items-center gap-4 animate-in slide-in-from-top-4 duration-700">
+            <span className="text-5xl animate-bounce">🎂</span>
+            <div>
+              <h3 className="font-extrabold text-xl">¡Feliz Cumpleaños, {usuario?.nombre}!</h3>
+              <p className="text-sm opacity-90 mt-1 leading-relaxed">
+                Que tengas un día espectacular. ¡Hoy date un gustito y no mires tanto el presupuesto! 😉
+              </p>
+            </div>
+          </div>
+        )}
         <PageHeader
           titulo={`${saludo} ${emoji}`}
           subtitulo={`Resumen de ${mesCapitalizado}`}

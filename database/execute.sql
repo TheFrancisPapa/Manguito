@@ -19,6 +19,7 @@ create table if not exists usuarios (
   id              uuid primary key references auth.users(id) on delete cascade,
 
   nombre          text        not null,
+  fecha_nacimiento date        not null,
   email           text        not null unique,
   moneda          text        not null default 'ARS',   -- ARS, USD, EUR…
   plan            text        not null default 'basico' check (plan in ('basico', 'pro')), -- Acá está el campo nuevo
@@ -243,6 +244,32 @@ create trigger trg_movimientos_updated_at
 create trigger trg_metas_updated_at
   before update on metas
   for each row execute function set_updated_at();
+
+
+-- ─────────────────────────────────────────────
+--  SINCRONIZACIÓN: auth.users -> public.usuarios
+--  Crea el perfil automáticamente al registrarse.
+-- ─────────────────────────────────────────────
+create or replace function handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.usuarios (id, nombre, email, moneda, fecha_nacimiento)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'nombre', 'Usuario'),
+    new.email,
+    coalesce(new.raw_user_meta_data->>'moneda', 'ARS'),
+    (new.raw_user_meta_data->>'fecha_nacimiento')::date
+  );
+  return new;
+end;
+$$;
+
+-- Trigger en el esquema auth (requiere permisos de superusuario o definidor)
+-- Nota: En Supabase, esto se crea usualmente en el dashboard o vía migraciones.
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function handle_new_user();
 
 
 -- ─────────────────────────────────────────────
