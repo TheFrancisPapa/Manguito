@@ -114,168 +114,182 @@ export function RegistroPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col items-center justify-center p-4">
-
-      {/* Indicador de progreso (solo se muestra en pasos 1 al 4) */}
-      {paso < 5 && (
-        <div className="w-full max-w-md mb-8">
-          <div className="flex justify-between mb-2">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className={`h-1.5 flex-1 mx-1 rounded-full transition-all duration-500 ${paso >= i ? 'bg-amber-500' : 'bg-zinc-200 dark:bg-zinc-800'
-                }`} />
-            ))}
-          </div>
-          <p className="text-xs text-center text-zinc-500 font-medium">Paso {paso} de 4</p>
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] overflow-hidden">
+      {/* Panel Izquierdo: Ilustración y Marketing (Compartido con Login) */}
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-12 bg-white dark:bg-zinc-900 border-r border-[var(--mango)]/10 dark:border-zinc-800">
+        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[var(--mango)]/20 dark:bg-[var(--mango)]/10 rounded-full blur-[100px] animate-blob" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-[var(--primary-vibrant)]/10 rounded-full blur-[100px] animate-blob animation-delay-2000" />
+        
+        <div className="relative z-10 text-center">
+          <img 
+            src="/money-plant.png" 
+            alt="Manguito Money Plant" 
+            className="w-full max-w-sm mx-auto mb-8 drop-shadow-2xl animate-float"
+          />
+          <h2 className="text-4xl font-bold text-[var(--charcoal)] dark:text-white mb-4 tracking-tight">
+            Empezá tu camino <br /> al <span className="text-[var(--leaf)] dark:text-[var(--primary-vibrant)]">éxito financiero</span>
+          </h2>
+          <p className="text-lg text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto leading-relaxed">
+            Unite a miles de personas que ya están tomando mejores decisiones con Manguito.
+          </p>
         </div>
-      )}
+      </div>
 
-      <div className="w-full max-w-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 rounded-3xl shadow-sm border border-zinc-100 dark:border-zinc-800 p-6 md:p-8 overflow-hidden relative min-h-[400px] flex flex-col justify-center">
-
-        {error && (
-          <div className="absolute top-4 left-6 right-6 bg-red-50 dark:bg-red-900/20 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100 dark:border-red-900/50 animate-in slide-in-from-top-4">
-            {error}
-          </div>
-        )}
-
-        {/* PASO 1: Cuenta */}
-        {paso === 1 && (
-          <div className="flex flex-col gap-5 animate-in slide-in-from-right-8 fade-in duration-500">
-            <div className="text-center mb-2">
-              <span className="text-4xl mb-3 block">🥭</span>
-              <h1 className="text-2xl font-bold">Creá tu cuenta</h1>
-              <p className="text-zinc-500 text-sm mt-1">El primer paso para tomar el control.</p>
+      {/* Panel Derecho: Formulario Multi-paso */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 relative overflow-y-auto">
+        <div className="w-full max-w-md">
+          {/* Indicador de progreso */}
+          {paso < 5 && (
+            <div className="mb-8">
+              <div className="flex justify-between mb-3">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className={`h-1.5 flex-1 mx-1 rounded-full transition-all duration-500 ${paso >= i ? 'bg-[var(--mango)]' : 'bg-zinc-200 dark:bg-zinc-800'}`} />
+                ))}
+              </div>
+              <p className="text-[10px] text-center text-zinc-400 font-bold uppercase tracking-widest">Paso {paso} de 4</p>
             </div>
-            <Input label="Email" type="email" placeholder="vos@email.com" autoFocus
-              value={formData.email} onChange={e => handleChange('email', e.target.value)} />
-            <Input label="Contraseña" type="password" placeholder="Mínimo 6 caracteres"
-              value={formData.password} onChange={e => handleChange('password', e.target.value)} />
-            <Button onClick={avanzar} className="mt-2 text-lg py-3">Comenzar</Button>
-            <p className="text-center text-sm text-zinc-500 mt-2">
-              ¿Ya tenés cuenta? <Link to="/login" className="text-amber-600 font-medium hover:underline">Ingresá acá</Link>
-            </p>
-          </div>
-        )}
+          )}
 
-        {/* PASO 2: Datos Personales */}
-        {paso === 2 && (
-          <div className="flex flex-col gap-5 animate-in slide-in-from-right-8 fade-in duration-500">
-            <div className="text-center mb-2">
-              <h2 className="text-2xl font-bold">¡Hola! ¿Cómo te llamás?</h2>
-              <p className="text-zinc-500 text-sm mt-1">Queremos que te sientas como en casa.</p>
-            </div>
-            <Input label="Tu nombre o apodo" placeholder="Ej: Fran" autoFocus
-              value={formData.nombre} onChange={e => handleChange('nombre', e.target.value)} />
-            <Input label="Fecha de nacimiento" type="date"
-              value={formData.fechaNacimiento} onChange={e => handleChange('fechaNacimiento', e.target.value)} />
-            <p className="text-xs text-zinc-400 text-center -mt-2">Prometemos saludarte en tu cumple 🎂</p>
+          <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-3xl p-8 lg:p-10 shadow-xl border border-[var(--mango)]/10 dark:border-zinc-800 relative min-h-[450px] flex flex-col justify-center">
+            {error && (
+              <div className="absolute top-4 left-6 right-6 bg-red-50 dark:bg-red-900/20 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100 dark:border-red-900/50 z-20">
+                {error}
+              </div>
+            )}
 
-            <div className="flex gap-3 mt-4">
-              <Button onClick={() => setPaso(1)} variante="secondary" className="px-4">Atrás</Button>
-              <Button onClick={avanzar} className="flex-1">Siguiente</Button>
-            </div>
-          </div>
-        )}
-
-        {/* PASO 3: Objetivo */}
-        {paso === 3 && (
-          <div className="flex flex-col gap-4 animate-in slide-in-from-right-8 fade-in duration-500">
-            <div className="text-center mb-2">
-              <h2 className="text-2xl font-bold">¿Qué buscás lograr?</h2>
-              <p className="text-zinc-500 text-sm mt-1">Manguito se adaptará a tu necesidad principal.</p>
-            </div>
-            <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto px-1 pb-2">
-              {OBJETIVOS.map(obj => (
-                <div key={obj.id}
-                  onClick={() => handleChange('objetivo', obj.id)}
-                  className={`flex items-start gap-3 p-3 rounded-2xl border-2 cursor-pointer transition-all ${formData.objetivo === obj.id
-                      ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
-                      : 'border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700'
-                    }`}>
-                  <span className="text-2xl mt-0.5">{obj.icono}</span>
-                  <div>
-                    <h3 className="font-semibold text-sm">{obj.titulo}</h3>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{obj.desc}</p>
-                  </div>
+            {/* PASO 1: Cuenta */}
+            {paso === 1 && (
+              <div className="flex flex-col gap-6 animate-in slide-in-from-right-8 fade-in duration-500">
+                <div>
+                  <h1 className="text-3xl font-bold text-[var(--charcoal)] dark:text-white mb-2">Creá tu cuenta</h1>
+                  <p className="text-zinc-500 dark:text-zinc-400">El primer paso para tomar el control.</p>
                 </div>
-              ))}
-            </div>
-            <div className="flex gap-3 mt-2">
-              <Button onClick={() => setPaso(2)} variante="secondary" className="px-4">Atrás</Button>
-              <Button onClick={avanzar} className="flex-1">Siguiente</Button>
-            </div>
-          </div>
-        )}
+                <Input label="Email" type="email" placeholder="tu@email.com" autoFocus
+                  value={formData.email} onChange={e => handleChange('email', e.target.value)} className="bg-zinc-50 dark:bg-zinc-800/50" />
+                <Input label="Contraseña" type="password" placeholder="Mínimo 6 caracteres"
+                  value={formData.password} onChange={e => handleChange('password', e.target.value)} className="bg-zinc-50 dark:bg-zinc-800/50" />
+                <Button onClick={avanzar} className="mt-2 py-4 font-bold shadow-lg shadow-[var(--mango)]/20">Comenzar aventura</Button>
+                <p className="text-center text-sm text-zinc-500 mt-2">
+                  ¿Ya tenés cuenta? <Link to="/login" className="text-[var(--leaf)] dark:text-[var(--primary-vibrant)] font-bold hover:underline">Ingresá acá</Link>
+                </p>
+              </div>
+            )}
 
-        {/* PASO 4: Primera Meta (Opcional) */}
-        {paso === 4 && (
-          <div className="flex flex-col gap-5 animate-in slide-in-from-right-8 fade-in duration-500">
-            <div className="text-center mb-2">
-              <h2 className="text-2xl font-bold">Tu primera meta</h2>
-              <p className="text-zinc-500 text-sm mt-1">Las metas te ayudan a mantener el foco. ¿Armamos una rápida?</p>
-            </div>
+            {/* PASO 2: Datos Personales */}
+            {paso === 2 && (
+              <div className="flex flex-col gap-6 animate-in slide-in-from-right-8 fade-in duration-500">
+                <div>
+                  <h2 className="text-3xl font-bold text-[var(--charcoal)] dark:text-white mb-2">¡Hola! ¿Cómo te llamás?</h2>
+                  <p className="text-zinc-500 dark:text-zinc-400">Para que Manguito sea más personal.</p>
+                </div>
+                <Input label="Tu nombre o apodo" placeholder="Ej: Fran" autoFocus
+                  value={formData.nombre} onChange={e => handleChange('nombre', e.target.value)} className="bg-zinc-50 dark:bg-zinc-800/50" />
+                <Input label="Fecha de nacimiento" type="date"
+                  value={formData.fechaNacimiento} onChange={e => handleChange('fechaNacimiento', e.target.value)} className="bg-zinc-50 dark:bg-zinc-800/50" />
+                <p className="text-xs text-zinc-400 text-center -mt-2 italic">Prometemos saludarte en tu cumple 🎂</p>
 
-            {!formData.metaActiva ? (
-              <div className="flex flex-col gap-3 my-4 mt-auto">
-                <Button onClick={() => handleChange('metaActiva', true)} className="py-4 text-base" icono="🎯">
-                  ¡Dale, armemos una meta!
-                </Button>
-                <div className="flex gap-3">
-                  <Button onClick={() => setPaso(3)} variante="secondary" className="px-4">
-                    Atrás
-                  </Button>
-                  <Button onClick={avanzar} variante="ghost" className="flex-1 bg-zinc-100 dark:bg-zinc-800/50">
-                    Finalizar sin meta
-                  </Button>
+                <div className="flex gap-4 mt-4">
+                  <Button onClick={() => setPaso(1)} variante="secondary" className="px-6">Atrás</Button>
+                  <Button onClick={avanzar} className="flex-1 font-bold">Siguiente</Button>
                 </div>
               </div>
-            ) : (
-              <>
-                <div className="flex flex-col gap-4 bg-zinc-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 animate-in fade-in zoom-in-95">
-                  <div className="flex gap-3">
-                    <div className="w-16">
-                      <Input label="Emoji" value={formData.metaEmoji}
-                        onChange={e => handleChange('metaEmoji', e.target.value)} maxLength={2} className="text-center text-xl" />
+            )}
+
+            {/* PASO 3: Objetivo */}
+            {paso === 3 && (
+              <div className="flex flex-col gap-5 animate-in slide-in-from-right-8 fade-in duration-500">
+                <div>
+                  <h2 className="text-3xl font-bold text-[var(--charcoal)] dark:text-white mb-2">¿Qué buscás lograr?</h2>
+                  <p className="text-zinc-500 dark:text-zinc-400">Seleccioná tu meta principal.</p>
+                </div>
+                <div className="flex flex-col gap-3 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
+                  {OBJETIVOS.map(obj => (
+                    <div key={obj.id}
+                      onClick={() => handleChange('objetivo', obj.id)}
+                      className={`flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${formData.objetivo === obj.id
+                          ? 'border-[var(--mango)] bg-[var(--mango)]/5 dark:bg-[var(--mango)]/10'
+                          : 'border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700'
+                        }`}>
+                      <span className="text-2xl mt-0.5">{obj.icono}</span>
+                      <div>
+                        <h3 className="font-bold text-sm text-[var(--charcoal)] dark:text-white">{obj.titulo}</h3>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{obj.desc}</p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <Input label="¿Qué querés lograr?" placeholder="Ej: Celular nuevo" autoFocus
-                        value={formData.metaNombre} onChange={e => handleChange('metaNombre', e.target.value)} />
-                    </div>
-                  </div>
-                  <Input label="¿Cuánta plata necesitás?" type="number" prefijo="$" placeholder="0.00"
-                    value={formData.metaMonto} onChange={e => handleChange('metaMonto', e.target.value)} />
+                  ))}
+                </div>
+                <div className="flex gap-4 mt-2">
+                  <Button onClick={() => setPaso(2)} variante="secondary" className="px-6">Atrás</Button>
+                  <Button onClick={avanzar} className="flex-1 font-bold">Siguiente</Button>
+                </div>
+              </div>
+            )}
+
+            {/* PASO 4: Primera Meta (Opcional) */}
+            {paso === 4 && (
+              <div className="flex flex-col gap-6 animate-in slide-in-from-right-8 fade-in duration-500">
+                <div>
+                  <h2 className="text-3xl font-bold text-[var(--charcoal)] dark:text-white mb-2">Tu primera meta</h2>
+                  <p className="text-zinc-500 dark:text-zinc-400">¿Querés que armemos un objetivo ahora?</p>
                 </div>
 
-                <div className="flex gap-3 mt-auto">
-                  <Button onClick={() => handleChange('metaActiva', false)} variante="secondary" className="px-4">
-                    Atrás
-                  </Button>
-                  <Button onClick={avanzar} className="flex-1 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100">
-                    Finalizar y Crear Meta
-                  </Button>
+                {!formData.metaActiva ? (
+                  <div className="flex flex-col gap-4 my-4">
+                    <Button onClick={() => handleChange('metaActiva', true)} className="py-5 text-base font-bold" icono="🎯">
+                      ¡Sí, armar mi primera meta!
+                    </Button>
+                    <div className="flex gap-4">
+                      <Button onClick={() => setPaso(3)} variante="secondary" className="px-6 font-semibold">Atrás</Button>
+                      <Button onClick={avanzar} variante="ghost" className="flex-1 bg-zinc-50 dark:bg-zinc-800/50 font-bold border border-zinc-100 dark:border-zinc-800">
+                        Omitir por ahora
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-5 bg-zinc-50 dark:bg-zinc-800/50 p-6 rounded-3xl border border-zinc-100 dark:border-zinc-800">
+                      <div className="flex gap-4">
+                        <div className="w-20">
+                          <Input label="Icono" value={formData.metaEmoji}
+                            onChange={e => handleChange('metaEmoji', e.target.value)} maxLength={2} className="text-center text-2xl h-14" />
+                        </div>
+                        <div className="flex-1">
+                          <Input label="¿Qué querés lograr?" placeholder="Ej: Viaje a Brasil" autoFocus
+                            value={formData.metaNombre} onChange={e => handleChange('metaNombre', e.target.value)} className="h-14" />
+                        </div>
+                      </div>
+                      <Input label="Monto objetivo" type="number" prefijo="$" placeholder="0.00"
+                        value={formData.metaMonto} onChange={e => handleChange('metaMonto', e.target.value)} className="h-14" />
+                    </div>
+
+                    <div className="flex gap-4 mt-4">
+                      <Button onClick={() => handleChange('metaActiva', false)} variante="secondary" className="px-6">Atrás</Button>
+                      <Button onClick={avanzar} className="flex-1 font-bold">Crear mi cuenta</Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* PASO 5: Calibrando */}
+            {paso === 5 && (
+              <div className="flex flex-col items-center justify-center gap-8 py-10 animate-in fade-in duration-1000">
+                <div className="relative">
+                  <Spinner size={72} className="text-[var(--mango)]" />
+                  <div className="absolute inset-0 flex items-center justify-center text-3xl animate-pulse">
+                    {OBJETIVOS.find(o => o.id === formData.objetivo)?.icono || '🥭'}
+                  </div>
                 </div>
-              </>
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold mb-3 text-[var(--charcoal)] dark:text-white">Preparando tu Manguito</h2>
+                  <p className="text-zinc-500 dark:text-zinc-400 font-medium italic animate-pulse">
+                    {FRASES_CALIBRACION[fraseIndex]}
+                  </p>
+                </div>
+              </div>
             )}
           </div>
-        )}
-
-        {/* PASO 5: Calibrando (Loading Screen) */}
-        {paso === 5 && (
-          <div className="flex flex-col items-center justify-center gap-6 py-8 animate-in fade-in duration-1000">
-            <div className="relative">
-              <Spinner size={60} className="text-amber-500" />
-              <div className="absolute inset-0 flex items-center justify-center text-2xl animate-pulse">
-                {OBJETIVOS.find(o => o.id === formData.objetivo)?.icono || '✨'}
-              </div>
-            </div>
-            <div className="text-center">
-              <h2 className="text-xl font-bold mb-2">Preparando todo para {formData.nombre}</h2>
-              <p className="text-zinc-500 text-sm min-h-[20px] transition-all duration-300">
-                {FRASES_CALIBRACION[fraseIndex]}
-              </p>
-            </div>
-          </div>
-        )}
-
+        </div>
       </div>
     </div>
   )

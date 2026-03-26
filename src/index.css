@@ -21,6 +21,14 @@
   --leaf-light:   #E8F5E0;
   --leaf-dark:    #4A8C2F;
 
+  /* Nuevo Acento "Vibrante" — Verde Dinero Moderno */
+  --primary-vibrant: #4ADE80;
+  --primary-soft:    #DCFCE7;
+  
+  /* Grises premium para fondos oscuros */
+  --dark-bg:      #111827; /* Gris azulado muy oscuro */
+  --dark-card:    #1F2937; /* Gris para tarjetas en modo oscuro */
+
   /* Carbón — outline del mango, textos sobre dorado */
   --charcoal:     #2D2D2D;
 
@@ -31,7 +39,7 @@
 
 @layer base {
   body {
-    @apply bg-[var(--cream-soft)] dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 antialiased;
+    @apply bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] text-zinc-800 dark:text-zinc-100 antialiased;
   }
 
   ::selection {

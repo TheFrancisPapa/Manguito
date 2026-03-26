@@ -48,41 +48,49 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-[var(--cream-soft)] dark:bg-zinc-950">
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[var(--mango)]/30 dark:bg-[var(--mango)]/15 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-blob" />
-      <div className="absolute top-[20%] right-[-10%] w-96 h-96 bg-[var(--mango-dark)]/20 dark:bg-[var(--mango-dark)]/15 rounded-full blur-[100px] mix-blend-multiply dark:mix-blend-screen animate-blob animation-delay-2000" />
-      <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-[var(--mango-light)]/30 dark:bg-[var(--mango-light)]/10 rounded-full blur-[120px] mix-blend-multiply dark:mix-blend-screen animate-blob animation-delay-4000" />
-
-      <div className="container mx-auto px-4 relative z-10 flex flex-col lg:flex-row items-center justify-center lg:justify-evenly gap-12 lg:gap-0">
-        <div className="text-center lg:text-left max-w-lg mt-10 lg:mt-0">
-          <div className="inline-flex items-center justify-center lg:justify-start gap-3 mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-[var(--mango)] blur-md opacity-30 rounded-full animate-pulse"></div>
-              <img src="/Mango.png" alt="Logo Manguito" className="relative w-14 h-14 lg:w-16 lg:h-16 object-contain" />
-            </div>
-            <span className="text-3xl lg:text-4xl font-extrabold bg-gradient-to-br from-[var(--mango)] to-[var(--mango-dark)] bg-clip-text text-transparent tracking-tight">
-              Manguito
-            </span>
-          </div>
-          <h1 className="text-4xl lg:text-6xl font-bold tracking-tight text-[var(--charcoal)] dark:text-white leading-tight mb-4">
-            Tomá el control de <br className="hidden lg:block" />
-            <span className="text-[var(--mango-dark)] relative inline-block">
-              <span className={`transition-opacity duration-500 ${animandoTexto ? 'opacity-0' : 'opacity-100'}`}>
-                {PALABRAS_CLAVE[palabraActual]}
-              </span>
-              <svg className="absolute w-full h-3 -bottom-1 left-0 text-[var(--mango)]/50" viewBox="0 0 100 10" preserveAspectRatio="none">
-                <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="4" fill="transparent" strokeLinecap="round" />
-              </svg>
-            </span>
-          </h1>
-          <p className="text-lg text-zinc-600 dark:text-zinc-400 mb-8 max-w-md mx-auto lg:mx-0">
-            Una herramienta simple, rápida y sin vueltas para entender a dónde va tu plata todos los meses.
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] overflow-hidden">
+      {/* Panel Izquierdo: Ilustración y Marketing */}
+      <div className="hidden lg:flex lg:w-1/2 relative flex-col items-center justify-center p-12 bg-white dark:bg-zinc-900 border-r border-[var(--mango)]/10 dark:border-zinc-800">
+        <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[var(--mango)]/20 dark:bg-[var(--mango)]/10 rounded-full blur-[100px] animate-blob" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-[var(--primary-vibrant)]/10 rounded-full blur-[100px] animate-blob animation-delay-2000" />
+        
+        <div className="relative z-10 text-center">
+          <img 
+            src="/money-plant.png" 
+            alt="Manguito Money Plant" 
+            className="w-full max-w-sm mx-auto mb-8 drop-shadow-2xl animate-float"
+          />
+          <h2 className="text-4xl font-bold text-[var(--charcoal)] dark:text-white mb-4 tracking-tight">
+            Hace que tu plata <span className="text-[var(--leaf)] dark:text-[var(--primary-vibrant)]">crezca</span>
+          </h2>
+          <p className="text-lg text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto leading-relaxed">
+            La herramienta más simple para entender tus finanzas y alcanzar tus metas de ahorro.
           </p>
+        </div>
+      </div>
+
+      {/* Panel Derecho: Formulario */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 relative">
+        {/* Fondo decorativo mobile */}
+        <div className="lg:hidden absolute inset-0 overflow-hidden -z-10">
+          <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-[var(--mango)]/20 rounded-full blur-[80px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 bg-[var(--primary-vibrant)]/10 rounded-full blur-[80px]" />
         </div>
 
         <div className="w-full max-w-md">
-          <div className="bg-white/70 dark:bg-zinc-900/70 backdrop-blur-xl rounded-3xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] border border-[var(--mango)]/15 dark:border-zinc-800/50">
-            <h2 className="text-2xl font-bold text-[var(--charcoal)] dark:text-white mb-6">Iniciar sesión</h2>
+          {/* Logo Mobile */}
+          <div className="lg:hidden flex items-center justify-center gap-3 mb-10">
+            <img src="/Mango.png" alt="Logo" className="w-12 h-12 object-contain" />
+            <span className="text-3xl font-extrabold bg-gradient-to-br from-[var(--mango)] to-[var(--mango-dark)] bg-clip-text text-transparent italic">
+              Manguito
+            </span>
+          </div>
+
+          <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl rounded-3xl p-8 lg:p-10 shadow-xl border border-[var(--mango)]/10 dark:border-zinc-800">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-[var(--charcoal)] dark:text-white mb-2">¡Hola de nuevo! 👋</h1>
+              <p className="text-zinc-500 dark:text-zinc-400">Ingresá tus datos para entrar a Manguito.</p>
+            </div>
 
             {error && (
               <div className="mb-6 bg-red-50 dark:bg-red-900/20 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100 dark:border-red-900/50">
@@ -90,14 +98,15 @@ export function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
               <Input
                 label="Email"
                 type="email"
-                placeholder="vos@email.com"
+                placeholder="tu@email.com"
                 value={formData.email}
                 onChange={e => handleChange('email', e.target.value)}
                 required
+                className="bg-zinc-50 dark:bg-zinc-800/50"
               />
               <div>
                 <Input
@@ -107,23 +116,24 @@ export function LoginPage() {
                   value={formData.password}
                   onChange={e => handleChange('password', e.target.value)}
                   required
+                  className="bg-zinc-50 dark:bg-zinc-800/50"
                 />
-                <div className="flex justify-end mt-1">
-                  <Link to="/recuperar-password" className="text-xs text-[var(--mango-dark)] dark:text-[var(--mango)] hover:underline font-medium">
+                <div className="flex justify-end mt-2">
+                  <Link to="/recuperar-password" title="Recuperar contraseña" className="text-xs text-[var(--leaf)] hover:text-[var(--leaf-dark)] dark:text-[var(--primary-vibrant)] font-semibold transition-colors">
                     ¿Te olvidaste la contraseña?
                   </Link>
                 </div>
               </div>
 
-              <Button type="submit" cargando={cargando} className="w-full mt-4 py-3 text-base">
-                Ingresar a mi cuenta
+              <Button type="submit" cargando={cargando} className="w-full mt-4 py-4 text-base font-bold shadow-lg shadow-[var(--mango)]/20 dark:shadow-none">
+                Entrar a mi cuenta
               </Button>
             </form>
 
-            <div className="mt-8 pt-6 border-t border-zinc-200/50 dark:border-zinc-800/50 text-center">
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">¿Primera vez por acá?</p>
-              <Link to="/registro" className="inline-block mt-2 font-semibold text-[var(--charcoal)] dark:text-white hover:text-[var(--mango-dark)] dark:hover:text-[var(--mango)] transition-colors">
-                Crear una cuenta gratis &rarr;
+            <div className="mt-10 pt-8 border-t border-zinc-100 dark:border-zinc-800 text-center">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">¿Todavía no tenés cuenta?</p>
+              <Link to="/registro" className="text-base font-bold text-[var(--charcoal)] dark:text-[var(--primary-vibrant)] hover:scale-105 inline-block transition-transform">
+                Empezá gratis ahora &rarr;
               </Link>
             </div>
           </div>

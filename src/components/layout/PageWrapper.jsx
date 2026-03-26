@@ -1,8 +1,13 @@
+import { Header } from './Header'
+
 export function PageWrapper({ children, className = '' }) {
   return (
-    <main className={`min-h-screen bg-[var(--cream-soft)] dark:bg-zinc-950 px-4 pt-6 pb-24 md:pb-6 md:pl-[88px] ${className}`}>
-      <div className="max-w-2xl mx-auto md:max-w-4xl">{children}</div>
-    </main>
+    <>
+      <Header />
+      <main className={`min-h-screen bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] px-4 pt-6 pb-24 md:pb-6 md:pl-[88px] ${className}`}>
+        <div className="max-w-2xl mx-auto md:max-w-4xl">{children}</div>
+      </main>
+    </>
   )
 }
 
