@@ -162,20 +162,34 @@ export function ChatPage() {
         },
       })
 
-      if (fnError) throw fnError
-      if (!data?.text) throw new Error('empty')
+      if (fnError) {
+        // Intentamos extraer el mensaje de error del body si es posible
+        let errorMsg = fnError.message || 'Error en la función'
+        try {
+          // Supabase FunctionsHttpError suele tener el texto del body
+          const resp = await fnError.context?.json()
+          if (resp?.error) errorMsg = resp.error
+        } catch { /* ignore */ }
+        throw new Error(errorMsg)
+      }
+
+      if (!data?.text) throw new Error('El asistente no devolvió una respuesta válida.')
 
       setMensajes(prev => [...prev, { rol: 'asistente', contenido: data.text }])
     } catch (err) {
-      const msg = typeof err?.message === 'string' ? err.message : ''
-      if (msg.includes('429') || msg.includes('RATE') || msg.includes('quota')) {
-        setError('El asistente está ocupado. Esperá unos segundos e intentá de nuevo. ⏳')
+      const msg = err.message || ''
+      console.error('Error en Chat:', err)
+      
+      if (msg.includes('429') || msg.includes('quota') || msg.includes('limit')) {
+        setError('El asistente alcanzó su límite de mensajes gratuitos. Esperá un minuto e intentá de nuevo. ⏳')
       } else if (msg.includes('401') || msg.includes('autorizado')) {
-        setError('Tu sesión expiró. Recargá la página e intentá de nuevo. 🔒')
+        setError('Tu sesión expiró o no tenés permiso. Recargá la página. 🔒')
+      } else if (msg.includes('404')) {
+        setError('No se encontró el servicio de IA. Avisale al administrador. 🛠️')
       } else {
-        setError('Hubo un problema al conectar con el asistente. Intentá de nuevo.')
+        // Mostramos el mensaje real si existe, sino el genérico
+        setError(msg.length > 5 && msg.length < 100 ? msg : 'Hubo un problema al conectar con el asistente. Intentá de nuevo.')
       }
-      console.error(err)
     } finally {
       setCargando(false)
       setTimeout(() => inputRef.current?.focus(), 100)
