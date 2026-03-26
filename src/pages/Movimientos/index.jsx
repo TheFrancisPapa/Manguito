@@ -11,10 +11,11 @@ export function MovimientosPage() {
   const [filtroActivo, setFiltroActivo] = useState('todos')
 
   const [modalNuevo, setModalNuevo]         = useState(false)
+  const [modalEditar, setModalEditar]       = useState(false)
   const [movSeleccionado, setMovSeleccionado] = useState(null)
 
   // FIX: el hook exporta `borrar`, no `eliminar`
-  const { movimientos, cargando, agregar, borrar } = useMovimientos()
+  const { movimientos, cargando, agregar, borrar, recargar } = useMovimientos()
 
   const movimientosFiltrados = movimientos.filter(m => {
     if (filtroActivo === 'todos') return true
@@ -33,14 +34,23 @@ export function MovimientosPage() {
 
   const handleGuardar = async (datos) => {
     await agregar({ ...datos, usuario_id: usuario.id })
+    await recargar() // Aseguramos que el estado local esté al día
     setModalNuevo(false)
   }
 
   const handleEliminar = async () => {
     if (window.confirm(`¿Eliminás "${movSeleccionado.descripcion}"? Esta acción no se puede deshacer.`)) {
-      await borrar(movSeleccionado.id)   // FIX: era eliminar(), ahora borrar()
+      await borrar(movSeleccionado.id)
+      await recargar()
       setMovSeleccionado(null)
     }
+  }
+
+  const handleEditarSubmit = async (datos) => {
+    await editar(movSeleccionado.id, datos)
+    await recargar()
+    setModalEditar(false)
+    setMovSeleccionado(null)
   }
 
   return (
@@ -105,8 +115,19 @@ export function MovimientosPage() {
         <FormMovimiento onSubmit={handleGuardar} onCancel={() => setModalNuevo(false)} />
       </Modal>
 
+      {/* Modal Editar */}
+      <Modal abierto={modalEditar} onCerrar={() => setModalEditar(false)} titulo="Editar movimiento">
+        {movSeleccionado && (
+          <FormMovimiento 
+            valoresIniciales={movSeleccionado} 
+            onSubmit={handleEditarSubmit} 
+            onCancel={() => setModalEditar(false)} 
+          />
+        )}
+      </Modal>
+
       {/* Modal Detalle */}
-      <Modal abierto={!!movSeleccionado} onCerrar={() => setMovSeleccionado(null)} titulo="Detalle del movimiento">
+      <Modal abierto={!!movSeleccionado && !modalEditar} onCerrar={() => setMovSeleccionado(null)} titulo="Detalle del movimiento">
         {movSeleccionado && (
           <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4 fade-in duration-300">
             <div className="text-center p-6 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50">
@@ -117,7 +138,7 @@ export function MovimientosPage() {
               <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                 {movSeleccionado.categorias?.nombre}
               </p>
-              <h2 className={`text-4xl font-extrabold mt-2 tracking-tight ${
+              <h2 className={`text-3xl md:text-4xl font-black mt-2 tracking-tight break-all ${
                 movSeleccionado.tipo === 'ingreso' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'
               }`}>
                 {movSeleccionado.tipo === 'ingreso' ? '+' : '-'}{formatMoneda(movSeleccionado.monto, usuario?.moneda, true)}
@@ -138,12 +159,15 @@ export function MovimientosPage() {
               </div>
             )}
 
-            <div className="flex gap-3 mt-4">
-              <Button variante="secondary" className="flex-1 py-3 text-base" onClick={() => setMovSeleccionado(null)}>
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
+              <Button variante="secondary" className="flex-1 py-3 text-sm md:text-base font-medium order-3 sm:order-1" onClick={() => setMovSeleccionado(null)}>
                 Cerrar
               </Button>
-              <Button variante="danger" className="flex-1 py-3 text-base font-semibold" onClick={handleEliminar}>
-                Eliminar Movimiento
+              <Button variante="primary" className="flex-1 py-3 text-sm md:text-base font-semibold order-1 sm:order-2" onClick={() => setModalEditar(true)}>
+                Editar
+              </Button>
+              <Button variante="danger" className="flex-1 py-3 text-sm md:text-base font-semibold order-2 sm:order-3" onClick={handleEliminar}>
+                Eliminar
               </Button>
             </div>
           </div>
