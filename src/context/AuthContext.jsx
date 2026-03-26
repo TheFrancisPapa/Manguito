@@ -15,16 +15,25 @@ export const AuthProvider = ({ children }) => {
       return
     }
     try {
-      const perfil = await getPerfil()
+      let perfil = await getPerfil()
+      // Forzamos plan PRO para la cuenta del desarrollador
+      if (perfil?.email === 'urielrt2095@gmail.com') {
+        perfil.plan = 'pro'
+      }
       setUsuario(perfil)
     } catch (err) {
       console.error("Error cargando perfil desde DB:", err)
       // Fallback a los metadatos de sesión si falla la DB
-      setUsuario({
+      const dataFallback = {
         id: currentSession.user.id,
         email: currentSession.user.email,
         ...currentSession.user.user_metadata
-      })
+      }
+      // También aplicamos el forzado en el fallback
+      if (dataFallback.email === 'urielrt2095@gmail.com') {
+        dataFallback.plan = 'pro'
+      }
+      setUsuario(dataFallback)
     }
   }, [])
 
