@@ -38,8 +38,8 @@ export default async function handler(req, res) {
       },
     }
 
-    // Usamos gemini-1.5-flash: rápido, económico y más que suficiente para el chat
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+    // gemini-2.0-flash es el modelo rápido actual de Google
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
 
     const response = await fetch(url, {
       method: 'POST',
