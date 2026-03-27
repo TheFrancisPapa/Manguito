@@ -1,35 +1,99 @@
+// src/components/layout/Header.jsx
+import { useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { useTheme } from '../../hooks/useTheme'
+import { useAuthContext } from '../../context/AuthContext'
+
+function obtenerSaludo(nombre) {
+  const hora = new Date().getHours()
+  const primerNombre = nombre?.split(' ')[0] || ''
+  if (hora >= 5 && hora < 12)  return `Buenos días, ${primerNombre}`
+  if (hora >= 12 && hora < 20) return `Buenas tardes, ${primerNombre}`
+  return `Buenas noches, ${primerNombre}`
+}
 
 export function Header() {
-  const { theme, toggleTheme } = useTheme()
+  const { toggleTheme } = useTheme()
+  const { usuario } = useAuthContext()
+  const location = useLocation()
+  const [menuAbierto, setMenuAbierto] = useState(false)
+
+  const saludo = obtenerSaludo(usuario?.nombre)
+
+  const menuItems = [
+    { path: '/dashboard', label: 'Panel Principal', icono: '🏠' },
+    { path: '/movimientos', label: 'Movimientos', icono: '💸' },
+    { path: '/presupuestos', label: 'Presupuestos', icono: '📊' },
+    { path: '/metas', label: 'Metas', icono: '🎯' },
+    { path: '/inversiones', label: 'Inversiones', icono: '📈' },
+    { path: '/cotizaciones', label: 'Cotizaciones', icono: '💱' },
+    { path: '/chat', label: 'Chat IA', icono: '🤖' },
+    { path: '/configuracion', label: 'Mi Perfil', icono: '⚙️' },
+  ]
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-[var(--cream-soft)]/80 dark:bg-[var(--dark-bg)]/80 backdrop-blur-md border-b border-[var(--mango)]/10 dark:border-zinc-800/50">
-      <div className="max-w-2xl mx-auto md:max-w-4xl px-4 h-16 flex items-center justify-between">
-        {/* Espacio para el logo en mobile si se desea, o simplemente vacío para empujar el botón al final */}
-        <div className="md:hidden flex items-center gap-2">
-          <img src="/Mango.png" alt="Logo" className="w-8 h-8 object-contain" />
-          <span className="font-bold text-[var(--charcoal)] dark:text-white">Manguito</span>
-        </div>
-        
-        <div className="flex-1" />
+    <>
+      <header className="sticky top-0 z-30 w-full bg-[var(--cream-soft)]/90 dark:bg-[var(--dark-bg)]/90 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
+        <div className="px-4 h-16 flex items-center justify-between max-w-xl mx-auto md:max-w-4xl">
+          
+          {/* Izquierda: Logo + Saludo */}
+          <div className="flex items-center gap-2">
+            <img src="/Mango.png" alt="Logo" className="w-8 h-8 object-contain" />
+            <div>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">{saludo}</p>
+              <p className="text-sm font-bold text-zinc-900 dark:text-white leading-none">Manguito</p>
+            </div>
+          </div>
 
-        <button
-          onClick={toggleTheme}
-          className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[var(--mango)]/20 dark:border-zinc-800 shadow-sm hover:scale-105 transition-transform active:scale-95"
-          aria-label="Cambiar tema"
-        >
-          {theme === 'light' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-amber-500">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+          {/* Derecha: Menú Hamburguesa */}
+          <button 
+            onClick={() => setMenuAbierto(true)}
+            className="p-2 -mr-2 text-zinc-700 dark:text-zinc-300 active:scale-95 transition-transform"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-amber-400">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-            </svg>
-          )}
-        </button>
-      </div>
-    </header>
+          </button>
+        </div>
+      </header>
+
+      {/* Menú Desplegable (Drawer) */}
+      {menuAbierto && (
+        <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200">
+          {/* Fondo oscuro transparente */}
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMenuAbierto(false)} />
+          
+          {/* Panel del menú */}
+          <div className="relative w-64 h-full bg-white dark:bg-[var(--dark-bg)] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-4 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
+              <span className="font-bold text-lg">Menú</span>
+              <button onClick={() => setMenuAbierto(false)} className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full">
+                ✕
+              </button>
+            </div>
+            
+            <nav className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+              {menuItems.map(item => (
+                <Link 
+                  key={item.path} 
+                  to={item.path}
+                  onClick={() => setMenuAbierto(false)}
+                  className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${location.pathname === item.path ? 'bg-[var(--mango)]/10 text-[var(--mango-dark)] font-bold' : 'text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'}`}
+                >
+                  <span className="text-xl">{item.icono}</span>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">
+              <button onClick={toggleTheme} className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 text-sm font-semibold">
+                Cambiar Modo (Día/Noche)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
