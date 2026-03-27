@@ -49,20 +49,20 @@ export function DashboardPage() {
         </div>
 
         {/* 3. LAS 3 VENTANITAS DE ACCESO RÁPIDO */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <Link to="/movimientos" className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
-            <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-xl">💸</div>
-            <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Movimientos</span>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
+          <Link to="/movimientos" className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 sm:p-4 flex flex-col items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-lg">💸</div>
+            <span className="text-[10px] sm:text-xs font-semibold text-center leading-tight text-zinc-700 dark:text-zinc-300">Movimientos</span>
           </Link>
           
-          <Link to="/inversiones" className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
-            <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-xl">📈</div>
-            <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Inversiones</span>
+          <Link to="/inversiones" className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 sm:p-4 flex flex-col items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-lg">📈</div>
+            <span className="text-[10px] sm:text-xs font-semibold text-center leading-tight text-zinc-700 dark:text-zinc-300">Inversiones</span>
           </Link>
 
-          <Link to="/chat" className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform">
-            <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-xl">🤖</div>
-            <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Chat IA</span>
+          <Link to="/chat" className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 sm:p-4 flex flex-col items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-transform">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-lg">🤖</div>
+            <span className="text-[10px] sm:text-xs font-semibold text-center leading-tight text-zinc-700 dark:text-zinc-300">Chat IA</span>
           </Link>
         </div>
 
