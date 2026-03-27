@@ -2,7 +2,7 @@ import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { AuthProvider } from '../context/AuthContext'
 import { PrivateRoute, PublicRoute } from './guards'
-import { PageLoader } from '../components/ui'
+import { PageLoader, ErrorBoundary } from '../components/ui'
 
 const LoginPage         = lazy(() => import('../pages/Login').then(m => ({ default: m.LoginPage })))
 const RegistroPage      = lazy(() => import('../pages/Registro').then(m => ({ default: m.RegistroPage })))
@@ -32,6 +32,7 @@ function Root() {
 export const router = createBrowserRouter([
   {
     element: <Root />,
+    errorElement: <ErrorBoundary />,
     children: [
       { path: '/',                     element: <LandingPage /> },
       { path: '/login',                element: <PublicRoute><LoginPage /></PublicRoute> },
