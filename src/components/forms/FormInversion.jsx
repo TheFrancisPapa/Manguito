@@ -190,7 +190,7 @@ export function FormInversion({ onSubmit, onCancel }) {
   })()
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-h-[75vh] overflow-y-auto pr-1">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-h-[75vh] overflow-y-auto overflow-x-hidden pr-1">
 
       {/* ── 1. Tipo de activo ── */}
       <div>

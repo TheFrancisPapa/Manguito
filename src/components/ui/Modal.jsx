@@ -21,7 +21,7 @@ export function Modal({ abierto, onCerrar, titulo, children, ancho = 'max-w-md' 
       onClick={onCerrar}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div className={`relative w-full ${ancho} bg-white dark:bg-zinc-900 rounded-2xl p-6
-        border border-[var(--mango)]/15 dark:border-zinc-800 shadow-xl`}
+        border border-[var(--mango)]/15 dark:border-zinc-800 shadow-xl overflow-x-hidden`}
         onClick={(e) => e.stopPropagation()}>
         {/* Línea decorativa mango en el header */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)] rounded-full -mt-0.5" />
