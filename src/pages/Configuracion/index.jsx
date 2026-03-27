@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthContext }       from '../../context/AuthContext.jsx'
 import { logout, actualizarPerfil } from '../../api/auth.js'
 import { supabase }             from '../../lib/supabase.js'
-import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout/index.js'
+import { PageWrapper, PageHeader } from '../../components/layout/index.js'
 import { Card, Button, Spinner } from '../../components/ui/index.js'
 
 // ─── Monedas disponibles ─────────────────────────────────────
@@ -115,9 +115,7 @@ export function ConfiguracionPage() {
   const monedaActual = MONEDAS.find(m => m.codigo === moneda)
 
   return (
-    <>
-      <Sidebar usuario={usuario} />
-      <BottomNav />
+    <div className="animate-in fade-in duration-500">
       <PageWrapper>
         <PageHeader titulo="Mi perfil" subtitulo="Configuración de tu cuenta" />
 
@@ -347,6 +345,6 @@ export function ConfiguracionPage() {
           </p>
         </div>
       </PageWrapper>
-    </>
+    </div>
   )
 }

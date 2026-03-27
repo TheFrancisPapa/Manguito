@@ -1,11 +1,12 @@
+// src/pages/Chat/index.jsx
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
-import { PageWrapper, Sidebar, BottomNav } from '../../components/layout'
+import { useTheme } from '../../hooks/useTheme'
 import { Spinner, Button } from '../../components/ui'
 import { supabase } from '../../lib/supabase'
 
-// ─── Prompt de sistema — define el comportamiento del bot ────
+// ─── Prompt de sistema ────
 const SYSTEM_PROMPT = `Sos ManguitoAI, el asistente financiero integrado en Manguito, una app de finanzas personales argentina.
 
 TU ÚNICO ROL es responder preguntas sobre:
@@ -39,38 +40,29 @@ Puedo ayudarte con:
 ¿Sobre qué querés hablar?`,
 }
 
-// ─── Burbujas ────────────────────────────────────────────────
+// ─── Burbujas (Mantenemos tu componente Burbuja igual) ────────
 function Burbuja({ mensaje }) {
   const esUsuario = mensaje.rol === 'usuario'
   return (
     <div className={`flex gap-3 ${esUsuario ? 'flex-row-reverse' : 'flex-row'}`}>
-      {/* Avatar */}
       <div className={`w-8 h-8 flex-shrink-0 rounded-xl flex items-center justify-center text-sm font-medium
-        ${esUsuario
-          ? 'bg-[var(--mango)] text-[var(--charcoal)]'
-          : 'bg-zinc-100 dark:bg-zinc-800 text-base'}`}>
+        ${esUsuario ? 'bg-[var(--mango)] text-[var(--charcoal)]' : 'bg-zinc-100 dark:bg-zinc-800 text-base'}`}>
         {esUsuario ? '👤' : '🥭'}
       </div>
-
-      {/* Contenido */}
       <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed
-        ${esUsuario
-          ? 'bg-[var(--mango)] text-[var(--charcoal)] rounded-tr-sm'
-          : 'bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-sm'}`}>
+        ${esUsuario ? 'bg-[var(--mango)] text-[var(--charcoal)] rounded-tr-sm' : 'bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-sm'}`}>
         <MarkdownSimple texto={mensaje.contenido} />
       </div>
     </div>
   )
 }
 
-// Renderizador mínimo de markdown (negrita, listas)
 function MarkdownSimple({ texto }) {
   const lineas = texto.split('\n')
   return (
     <div>
       {lineas.map((linea, i) => {
         if (!linea.trim()) return <div key={i} className="h-2" />
-        // Lista
         if (linea.startsWith('- ')) {
           return (
             <div key={i} className="flex gap-2 my-0.5">
@@ -87,51 +79,50 @@ function MarkdownSimple({ texto }) {
 
 function parsearNegritas(texto) {
   const partes = texto.split(/\*\*(.*?)\*\*/g)
-  return partes.map((parte, i) =>
-    i % 2 === 1 ? <strong key={i}>{parte}</strong> : parte
-  )
+  return partes.map((parte, i) => i % 2 === 1 ? <strong key={i}>{parte}</strong> : parte)
 }
 
 // ─── Página principal ─────────────────────────────────────────
 export function ChatPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { usuario } = useAuthContext()
+  const { toggleTheme } = useTheme()
   const plan = usuario?.plan || 'basico'
 
-  // ─── Hooks (SIEMPRE antes de cualquier return condicional) ───
   const [mensajes, setMensajes] = useState([MSG_BIENVENIDA])
   const [input, setInput]       = useState('')
   const [cargando, setCargando] = useState(false)
   const [error, setError]       = useState(null)
+  const [menuAbierto, setMenuAbierto] = useState(false) // Estado del menú hamburguesa
+
   const finRef = useRef(null)
   const inputRef = useRef(null)
 
-  // Scroll automático al último mensaje
   useEffect(() => {
     finRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensajes, cargando])
 
-  // Si es básico, le mostramos el cartel de bloqueo
+  const menuItems = [
+    { path: '/dashboard', label: 'Panel Principal', icono: '🏠' },
+    { path: '/movimientos', label: 'Movimientos', icono: '💸' },
+    { path: '/presupuestos', label: 'Presupuestos', icono: '📊' },
+    { path: '/metas', label: 'Metas', icono: '🎯' },
+    { path: '/inversiones', label: 'Inversiones', icono: '📈' },
+    { path: '/cotizaciones', label: 'Cotizaciones', icono: '💱' },
+    { path: '/chat', label: 'Chat IA', icono: '🤖' },
+    { path: '/configuracion', label: 'Mi Perfil', icono: '⚙️' },
+  ]
+
+  // Bloqueo de plan básico
   if (plan === 'basico') {
     return (
-      <>
-        <Sidebar usuario={usuario} />
-        <BottomNav />
-        <div className="min-h-screen bg-[var(--cream-soft)] dark:bg-zinc-950 md:pl-[88px] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
-          <div className="w-20 h-20 bg-emerald-500/10 text-emerald-500 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-sm">
-            ⭐
-          </div>
-          <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-3">
-            ManguitoAI es una función Pro
-          </h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mb-8 leading-relaxed">
-            El asistente financiero con inteligencia artificial está disponible únicamente para usuarios de Manguito Pro. Mejorá tu plan para chatear sin límites.
-          </p>
-          <Button onClick={() => navigate('/configuracion/planes')}>
-            Ver planes de suscripción
-          </Button>
-        </div>
-      </>
+      <div className="min-h-screen bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-500">
+        <div className="w-20 h-20 bg-emerald-500/10 text-emerald-500 rounded-3xl flex items-center justify-center text-4xl mb-6 shadow-sm">⭐</div>
+        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-3">ManguitoAI es una función Pro</h2>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mb-8 leading-relaxed">El asistente financiero con inteligencia artificial está disponible únicamente para usuarios de Manguito Pro. Mejorá tu plan para chatear sin límites.</p>
+        <Button onClick={() => navigate('/configuracion/planes')}>Ver planes de suscripción</Button>
+      </div>
     )
   }
 
@@ -147,49 +138,22 @@ export function ChatPage() {
     setError(null)
 
     try {
-      // Construimos el historial para la API (excluimos el mensaje de bienvenida)
       const historialAPI = [...mensajes.slice(1), msgUsuario].map(m => ({
         role: m.rol === 'usuario' ? 'user' : 'assistant',
         content: m.contenido,
       }))
 
-      // Llamamos al Edge Function en vez de directamente a Anthropic
       const { data, error: fnError } = await supabase.functions.invoke('chat-proxy', {
-        body: {
-          system: SYSTEM_PROMPT,
-          messages: historialAPI,
-          max_tokens: 1000,
-        },
+        body: { system: SYSTEM_PROMPT, messages: historialAPI, max_tokens: 1000 },
       })
 
-      if (fnError) {
-        // Intentamos extraer el mensaje de error del body si es posible
-        let errorMsg = fnError.message || 'Error en la función'
-        try {
-          // Supabase FunctionsHttpError suele tener el texto del body
-          const resp = await fnError.context?.json()
-          if (resp?.error) errorMsg = resp.error
-        } catch { /* ignore */ }
-        throw new Error(errorMsg)
-      }
-
+      if (fnError) throw new Error(fnError.message || 'Error en la función')
       if (!data?.text) throw new Error('El asistente no devolvió una respuesta válida.')
 
       setMensajes(prev => [...prev, { rol: 'asistente', contenido: data.text }])
     } catch (err) {
-      const msg = err.message || ''
       console.error('Error en Chat:', err)
-      
-      if (msg.includes('429') || msg.includes('quota') || msg.includes('limit')) {
-        setError('El asistente alcanzó su límite de mensajes gratuitos. Esperá un minuto e intentá de nuevo. ⏳')
-      } else if (msg.includes('401') || msg.includes('autorizado')) {
-        setError('Tu sesión expiró o no tenés permiso. Recargá la página. 🔒')
-      } else if (msg.includes('404')) {
-        setError('No se encontró el servicio de IA. Avisale al administrador. 🛠️')
-      } else {
-        // Mostramos el mensaje real si existe, sino el genérico
-        setError(msg.length > 5 && msg.length < 100 ? msg : 'Hubo un problema al conectar con el asistente. Intentá de nuevo.')
-      }
+      setError('Hubo un problema al conectar con el asistente. Intentá de nuevo.')
     } finally {
       setCargando(false)
       setTimeout(() => inputRef.current?.focus(), 100)
@@ -210,46 +174,39 @@ export function ChatPage() {
 
   return (
     <>
-      <Sidebar usuario={usuario} />
-      <BottomNav />
-
-      {/* Usamos layout custom para que el chat ocupe toda la altura disponible */}
-      <div className="min-h-screen bg-[var(--cream-soft)] dark:bg-zinc-950 md:pl-[88px] flex flex-col">
+      <div className="min-h-screen bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] flex flex-col">
         
-        {/* Header */}
-        <header className="sticky top-0 z-30 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg
-          border-b border-zinc-100 dark:border-zinc-800 px-4 py-3 flex items-center justify-between">
+        {/* Header Específico del Chat con Menú Hamburguesa */}
+        <header className="sticky top-0 z-30 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg border-b border-zinc-100 dark:border-zinc-800 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-[var(--mango)]/15 dark:bg-[var(--mango)]/10 rounded-2xl flex items-center justify-center text-lg">
-              🥭
-            </div>
+            <div className="w-9 h-9 bg-[var(--mango)]/15 dark:bg-[var(--mango)]/10 rounded-2xl flex items-center justify-center text-lg">🥭</div>
             <div>
               <p className="text-sm font-semibold">ManguitoAI</p>
               <p className="text-xs text-zinc-400">Asistente financiero</p>
             </div>
           </div>
-          <button onClick={limpiarChat}
-            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300
-              px-3 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-            🗑 Limpiar
-          </button>
+          
+          <div className="flex items-center gap-1">
+            <button onClick={limpiarChat} className="text-xs text-zinc-500 font-medium px-3 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+              Limpiar
+            </button>
+            <button onClick={() => setMenuAbierto(true)} className="p-2 -mr-2 text-zinc-700 dark:text-zinc-300 active:scale-95 transition-transform">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
+          </div>
         </header>
 
         {/* Área de mensajes */}
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <div className="max-w-2xl mx-auto flex flex-col gap-4">
-            {mensajes.map((msg, i) => (
-              <Burbuja key={i} mensaje={msg} />
-            ))}
-
-            {/* Indicador de escritura */}
+            {mensajes.map((msg, i) => <Burbuja key={i} mensaje={msg} />)}
+            
             {cargando && (
               <div className="flex gap-3">
-                <div className="w-8 h-8 flex-shrink-0 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-base">
-                  🥭
-                </div>
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800
-                  rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
+                <div className="w-8 h-8 flex-shrink-0 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-base">🥭</div>
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                   <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -257,76 +214,80 @@ export function ChatPage() {
               </div>
             )}
 
-            {/* Error */}
             {error && (
               <div className="text-center">
-                <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-4 py-2
-                  border border-red-100 dark:border-red-900 inline-block">{error}</p>
+                <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 rounded-xl px-4 py-2 border border-red-100 dark:border-red-900 inline-block">{error}</p>
               </div>
             )}
 
-            {/* Sugerencias — solo cuando el chat está limpio */}
             {mensajes.length === 1 && !cargando && (
               <div className="mt-4">
                 <p className="text-xs text-zinc-400 text-center mb-3">Algunas preguntas para empezar</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {SUGERENCIAS.map(s => (
-                    <button key={s} onClick={() => enviar(null, s)}
-                      className="text-left text-xs px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700
-                        bg-white dark:bg-zinc-900 hover:border-[var(--mango)] hover:bg-[var(--cream)] dark:hover:bg-[var(--mango)]/10
-                        text-zinc-600 dark:text-zinc-400 hover:text-[var(--mango-dark)] dark:hover:text-[var(--mango)]
-                        transition-all">
+                    <button key={s} onClick={() => enviar(null, s)} className="text-left text-xs px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-[var(--mango)] hover:bg-[var(--cream)] text-zinc-600 dark:text-zinc-400 transition-all">
                       {s}
                     </button>
                   ))}
                 </div>
               </div>
             )}
-
             <div ref={finRef} />
           </div>
         </div>
 
-        {/* Input fijo en el fondo */}
-        <div className="sticky bottom-0 border-t border-zinc-100 dark:border-zinc-800
-          bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg px-4 py-3 pb-safe">
-          <form onSubmit={enviar}
-            className="max-w-2xl mx-auto flex gap-2 items-end mb-16 md:mb-0">
+        {/* Input de texto */}
+        <div className="sticky bottom-0 border-t border-zinc-100 dark:border-zinc-800 bg-white/90 dark:bg-[var(--dark-bg)]/90 backdrop-blur-lg px-4 py-3 pb-safe">
+          <form onSubmit={enviar} className="max-w-2xl mx-auto flex gap-2 items-end">
             <textarea
               ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar() }
-              }}
-              placeholder="Preguntá sobre economía, inversiones o mercados..."
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar() } }}
+              placeholder="Preguntá sobre economía o inversiones..."
               rows={1}
               disabled={cargando}
-              className="flex-1 resize-none bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700
-                rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[var(--mango)]/40
-                dark:focus:ring-[var(--mango)]/30 transition-shadow text-zinc-900 dark:text-white
-                placeholder:text-zinc-400 dark:placeholder:text-zinc-500 max-h-32 overflow-y-auto
-                disabled:opacity-50"
+              className="flex-1 resize-none bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[var(--mango)]/40 text-zinc-900 dark:text-white placeholder:text-zinc-400 max-h-32 overflow-y-auto disabled:opacity-50"
               style={{ fieldSizing: 'content' }}
             />
-            <button type="submit" disabled={cargando || !input.trim()}
-              className="w-11 h-11 flex-shrink-0 rounded-2xl bg-[var(--mango)] hover:bg-[var(--mango-dark)]
-                text-[var(--charcoal)] flex items-center justify-center transition-all active:scale-95 cursor-pointer
-                disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 shadow-sm shadow-[var(--mango)]/30">
-              {cargando
-                ? <Spinner size={16} />
-                : <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-              }
+            <button type="submit" disabled={cargando || !input.trim()} className="w-11 h-11 flex-shrink-0 rounded-2xl bg-[var(--mango)] text-[var(--charcoal)] flex items-center justify-center active:scale-95 disabled:opacity-40 shadow-sm">
+              {cargando ? <Spinner size={16} /> : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                  <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
             </button>
           </form>
-          <p className="max-w-2xl mx-auto text-[10px] text-zinc-400 text-center mt-1">
-            No es asesoramiento financiero profesional. Consultá con un experto antes de invertir.
-          </p>
         </div>
       </div>
+
+      {/* Drawer del Menú Hamburguesa */}
+      {menuAbierto && (
+        <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMenuAbierto(false)} />
+          <div className="relative w-64 h-full bg-white dark:bg-[var(--dark-bg)] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-4 flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800">
+              <span className="font-bold text-lg">Menú</span>
+              <button onClick={() => setMenuAbierto(false)} className="p-2 bg-zinc-100 dark:bg-zinc-800 rounded-full">✕</button>
+            </div>
+            <nav className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+              {menuItems.map(item => (
+                <Link key={item.path} to={item.path} onClick={() => setMenuAbierto(false)}
+                  className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${location.pathname === item.path ? 'bg-[var(--mango)]/10 text-[var(--mango-dark)] font-bold' : 'text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50'}`}>
+                  <span className="text-xl">{item.icono}</span>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="p-4 border-t border-zinc-100 dark:border-zinc-800">
+              <button onClick={toggleTheme} className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 text-sm font-semibold">
+                Cambiar Modo (Día/Noche)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

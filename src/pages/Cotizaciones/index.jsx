@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
-import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout'
+import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, CardHeader, Button } from '../../components/ui'
 
 // ─── Iconos y colores por tipo de dólar ─────────────────────
@@ -376,9 +376,7 @@ export function CotizacionesPage() {
   const { dolares, cotizaciones, cargando, error, recargar } = useDolarAPI()
 
   return (
-    <>
-      <Sidebar usuario={usuario} />
-      <BottomNav />
+    <div className="animate-in fade-in duration-500">
       <PageWrapper>
         <PageHeader 
           titulo="Cotizaciones" 
@@ -434,6 +432,6 @@ export function CotizacionesPage() {
           Fuente: DolarAPI.com · Cotizaciones referenciales, no transaccionales.
         </p>
       </PageWrapper>
-    </>
+    </div>
   )
 }

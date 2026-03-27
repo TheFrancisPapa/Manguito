@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { useMetas } from '../../hooks/useMetas'
-import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout'
+import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, Button, EmptyState, Modal, Input, ModalUpgrade } from '../../components/ui'
 import { BarraMeta } from '../../components/charts'
 
@@ -61,8 +61,6 @@ export function MetasPage() {
 
   return (
     <div className="animate-in fade-in duration-500">
-      <Sidebar usuario={usuario} />
-      <BottomNav />
       <PageWrapper>
         <PageHeader
           titulo="Mis Metas"

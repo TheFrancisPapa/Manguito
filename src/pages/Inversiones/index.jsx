@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { useInversiones } from '../../hooks/useInversiones'
-import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout'
+import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, CardHeader, Button, EmptyState, Modal } from '../../components/ui'
 import { FormInversion } from '../../components/forms/FormInversion'
 import { FormVenta } from '../../components/forms/FormVenta'
@@ -325,9 +325,6 @@ export function InversionesPage() {
 
   return (
     <div className="animate-in fade-in duration-500">
-      <Sidebar usuario={usuario} />
-      <BottomNav />
-
       <PageWrapper>
         <PageHeader
           titulo="Inversiones"

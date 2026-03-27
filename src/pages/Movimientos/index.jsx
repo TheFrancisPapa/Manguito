@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { useMovimientos } from '../../hooks/useMovimientos'
-import { PageWrapper, PageHeader, Sidebar, BottomNav, MovCard } from '../../components/layout'
+import { PageWrapper, PageHeader, MovCard } from '../../components/layout'
 import { Card, Button, EmptyState, EMPTY_STATES, Modal } from '../../components/ui'
 import { FormMovimiento } from '../../components/forms/FormMovimiento'
 import { formatMoneda } from '../../lib/utils'
@@ -60,8 +60,6 @@ export function MovimientosPage() {
 
   return (
     <div className="animate-in fade-in duration-500">
-      <Sidebar usuario={usuario} />
-      <BottomNav />
       <PageWrapper>
         <PageHeader
           titulo="Movimientos"

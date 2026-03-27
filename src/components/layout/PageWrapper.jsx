@@ -11,7 +11,6 @@ export function PageWrapper({ children, className = '' }) {
           bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)]
           px-4 pt-5
           pb-24 md:pb-8
-          md:pl-[88px]
           ${className}
         `}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}

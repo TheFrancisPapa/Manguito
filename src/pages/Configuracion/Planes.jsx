@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout'
+import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, Button } from '../../components/ui'
 import { useAuthContext } from '../../context/AuthContext'
 import { iniciarPago } from '../../lib/pagos'
@@ -24,9 +24,6 @@ export function PlanesPage() {
 
   return (
     <div className="animate-in fade-in duration-700">
-      <Sidebar usuario={usuario} />
-      <BottomNav />
-
       <PageWrapper>
         <div className="text-center mb-12">
           <h1 className="text-3xl lg:text-4xl font-extrabold text-[var(--charcoal)] dark:text-white mb-3">

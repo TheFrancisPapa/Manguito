@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { usePresupuestos } from '../../hooks/usePresupuestos'
 import { useCategorias } from '../../hooks/useCategorias'
-import { PageWrapper, PageHeader, Sidebar, BottomNav, PresupCard } from '../../components/layout'
+import { PageWrapper, PageHeader, PresupCard } from '../../components/layout'
 import { Card, Button, EmptyState, Modal, Input, Select, EMPTY_STATES, ModalUpgrade } from '../../components/ui'
 
 // ─── Formulario para crear / editar ─────────────────────────
@@ -147,8 +147,6 @@ export function PresupuestosPage() {
 
   return (
     <div className="animate-in fade-in duration-500">
-      <Sidebar usuario={usuario} />
-      <BottomNav />
       <PageWrapper>
         <PageHeader
           titulo="Mis Presupuestos"
