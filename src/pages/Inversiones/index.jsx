@@ -4,6 +4,7 @@ import { useInversiones } from '../../hooks/useInversiones'
 import { CRYPTOS_POPULARES } from '../../api/inversiones'
 import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout'
 import { Card, CardHeader, Button, EmptyState, Modal, Input } from '../../components/ui'
+import { fetchSymbolInfoConFecha } from '../../api/inversiones'
 
 // ── Formateo ────────────────────────────────────────────────
 const fmt = (n, dec = 2) =>

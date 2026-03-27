@@ -43,40 +43,40 @@ export async function borrarInversion(id) {
 //  Mapeo de símbolos cripto → IDs de CoinGecko
 // ──────────────────────────────────────────────
 export const CRYPTO_GECKO_IDS = {
-  BTC: 'bitcoin',
-  ETH: 'ethereum',
-  SOL: 'solana',
+  BTC:  'bitcoin',
+  ETH:  'ethereum',
+  SOL:  'solana',
   USDT: 'tether',
   USDC: 'usd-coin',
-  BNB: 'binancecoin',
-  ADA: 'cardano',
+  BNB:  'binancecoin',
+  ADA:  'cardano',
   DOGE: 'dogecoin',
   AVAX: 'avalanche-2',
-  DOT: 'polkadot',
-  MATIC: 'matic-network',
+  DOT:  'polkadot',
+  MATIC:'matic-network',
   LINK: 'chainlink',
-  UNI: 'uniswap',
+  UNI:  'uniswap',
   ATOM: 'cosmos',
-  XRP: 'ripple',
+  XRP:  'ripple',
   SHIB: 'shiba-inu',
-  LTC: 'litecoin',
-  BCH: 'bitcoin-cash',
+  LTC:  'litecoin',
+  BCH:  'bitcoin-cash',
   NEAR: 'near',
-  ARB: 'arbitrum',
+  ARB:  'arbitrum',
 }
 
 // Lista para el selector de cripto
 export const CRYPTOS_POPULARES = [
-  { simbolo: 'BTC',  nombre: 'Bitcoin',  icono: '₿' },
-  { simbolo: 'ETH',  nombre: 'Ethereum', icono: 'Ξ' },
-  { simbolo: 'SOL',  nombre: 'Solana',   icono: '◎' },
-  { simbolo: 'USDT', nombre: 'Tether',   icono: '💲' },
-  { simbolo: 'BNB',  nombre: 'BNB',      icono: '⬡' },
-  { simbolo: 'ADA',  nombre: 'Cardano',  icono: '₳' },
-  { simbolo: 'DOGE', nombre: 'Dogecoin', icono: '🐕' },
-  { simbolo: 'AVAX', nombre: 'Avalanche',icono: '🔺' },
-  { simbolo: 'XRP',  nombre: 'XRP',      icono: '✕' },
-  { simbolo: 'MATIC',nombre: 'Polygon',  icono: '⬡' },
+  { simbolo: 'BTC',  nombre: 'Bitcoin',   icono: '₿'  },
+  { simbolo: 'ETH',  nombre: 'Ethereum',  icono: 'Ξ'  },
+  { simbolo: 'SOL',  nombre: 'Solana',    icono: '◎'  },
+  { simbolo: 'USDT', nombre: 'Tether',    icono: '💲' },
+  { simbolo: 'BNB',  nombre: 'BNB',       icono: '⬡'  },
+  { simbolo: 'ADA',  nombre: 'Cardano',   icono: '₳'  },
+  { simbolo: 'DOGE', nombre: 'Dogecoin',  icono: '🐕' },
+  { simbolo: 'AVAX', nombre: 'Avalanche', icono: '🔺' },
+  { simbolo: 'XRP',  nombre: 'XRP',       icono: '✕'  },
+  { simbolo: 'MATIC',nombre: 'Polygon',   icono: '⬡'  },
 ]
 
 // ──────────────────────────────────────────────
@@ -90,8 +90,8 @@ export const CRYPTOS_POPULARES = [
  * Retorna un mapa { SIMBOLO: { currentPrice, changePercent, currency, ... } }
  */
 export async function fetchPrecios(inversiones) {
-  const precios = {}
-  const promesas = []
+  const precios   = {}
+  const promesas  = []
 
   // ── Cripto via CoinGecko ──────────────────
   const cryptos = inversiones.filter(i => i.tipo === 'crypto' && i.simbolo)
@@ -104,7 +104,7 @@ export async function fetchPrecios(inversiones) {
     if (uniqueIds.length > 0) {
       promesas.push(
         fetch(
-          `https://api.coingecko.com/api/v3/simple/price?ids=${uniqueIds.join(',')}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true`
+          `https://api.coingecko.com/api/v3/simple/price?ids=${uniqueIds.join(',')}&vs_currencies=usd&include_24hr_change=true`
         )
           .then(r => r.json())
           .then(data => {
@@ -114,10 +114,10 @@ export async function fetchPrecios(inversiones) {
                 precios[inv.simbolo.toUpperCase()] = {
                   currentPrice:  data[geckoId].usd,
                   changePercent: data[geckoId].usd_24h_change ?? 0,
-                  change: 0, // no disponible directamente
-                  currency: 'USD',
-                  shortName: inv.nombre,
-                  source: 'coingecko',
+                  change:        0,
+                  currency:      'USD',
+                  shortName:     inv.nombre,
+                  source:        'coingecko',
                 }
               }
             })
@@ -128,9 +128,7 @@ export async function fetchPrecios(inversiones) {
   }
 
   // ── Acciones y CEDEARs via proxy Yahoo Finance ──
-  const stocks = inversiones.filter(
-    i => ['accion', 'cedear'].includes(i.tipo) && i.simbolo
-  )
+  const stocks      = inversiones.filter(i => ['accion', 'cedear'].includes(i.tipo) && i.simbolo)
   const symbolsUnicos = [...new Set(stocks.map(i => i.simbolo.toUpperCase()))]
 
   symbolsUnicos.forEach(symbol => {
@@ -169,6 +167,101 @@ export async function fetchDolarRate() {
 }
 
 // ──────────────────────────────────────────────
+//  Auto-detección de símbolo con precio histórico
+// ──────────────────────────────────────────────
+
+/**
+ * Dada un símbolo, tipo de activo y fecha de compra, devuelve:
+ * - nombre del activo
+ * - símbolo normalizado (ej: agrega .BA para CEDEARs)
+ * - precio de CIERRE en la fecha indicada (o el día hábil más cercano anterior)
+ * - moneda del precio (USD para acciones/cripto, ARS para CEDEARs)
+ *
+ * @param {string} simbolo  Ticker del activo (ej: "AAPL", "BTC", "SPY")
+ * @param {string} tipo     Tipo: 'accion' | 'cedear' | 'crypto'
+ * @param {string} fecha    Fecha en formato YYYY-MM-DD
+ * @returns {Promise<{nombre, simboloFinal, precio, moneda, exchange, isHistorical, actualDate, fuente}>}
+ */
+export async function fetchSymbolInfoConFecha(simbolo, tipo, fecha) {
+  if (!simbolo?.trim() || !tipo || !fecha) return null
+
+  // ── Cripto via CoinGecko historical ──────────────────────────
+  if (tipo === 'crypto') {
+    const simboloUp = simbolo.toUpperCase().trim()
+    const geckoId   = CRYPTO_GECKO_IDS[simboloUp]
+
+    if (!geckoId) {
+      throw new Error(`"${simboloUp}" no está en la lista de criptos soportadas.`)
+    }
+
+    // CoinGecko history espera fecha en DD-MM-YYYY
+    const [anio, mes, dia] = fecha.split('-')
+    const fechaCoinGecko   = `${dia}-${mes}-${anio}`
+
+    const res = await fetch(
+      `https://api.coingecko.com/api/v3/coins/${geckoId}/history?date=${fechaCoinGecko}&localization=false`,
+      { headers: { 'Accept': 'application/json' } }
+    )
+
+    if (!res.ok) {
+      throw new Error(`CoinGecko respondió con error ${res.status}`)
+    }
+
+    const data = await res.json()
+
+    if (!data.market_data?.current_price?.usd) {
+      throw new Error(`No hay datos de precio para el ${dia}/${mes}/${anio}. Probá otra fecha.`)
+    }
+
+    return {
+      nombre:       data.name,
+      simboloFinal: simboloUp,
+      precio:       data.market_data.current_price.usd,
+      moneda:       'USD',
+      isHistorical: true,
+      actualDate:   fecha,
+      fuente:       'coingecko',
+    }
+  }
+
+  // ── Acciones y CEDEARs via proxy Yahoo Finance ────────────────
+  let simboloYahoo = simbolo.toUpperCase().trim()
+
+  // Para CEDEARs: si el usuario no escribió .BA, lo agregamos automáticamente
+  if (tipo === 'cedear' && !simboloYahoo.includes('.')) {
+    simboloYahoo = simboloYahoo + '.BA'
+  }
+
+  const params = new URLSearchParams({ symbol: simboloYahoo, date: fecha })
+  const res    = await fetch(`/api/cotizacion?${params.toString()}`)
+
+  if (!res.ok) {
+    throw new Error(`Error ${res.status} al consultar Yahoo Finance`)
+  }
+
+  const data = await res.json()
+
+  if (data.error) {
+    throw new Error(data.error)
+  }
+
+  if (data.currentPrice == null || data.currentPrice === 0) {
+    throw new Error(`Sin datos de precio para ${simboloYahoo} en esa fecha`)
+  }
+
+  return {
+    nombre:       data.shortName || data.symbol,
+    simboloFinal: data.symbol    || simboloYahoo,
+    precio:       data.currentPrice,
+    moneda:       data.currency  || 'USD',   // ARS para .BA, USD para el resto
+    exchange:     data.exchange  || '',
+    isHistorical: data.isHistorical ?? true,
+    actualDate:   data.actualDate   || fecha,
+    fuente:       'yahoo',
+  }
+}
+
+// ──────────────────────────────────────────────
 //  Cálculo del portfolio
 // ──────────────────────────────────────────────
 
@@ -181,10 +274,10 @@ export function calcularPortfolio(inversiones, cotizaciones, dolarBlue) {
 
   let totalValorARS = 0
   let totalCostoARS = 0
-  const detalles = []
+  const detalles    = []
 
   inversiones.forEach(inv => {
-    const cot = cotizaciones[inv.simbolo?.toUpperCase()]
+    const cot            = cotizaciones[inv.simbolo?.toUpperCase()]
     const precioActualUSD = cot?.currentPrice ?? null
 
     // Costo de compra convertido a ARS
@@ -192,29 +285,27 @@ export function calcularPortfolio(inversiones, cotizaciones, dolarBlue) {
     if (inv.moneda_compra === 'ARS') {
       costoUnitarioARS = inv.precio_compra
     } else {
-      // Simplificamos: usamos el dólar blue actual para la conversión
       costoUnitarioARS = inv.precio_compra * dolarVenta
     }
     const costoTotalARS = inv.cantidad * costoUnitarioARS
 
     // Valor actual en ARS
-    let valorActualARS = null
-    let valorActualUSD = null
-    let gananciaUSD = null
-    let gananciaPct = null
+    let valorActualARS  = null
+    let valorActualUSD  = null
+    let gananciaUSD     = null
+    let gananciaPct     = null
 
     if (precioActualUSD !== null) {
       valorActualUSD = inv.cantidad * precioActualUSD
       valorActualARS = valorActualUSD * dolarVenta
 
-      gananciaUSD = valorActualUSD - inv.cantidad * (
-        inv.moneda_compra === 'ARS'
-          ? inv.precio_compra / dolarVenta
-          : inv.precio_compra
-      )
-      gananciaPct = inv.precio_compra > 0
-        ? ((precioActualUSD - (inv.moneda_compra === 'ARS' ? inv.precio_compra / dolarVenta : inv.precio_compra))
-            / (inv.moneda_compra === 'ARS' ? inv.precio_compra / dolarVenta : inv.precio_compra)) * 100
+      const precioCompraUSD = inv.moneda_compra === 'ARS'
+        ? inv.precio_compra / dolarVenta
+        : inv.precio_compra
+
+      gananciaUSD = valorActualUSD - inv.cantidad * precioCompraUSD
+      gananciaPct = precioCompraUSD > 0
+        ? ((precioActualUSD - precioCompraUSD) / precioCompraUSD) * 100
         : null
 
       totalValorARS += valorActualARS
@@ -233,7 +324,7 @@ export function calcularPortfolio(inversiones, cotizaciones, dolarBlue) {
     })
   })
 
-  const gananciaARS   = totalValorARS - totalCostoARS
+  const gananciaARS      = totalValorARS - totalCostoARS
   const gananciaTotalPct = totalCostoARS > 0 ? (gananciaARS / totalCostoARS) * 100 : 0
 
   return {
