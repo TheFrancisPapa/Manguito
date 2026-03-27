@@ -3,9 +3,11 @@ import {
   getInversiones, crearInversion, editarInversion, borrarInversion,
   fetchPrecios, fetchDolarRate, calcularPortfolio,
 } from '../api/inversiones'
+import { getVentas, crearVenta, borrarVenta } from '../api/ventas'
 
 export function useInversiones() {
   const [inversiones,      setInversiones]      = useState([])
+  const [ventas,           setVentas]           = useState([])
   const [cotizaciones,     setCotizaciones]     = useState({})
   const [dolarRate,        setDolarRate]        = useState(null)
   const [portfolio,        setPortfolio]        = useState(null)
@@ -18,8 +20,12 @@ export function useInversiones() {
     try {
       setCargando(true)
       setError(null)
-      const data = await getInversiones()
+      const [data, ventasData] = await Promise.all([
+        getInversiones(),
+        getVentas(),
+      ])
       setInversiones(data)
+      setVentas(ventasData)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -56,13 +62,12 @@ export function useInversiones() {
     if (inversiones.length > 0) {
       actualizarPrecios(inversiones)
     } else if (!cargando) {
-      // No hay inversiones, igual buscamos el dólar para el portfolio vacío
       fetchDolarRate().then(setDolarRate).catch(console.error)
       setPortfolio(calcularPortfolio([], {}, null))
     }
   }, [inversiones, cargando, actualizarPrecios])
 
-  // ── CRUD ─────────────────────────────────────
+  // ── CRUD inversiones ─────────────────────────
   const crear = async (datos, usuario_id) => {
     if (!usuario_id) throw new Error('No se encontró sesión de usuario')
     const nueva = await crearInversion({ ...datos, usuario_id })
@@ -91,18 +96,59 @@ export function useInversiones() {
     }
   }
 
+  // ── CRUD ventas ──────────────────────────────
+  const registrarVenta = async (datos, usuario_id) => {
+    if (!usuario_id) throw new Error('No se encontró sesión de usuario')
+    const venta = await crearVenta({ ...datos, usuario_id })
+    setVentas(prev => [venta, ...prev])
+
+    // Si la venta viene de una inversión existente,
+    // descontamos la cantidad o la eliminamos si vendió todo
+    if (datos.inversion_id) {
+      const inv = inversiones.find(i => i.id === datos.inversion_id)
+      if (inv) {
+        const cantidadRestante = Number(inv.cantidad) - Number(datos.cantidad)
+        if (cantidadRestante <= 0.00000001) {
+          // Vendió todo: eliminamos la inversión
+          await borrarInversion(datos.inversion_id)
+          const nuevaLista = inversiones.filter(i => i.id !== datos.inversion_id)
+          setInversiones(nuevaLista)
+          setPortfolio(calcularPortfolio(nuevaLista, cotizaciones, dolarRate))
+        } else {
+          // Venta parcial: actualizamos la cantidad
+          const actualizada = await editarInversion(datos.inversion_id, {
+            cantidad: cantidadRestante,
+          })
+          const nuevaLista = inversiones.map(i => i.id === datos.inversion_id ? actualizada : i)
+          setInversiones(nuevaLista)
+          actualizarPrecios(nuevaLista)
+        }
+      }
+    }
+
+    return venta
+  }
+
+  const eliminarVenta = async (id) => {
+    await borrarVenta(id)
+    setVentas(prev => prev.filter(v => v.id !== id))
+  }
+
   return {
     inversiones,
+    ventas,
     cotizaciones,
     dolarRate,
     portfolio,
     cargando,
     cargandoPrecios,
     error,
-    recargar:        cargar,
+    recargar:         cargar,
     refrescarPrecios: () => actualizarPrecios(inversiones),
     crear,
     editar,
     borrar,
+    registrarVenta,
+    eliminarVenta,
   }
 }

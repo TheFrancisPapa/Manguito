@@ -4,6 +4,7 @@ import { useInversiones } from '../../hooks/useInversiones'
 import { PageWrapper, PageHeader, Sidebar, BottomNav } from '../../components/layout'
 import { Card, CardHeader, Button, EmptyState, Modal } from '../../components/ui'
 import { FormInversion } from '../../components/forms/FormInversion'
+import { FormVenta } from '../../components/forms/FormVenta'
 
 // ── Formateo ────────────────────────────────────────────────
 const fmt = (n, dec = 2) =>
@@ -12,31 +13,30 @@ const fmt = (n, dec = 2) =>
 const fmtARS = (n) => n == null ? '—' : `$\u00A0${fmt(n, 0)}`
 const fmtUSD = (n) => n == null ? '—' : `U$D\u00A0${fmt(n, 2)}`
 
-// ── Tipos de activo con metadatos ───────────────────────────
 const TIPOS = {
-  accion:  { label: 'Acción',   icono: '📈', color: '#3B82F6', hint: 'Ej: AAPL, TSLA, MSFT' },
-  cedear:  { label: 'CEDEAR',   icono: '🇦🇷', color: '#8B5CF6', hint: 'Ej: AAPL.BA, GOOGL.BA' },
-  crypto:  { label: 'Cripto',   icono: '₿',  color: '#F59E0B', hint: 'Seleccioná de la lista' },
-  fci:     { label: 'FCI',      icono: '🏦', color: '#10B981', hint: 'Ingresá el nombre del fondo' },
-  otro:    { label: 'Otro',     icono: '💼', color: '#6B7280', hint: 'Inmueble, oro, plazo fijo, etc.' },
+  accion:  { label: 'Acción',   icono: '📈', color: '#3B82F6' },
+  cedear:  { label: 'CEDEAR',   icono: '🇦🇷', color: '#8B5CF6' },
+  crypto:  { label: 'Cripto',   icono: '₿',  color: '#F59E0B' },
+  fci:     { label: 'FCI',      icono: '🏦', color: '#10B981' },
+  otro:    { label: 'Otro',     icono: '💼', color: '#6B7280' },
 }
 
-// ── Badge de variación ───────────────────────────────────────
-function BadgeVariacion({ pct, size = 'sm' }) {
+function BadgeVariacion({ pct }) {
   if (pct == null) return <span className="text-xs text-zinc-400">—</span>
   const positivo = pct >= 0
-  const cls = positivo
-    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
-    : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
   return (
-    <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold ${cls}`}>
+    <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-bold ${
+      positivo
+        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'
+        : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+    }`}>
       {positivo ? '▲' : '▼'} {Math.abs(pct).toFixed(2)}%
     </span>
   )
 }
 
 // ── Tarjeta de inversión individual ─────────────────────────
-function TarjetaInversion({ detalle, onEliminar }) {
+function TarjetaInversion({ detalle, onEliminar, onVender }) {
   const tipo = TIPOS[detalle.tipo] || TIPOS.otro
   const cot  = detalle.cotizacion
   const tienePrecios = detalle.precioActualUSD != null
@@ -81,7 +81,7 @@ function TarjetaInversion({ detalle, onEliminar }) {
         </div>
       </div>
 
-      {/* Fila inferior: holdings */}
+      {/* Fila de holdings */}
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-2.5">
           <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mb-0.5">Mi posición</p>
@@ -103,7 +103,11 @@ function TarjetaInversion({ detalle, onEliminar }) {
           <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mb-0.5">Ganancia</p>
           {detalle.gananciaUSD != null ? (
             <>
-              <p className={`text-sm font-bold ${detalle.gananciaUSD >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+              <p className={`text-sm font-bold ${
+                detalle.gananciaUSD >= 0
+                  ? 'text-emerald-700 dark:text-emerald-400'
+                  : 'text-red-600 dark:text-red-400'
+              }`}>
                 {detalle.gananciaUSD >= 0 ? '+' : ''}{fmtUSD(detalle.gananciaUSD)}
               </p>
               <BadgeVariacion pct={detalle.gananciaPct} />
@@ -114,18 +118,39 @@ function TarjetaInversion({ detalle, onEliminar }) {
         </div>
       </div>
 
-      {/* Detalles compra */}
-      <div className="flex items-center justify-between text-xs text-zinc-400 border-t border-zinc-100 dark:border-zinc-800 pt-2.5">
-        <span>
-          {detalle.cantidad % 1 === 0 ? detalle.cantidad : detalle.cantidad.toFixed(4)} unidades
+      {/* Pie: detalles + acciones */}
+      <div className="flex items-center justify-between text-xs text-zinc-400 border-t border-zinc-100 dark:border-zinc-800 pt-2.5 gap-2">
+        <span className="truncate">
+          {detalle.cantidad % 1 === 0 ? detalle.cantidad : detalle.cantidad.toFixed(4)} uds
           · Compré a {fmtUSD(detalle.precio_compra)}
         </span>
-        <div className="flex items-center gap-2">
-          <span>{new Date(detalle.fecha_compra + 'T00:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: '2-digit' })}</span>
+
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-zinc-300 dark:text-zinc-700">
+            {new Date(detalle.fecha_compra + 'T00:00:00').toLocaleDateString('es-AR', {
+              day: 'numeric', month: 'short', year: '2-digit',
+            })}
+          </span>
+
+          {/* Botón Vender — visible siempre en mobile, hover en desktop */}
+          <button
+            onClick={() => onVender(detalle)}
+            title="Registrar venta"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold
+              bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400
+              border border-red-200 dark:border-red-800/50
+              hover:bg-red-100 dark:hover:bg-red-900/40
+              transition-colors md:opacity-0 md:group-hover:opacity-100"
+          >
+            📉 Vender
+          </button>
+
+          {/* Botón Eliminar */}
           <button
             onClick={() => onEliminar(detalle)}
-            className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-300 hover:text-red-500 p-0.5"
-            title="Eliminar">
+            className="p-1 text-zinc-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+            title="Eliminar inversión"
+          >
             🗑️
           </button>
         </div>
@@ -134,6 +159,73 @@ function TarjetaInversion({ detalle, onEliminar }) {
   )
 }
 
+// ── Historial de ventas ──────────────────────────────────────
+function HistorialVentas({ ventas, onEliminar }) {
+  const [expandido, setExpandido] = useState(false)
+  if (!ventas || ventas.length === 0) return null
+
+  const visibles = expandido ? ventas : ventas.slice(0, 3)
+
+  return (
+    <Card className="mb-5">
+      <CardHeader
+        titulo="Historial de ventas"
+        subtitulo={`${ventas.length} operación${ventas.length !== 1 ? 'es' : ''} cerrada${ventas.length !== 1 ? 's' : ''}`}
+      />
+      <div className="flex flex-col gap-3 mt-2">
+        {visibles.map(v => {
+          const precioVenta = v.moneda_venta === 'ARS'
+            ? `$${Number(v.precio_venta).toLocaleString('es-AR', { maximumFractionDigits: 2 })}`
+            : `U$D ${Number(v.precio_venta).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
+
+          const tipo = TIPOS[v.tipo] || TIPOS.otro
+          const fechaFmt = new Date(v.fecha_venta + 'T00:00:00').toLocaleDateString('es-AR', {
+            day: 'numeric', month: 'short', year: '2-digit',
+          })
+
+          return (
+            <div key={v.id}
+              className="flex items-center gap-3 py-2.5 px-1 border-b border-zinc-100 dark:border-zinc-800 last:border-0 group">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+                style={{ background: tipo.color + '18' }}>
+                {v.icono || tipo.icono}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate">
+                  {v.nombre}
+                  {v.simbolo && <span className="text-zinc-400 font-normal ml-1">({v.simbolo})</span>}
+                </p>
+                <p className="text-xs text-zinc-400">
+                  {Number(v.cantidad) % 1 === 0 ? v.cantidad : Number(v.cantidad).toFixed(4)} uds
+                  · {fechaFmt}
+                </p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{precioVenta}/u</p>
+                <p className="text-xs text-zinc-400">por unidad</p>
+              </div>
+              <button
+                onClick={() => onEliminar(v.id)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-300 hover:text-red-500 ml-1 p-0.5"
+                title="Eliminar registro"
+              >
+                🗑️
+              </button>
+            </div>
+          )
+        })}
+      </div>
+      {ventas.length > 3 && (
+        <button
+          onClick={() => setExpandido(e => !e)}
+          className="w-full text-center text-xs font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800 transition-colors"
+        >
+          {expandido ? 'Ver menos ▲' : `Ver ${ventas.length - 3} más ▼`}
+        </button>
+      )}
+    </Card>
+  )
+}
 
 // ── Resumen del portfolio ────────────────────────────────────
 function ResumenPortfolio({ portfolio, dolarRate, cargandoPrecios }) {
@@ -195,14 +287,17 @@ function ResumenPortfolio({ portfolio, dolarRate, cargandoPrecios }) {
 
 // ── Página principal ─────────────────────────────────────────
 export function InversionesPage() {
-  const { usuario }     = useAuthContext()
+  const { usuario } = useAuthContext()
   const {
-    inversiones, cotizaciones, dolarRate, portfolio,
+    inversiones, ventas, cotizaciones, dolarRate, portfolio,
     cargando, cargandoPrecios,
-    crear, borrar, refrescarPrecios,
+    crear, borrar, registrarVenta, eliminarVenta, refrescarPrecios,
   } = useInversiones()
 
-  const [modalNuevo, setModalNuevo] = useState(false)
+  const [modalNuevo,  setModalNuevo]  = useState(false)
+  const [modalVenta,  setModalVenta]  = useState(false)
+  // Inversión preseleccionada al abrir el modal de venta desde una tarjeta
+  const [invParaVender, setInvParaVender] = useState(null)
 
   const handleEliminar = async (detalle) => {
     if (window.confirm(`¿Eliminás ${detalle.nombre} de tu cartera?`)) {
@@ -210,10 +305,22 @@ export function InversionesPage() {
     }
   }
 
-  const handleGuardar = async (datos) => {
+  const handleAbrirVenta = (detalle = null) => {
+    setInvParaVender(detalle)
+    setModalVenta(true)
+  }
+
+  const handleGuardarInversion = async (datos) => {
     if (!usuario?.id) return
     await crear(datos, usuario.id)
     setModalNuevo(false)
+  }
+
+  const handleGuardarVenta = async (datos) => {
+    if (!usuario?.id) return
+    await registrarVenta(datos, usuario.id)
+    setModalVenta(false)
+    setInvParaVender(null)
   }
 
   return (
@@ -232,9 +339,21 @@ export function InversionesPage() {
                 tamaño="sm"
                 onClick={refrescarPrecios}
                 cargando={cargandoPrecios}
-                title="Actualizar precios">
+                title="Actualizar precios"
+              >
                 🔄
               </Button>
+              {/* ── Botón Vender ── */}
+              <Button
+                variante="secondary"
+                tamaño="sm"
+                onClick={() => handleAbrirVenta(null)}
+                className="!text-red-600 dark:!text-red-400 !border-red-200 dark:!border-red-800/50 hover:!bg-red-50 dark:hover:!bg-red-900/20"
+                title="Registrar una venta"
+              >
+                📉 Vender
+              </Button>
+              {/* ── Botón Agregar ── */}
               <Button icono="+" onClick={() => setModalNuevo(true)}>
                 Agregar
               </Button>
@@ -242,7 +361,7 @@ export function InversionesPage() {
           }
         />
 
-        {/* Resumen */}
+        {/* Resumen del portfolio */}
         <ResumenPortfolio
           portfolio={portfolio}
           dolarRate={dolarRate}
@@ -257,7 +376,7 @@ export function InversionesPage() {
             ))}
           </div>
         ) : portfolio?.detalles?.length === 0 || inversiones.length === 0 ? (
-          <Card className="py-12">
+          <Card className="py-12 mb-5">
             <EmptyState
               icono="📊"
               titulo="Todavía no tenés inversiones"
@@ -266,7 +385,7 @@ export function InversionesPage() {
             />
           </Card>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 mb-5">
             <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-1">
               {inversiones.length} {inversiones.length === 1 ? 'posición' : 'posiciones'}
             </p>
@@ -275,19 +394,41 @@ export function InversionesPage() {
                 key={det.id}
                 detalle={det}
                 onEliminar={handleEliminar}
+                onVender={handleAbrirVenta}
               />
             ))}
-
-            {/* Nota legal */}
-            <p className="text-[10px] text-zinc-400 text-center mt-4 pb-2">
-              Precios referenciales · Fuente: Yahoo Finance & CoinGecko · No constituyen asesoramiento financiero.
-            </p>
           </div>
+        )}
+
+        {/* Historial de ventas */}
+        <HistorialVentas ventas={ventas} onEliminar={eliminarVenta} />
+
+        {inversiones.length > 0 && (
+          <p className="text-[10px] text-zinc-400 text-center mt-2 pb-2">
+            Precios referenciales · Fuente: Yahoo Finance & CoinGecko · No constituyen asesoramiento financiero.
+          </p>
         )}
       </PageWrapper>
 
+      {/* Modal: Agregar inversión */}
       <Modal abierto={modalNuevo} onCerrar={() => setModalNuevo(false)} titulo="Agregar inversión" ancho="max-w-lg">
-        <FormInversion onSubmit={handleGuardar} onCancel={() => setModalNuevo(false)} />
+        <FormInversion onSubmit={handleGuardarInversion} onCancel={() => setModalNuevo(false)} />
+      </Modal>
+
+      {/* Modal: Registrar venta */}
+      <Modal
+        abierto={modalVenta}
+        onCerrar={() => { setModalVenta(false); setInvParaVender(null) }}
+        titulo="Registrar venta"
+        ancho="max-w-lg"
+      >
+        <FormVenta
+          inversiones={inversiones}
+          dolarRate={dolarRate}
+          inversionPreseleccionada={invParaVender}
+          onSubmit={handleGuardarVenta}
+          onCancel={() => { setModalVenta(false); setInvParaVender(null) }}
+        />
       </Modal>
     </div>
   )
