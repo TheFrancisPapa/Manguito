@@ -11,6 +11,18 @@ if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-s
   document.documentElement.classList.remove('dark')
 }
 
+// ── Manejo de errores de despliegue (ChunkLoadError) ──
+window.addEventListener('error', (e) => {
+  if (e.message?.includes('Failed to fetch dynamically imported module')) {
+    window.location.reload()
+  }
+})
+window.addEventListener('unhandledrejection', (e) => {
+  if (e.reason?.message?.includes('Failed to fetch dynamically imported module')) {
+    window.location.reload()
+  }
+})
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
