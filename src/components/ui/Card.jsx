@@ -17,7 +17,7 @@ export function CardHeader({ titulo, subtitulo = null, accion = null }) {
   return (
     <div className="flex items-start justify-between gap-2 mb-3">
       <div className="flex-1 min-w-0"> {/* min-w-0 evita que textos largos empujen el layout */}
-        <h2 className="text-xs uppercase font-bold tracking-wider text-zinc-500 dark:text-zinc-400 mb-1 truncate">
+        <h2 className="text-xs uppercase font-bold tracking-wider text-zinc-500 dark:text-zinc-400 mb-1 leading-tight">
           {titulo}
         </h2>
         {subtitulo && (

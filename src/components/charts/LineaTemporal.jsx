@@ -11,10 +11,20 @@ export function LineaTemporal({ datos = [], moneda = 'ARS', cargando = false }) 
   const xStep  = innerW / (datos.length - 1 || 1)
   const px = (i) => PAD.l + i * xStep
   const py = (v) => PAD.t + innerH - (v / maxVal) * innerH
-  const linea = (campo, color) => (
-    <polyline points={datos.map((d, i) => `${px(i)},${py(d[campo])}`).join(' ')}
-      fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+  // Cambio principal: Usamos stroke="currentColor" y aplicamos la clase de color al polyline
+  const linea = (campo, colorClass) => (
+    <polyline 
+      points={datos.map((d, i) => `${px(i)},${py(d[campo])}`).join(' ')}
+      fill="none" 
+      stroke="currentColor" 
+      className={colorClass}
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+    />
   )
+
   return (
     <div className="w-full">
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="overflow-visible" onMouseLeave={() => setHover(null)}>
@@ -22,12 +32,17 @@ export function LineaTemporal({ datos = [], moneda = 'ARS', cargando = false }) 
           <line key={f} x1={PAD.l} y1={PAD.t + innerH * (1 - f)} x2={W - PAD.r} y2={PAD.t + innerH * (1 - f)}
             stroke="currentColor" strokeOpacity="0.08" strokeWidth="1" />
         ))}
-        {linea('ingresos', '#10B981')}
-        {linea('gastos',   '#EF4444')}
+        
+        {/* Usamos clases de texto de Tailwind para definir el currentColor */}
+        {linea('ingresos', 'text-emerald-500')}
+        {linea('gastos',   'text-red-500')}
+        
         {datos.map((d, i) => (
           <g key={i} onMouseEnter={() => setHover(i)}>
-            <circle cx={px(i)} cy={py(d.ingresos)} r="3" fill="#10B981" />
-            <circle cx={px(i)} cy={py(d.gastos)}   r="3" fill="#EF4444" />
+            {/* Aseguramos que los círculos también tengan el color correcto */}
+            <circle cx={px(i)} cy={py(d.ingresos)} r="3" className="fill-emerald-500" />
+            <circle cx={px(i)} cy={py(d.gastos)}   r="3" className="fill-red-500" />
+            
             <rect x={px(i) - xStep / 2} y={PAD.t} width={xStep} height={innerH} fill="transparent" />
             <text x={px(i)} y={H - 4} textAnchor="middle" fontSize="9" fill="currentColor" fillOpacity="0.4">{d.label}</text>
           </g>
