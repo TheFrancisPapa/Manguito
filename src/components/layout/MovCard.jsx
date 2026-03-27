@@ -22,7 +22,7 @@ export function MovCard({ movimiento, onClick }) {
   return (
     <div onClick={onClick}
       className="flex items-center gap-3 py-3 px-1 border-b border-zinc-100 dark:border-zinc-800/60
-        last:border-0 rounded-xl cursor-pointer
+        last:border-0 cursor-pointer text-zinc-800 dark:text-zinc-100
         hover:bg-zinc-50 dark:hover:bg-zinc-800/40
         active:bg-zinc-100 dark:active:bg-zinc-800
         transition-colors duration-100">

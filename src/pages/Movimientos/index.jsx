@@ -75,7 +75,7 @@ export function MovimientosPage() {
             <button
               key={f}
               onClick={() => setFiltroActivo(f)}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
+              className={`flex-1 py-1.5 px-4 rounded-lg text-xs font-medium transition-colors capitalize ${
                 filtroActivo === f
                   ? 'bg-white dark:bg-zinc-900 shadow-sm text-zinc-900 dark:text-white'
                   : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
