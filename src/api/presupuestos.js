@@ -3,7 +3,12 @@ import { supabase } from '../lib/supabase'
 export async function getPresupuestosMesActual() {
   const { data, error } = await supabase.rpc('presupuestos_mes_actual')
   if (error) throw error
-  return data
+  return data.map(p => ({
+    ...p,
+    categoria_nombre: p.nombre,
+    categoria_icono:  p.icono,
+    porcentaje: p.limite_monto > 0 ? (p.gastado / p.limite_monto) * 100 : 0,
+  }))
 }
 
 export async function crearPresupuesto({

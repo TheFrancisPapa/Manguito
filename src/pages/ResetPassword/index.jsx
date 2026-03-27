@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { actualizarPassword, onCambioSesion } from '../../api/auth'
 import { Button, Input } from '../../components/ui'
@@ -11,22 +11,31 @@ export function ResetPassword() {
   const [error, setError] = useState('')
   const [sesionValida, setSesionValida] = useState(false)
 
+  const sesionValidaRef = useRef(false)
+  
+  useEffect(() => {
+    sesionValidaRef.current = sesionValida
+  }, [sesionValida])
+
   useEffect(() => {
     // Escuchamos si Supabase pudo iniciar la sesión de recuperación
     const unsubscribe = onCambioSesion((user) => {
       if (user) setSesionValida(true)
     })
     
-    // Si después de 2 segundos no hay sesión, asumimos que el link es inválido
+    // Si después de 3 segundos no hay sesión, asumimos que el link es inválido
+    // (Aumentamos un poco el tiempo para evitar falsos positivos en conexiones lentas)
     const timer = setTimeout(() => {
-      if (!sesionValida) setError('El link de recuperación es inválido o expiró.')
-    }, 2000)
+      if (!sesionValidaRef.current) {
+        setError('El link de recuperación es inválido o expiró.')
+      }
+    }, 3000)
 
     return () => {
       unsubscribe()
       clearTimeout(timer)
     }
-  }, [sesionValida])
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()

@@ -1,56 +1,24 @@
-import { useState, useEffect } from 'react'
-import { getUsuarioActual, getPerfil, onCambioSesion,
-         login, loginConGoogle, logout, registrar, recuperarPassword } from '../api/auth'
+import { useAuthContext } from '../context/AuthContext'
+import { login, loginConGoogle, logout, registrar, recuperarPassword } from '../api/auth'
 
+/**
+ * useAuth() - Thin wrapper around useAuthContext for backward compatibility.
+ * Use useAuthContext() directly for a cleaner API in new components.
+ */
 export function useAuth() {
-  const [usuario,  setUsuario]  = useState(null)
-  const [sesion,   setSesion]   = useState(null)
-  const [cargando, setCargando] = useState(true)
-  const [error,    setError]    = useState(null)
-
-  useEffect(() => {
-    cargarSesion()
-    const limpiar = onCambioSesion(async (userAuth) => {
-      setSesion(userAuth)
-      if (userAuth) { const perfil = await getPerfil(); setUsuario(perfil) }
-      else setUsuario(null)
-      setCargando(false)
-    })
-    return limpiar
-  }, [])
-
-  async function cargarSesion() {
-    try {
-      const userAuth = await getUsuarioActual()
-      setSesion(userAuth)
-      if (userAuth) { const perfil = await getPerfil(); setUsuario(perfil) }
-    } catch (e) { setError(e.message) }
-    finally { setCargando(false) }
-  }
-
-  async function handleLogin(datos) {
-    setError(null)
-    try { await login(datos) }
-    catch (e) { setError(e.message); throw e }
-  }
-
-  async function handleRegistrar(datos) {
-    setError(null)
-    try { await registrar(datos) }
-    catch (e) { setError(e.message); throw e }
-  }
-
-  async function handleLogout() {
-    await logout()
-    setUsuario(null); setSesion(null)
-  }
+  const { session, usuario, cargando, recargarPerfil } = useAuthContext()
 
   return {
-    usuario, sesion, cargando, error,
-    estaLogueado: !!sesion,
+    usuario, 
+    sesion: session, // useAuth uses 'sesion'
+    cargando,
+    estaLogueado: !!session,
     onboardingOk: usuario?.onboarding_ok ?? false,
-    login: handleLogin, loginConGoogle,
-    registrar: handleRegistrar, logout: handleLogout,
-    recuperarPassword, recargarPerfil: cargarSesion,
+    login, 
+    loginConGoogle,
+    registrar, 
+    logout, 
+    recuperarPassword, 
+    recargarPerfil,
   }
 }
