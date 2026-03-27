@@ -59,11 +59,11 @@ export function MovCard({ movimiento, onClick, compact = false }) {
         <span className={`text-sm font-black tabular-nums ${
           esIngreso
             ? 'text-emerald-600 dark:text-emerald-400'
-            : 'text-zinc-800 dark:text-zinc-200'
+            : 'text-red-600 dark:text-red-400'
         }`}>
           {esIngreso ? '+' : '-'}{montoDisplay}
         </span>
-        {/* Monto completo en tooltip visual si está abreviado */}
+        {/* Monto completo debajo si está abreviado */}
         {montoAbs >= 100_000 && (
           <span className="text-[10px] text-zinc-400 dark:text-zinc-600 tabular-nums">
             {Number(monto).toLocaleString('es-AR', { maximumFractionDigits: 0 })}

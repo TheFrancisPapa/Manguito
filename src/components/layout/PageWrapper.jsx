@@ -25,9 +25,10 @@ export function PageWrapper({ children, className = '' }) {
 
 export function PageHeader({ titulo, subtitulo = null, accion = null }) {
   return (
-    <div className="flex items-start justify-between mb-5 gap-3">
+    <div className="flex flex-col gap-2 mb-5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+      {/* Título siempre visible, sin truncar */}
       <div className="flex-1 min-w-0">
-        <h1 className="text-xl font-bold text-zinc-900 dark:text-white leading-tight truncate">
+        <h1 className="text-xl font-bold text-zinc-900 dark:text-white leading-tight">
           {titulo}
         </h1>
         {subtitulo && (
@@ -36,8 +37,9 @@ export function PageHeader({ titulo, subtitulo = null, accion = null }) {
           </p>
         )}
       </div>
+      {/* Botones alineados a la derecha en sm+, o al final en mobile */}
       {accion && (
-        <div className="flex-shrink-0 mt-0.5">
+        <div className="flex-shrink-0 self-start">
           {accion}
         </div>
       )}
