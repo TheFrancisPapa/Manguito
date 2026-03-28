@@ -1,18 +1,21 @@
+// src/components/forms/FormMovimiento.jsx
+// Actualizado con escáner de tickets OCR
 import { useState, useEffect } from 'react'
 import { Button, Input, Select, Spinner } from '../ui/index.js'
 import { useCategorias } from '../../hooks/index.js'
+import { EscanerTicket } from './EscanerTicket.jsx'
 
 export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) {
-  const [tipo, setTipo] = useState(valoresIniciales?.tipo ?? 'gasto')
-  const [monto, setMonto] = useState(valoresIniciales?.monto ?? '')
+  const [tipo, setTipo]           = useState(valoresIniciales?.tipo ?? 'gasto')
+  const [monto, setMonto]         = useState(valoresIniciales?.monto ?? '')
   const [descripcion, setDescripcion] = useState(valoresIniciales?.descripcion ?? '')
-  
   const hoyLocal = new Date().toLocaleDateString('sv-SE')
-  const [fecha, setFecha] = useState(valoresIniciales?.fecha ?? hoyLocal)
-  
+  const [fecha, setFecha]         = useState(valoresIniciales?.fecha ?? hoyLocal)
   const [categoriaId, setCategoriaId] = useState(valoresIniciales?.categoria_id ?? '')
-  const [cargando, setCargando] = useState(false)
-  const [error, setError] = useState(null)
+  const [cargando, setCargando]   = useState(false)
+  const [error, setError]         = useState(null)
+  const [mostrarEscaner, setMostrarEscaner] = useState(false)
+  const [categoriaDetectada, setCategoriaDetectada] = useState(null)
 
   const { gastos, ingresos, cargando: cargandoCat } = useCategorias()
   const categoriasOptions = tipo === 'gasto' ? gastos : ingresos
@@ -23,29 +26,32 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
     }
   }, [categoriasOptions, categoriaId, valoresIniciales])
 
+  // Cuando la IA detecta datos del ticket
+  const handleTicketDetectado = ({ monto: m, descripcion: d, categoriaDetectada: cat }) => {
+    if (m) setMonto(String(m))
+    if (d) setDescripcion(d)
+    setCategoriaDetectada(cat)
+
+    // Intentar matchear la categoría detectada con las disponibles
+    if (cat) {
+      const match = gastos.find(g =>
+        g.nombre.toLowerCase().includes(cat.toLowerCase()) ||
+        cat.toLowerCase().includes(g.nombre.toLowerCase())
+      )
+      if (match) setCategoriaId(match.id)
+    }
+
+    setMostrarEscaner(false)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
-
-    if (!monto || monto <= 0) {
-      setError('El monto debe ser mayor a 0.')
-      return
-    }
-    if (!categoriaId) {
-      setError('Seleccioná una categoría.')
-      return
-    }
-
+    if (!monto || monto <= 0) { setError('El monto debe ser mayor a 0.'); return }
+    if (!categoriaId) { setError('Seleccioná una categoría.'); return }
     setCargando(true)
     try {
-      await onSubmit({
-        tipo,
-        monto: Number(monto),
-        descripcion,
-        fecha,
-        categoria_id: categoriaId,
-        es_recurrente: false,
-      })
+      await onSubmit({ tipo, monto: Number(monto), descripcion, fecha, categoria_id: categoriaId, es_recurrente: false })
     } catch (err) {
       setError(err.message || 'Error al guardar el movimiento.')
       setCargando(false)
@@ -54,69 +60,86 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {/* Toggle ingreso/gasto */}
       <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1 mb-2">
-        <button
-          type="button"
+        <button type="button"
           onClick={() => { setTipo('gasto'); setCategoriaId('') }}
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-            tipo === 'gasto' 
-              ? 'bg-white dark:bg-zinc-900 text-red-600 shadow-sm' 
-              : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-          }`}
-        >
+            tipo === 'gasto'
+              ? 'bg-white dark:bg-zinc-900 text-red-600 shadow-sm'
+              : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}>
           Gasto
         </button>
-        <button
-          type="button"
+        <button type="button"
           onClick={() => { setTipo('ingreso'); setCategoriaId('') }}
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-            tipo === 'ingreso' 
-              ? 'bg-white dark:bg-zinc-900 text-emerald-600 shadow-sm' 
-              : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-          }`}
-        >
+            tipo === 'ingreso'
+              ? 'bg-white dark:bg-zinc-900 text-emerald-600 shadow-sm'
+              : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}>
           Ingreso
         </button>
       </div>
 
+      {/* Escáner de ticket (solo para gastos) */}
+      {tipo === 'gasto' && (
+        <div>
+          {mostrarEscaner ? (
+            <div className="flex flex-col gap-2">
+              <EscanerTicket
+                onDetectado={handleTicketDetectado}
+                onError={(msg) => setError(msg)}
+              />
+              <button type="button" onClick={() => setMostrarEscaner(false)}
+                className="text-xs text-zinc-400 hover:text-zinc-600 text-center transition-colors">
+                Cancelar escaneo
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setMostrarEscaner(true)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
+                border border-dashed border-zinc-300 dark:border-zinc-700
+                text-xs font-medium text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300
+                hover:border-zinc-400 dark:hover:border-zinc-600 transition-all">
+              <span>📸</span> Escanear ticket con IA
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Badge de categoría detectada */}
+      {categoriaDetectada && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20
+          rounded-xl border border-emerald-200 dark:border-emerald-800/50 text-xs">
+          <span>✅</span>
+          <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+            Detectado: {categoriaDetectada}
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3">
         <Input
-          label="Monto"
-          type="number" // El tipo number abre el teclado numérico en celulares
-          inputMode="decimal" // Específico para forzar teclado con coma/punto
-          step="0.01"
-          min="0.01"
-          placeholder="0.00"
-          prefijo="$"
-          value={monto}
-          onChange={(e) => setMonto(e.target.value)}
-          required
+          label="Monto" type="number" inputMode="decimal" step="0.01" min="0.01"
+          placeholder="0.00" prefijo="$" value={monto}
+          onChange={(e) => setMonto(e.target.value)} required
         />
         <Input
-          label="Fecha"
-          type="date"
-          value={fecha}
-          onChange={(e) => setFecha(e.target.value)}
-          required
+          label="Fecha" type="date" value={fecha}
+          onChange={(e) => setFecha(e.target.value)} required
         />
       </div>
 
       <div className="flex flex-col gap-1">
         <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Categoría</label>
         {cargandoCat ? (
-          <div className="h-10 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse flex items-center px-3 text-sm text-zinc-400">Cargando...</div>
+          <div className="h-10 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse flex items-center px-3 text-sm text-zinc-400">
+            Cargando...
+          </div>
         ) : (
-          <Select
-            value={categoriaId}
-            onChange={(e) => setCategoriaId(e.target.value)}
-            required
-            className="w-full"
-          >
+          <Select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)} required>
             <option value="" disabled>Seleccioná una categoría</option>
             {categoriasOptions.map(c => (
-              <option key={c.id} value={c.id}>
-                {c.icono} {c.nombre}
-              </option>
+              <option key={c.id} value={c.id}>{c.icono} {c.nombre}</option>
             ))}
           </Select>
         )}
@@ -136,20 +159,10 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
       )}
 
       <div className="flex gap-3 mt-4">
-        <Button
-          type="button"
-          variante="secondary"
-          className="flex-1"
-          onClick={onCancel}
-          disabled={cargando}
-        >
+        <Button type="button" variante="secondary" className="flex-1" onClick={onCancel} disabled={cargando}>
           Cancelar
         </Button>
-        <Button
-          type="submit"
-          className="flex-1"
-          cargando={cargando}
-        >
+        <Button type="submit" className="flex-1" cargando={cargando}>
           Guardar
         </Button>
       </div>
