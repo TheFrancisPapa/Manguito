@@ -1,4 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+// src/hooks/useInversiones.js
+// FIX: actualizarPrecios ya no está en las deps de useEffect para evitar re-renders infinitos.
+// Se usa una ref para mantener la función actualizada sin re-disparar el efecto.
+
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   getInversiones, crearInversion, editarInversion, borrarInversion,
   fetchPrecios, fetchDolarRate, calcularPortfolio,
@@ -15,7 +19,45 @@ export function useInversiones() {
   const [cargandoPrecios,  setCargandoPrecios]  = useState(false)
   const [error,            setError]            = useState(null)
 
-  // ── Carga inicial desde DB ───────────────────
+  // Ref para acceder siempre a la última versión de dolarRate/cotizaciones
+  // sin añadirlos como deps (evita loops)
+  const dolarRateRef   = useRef(null)
+  const cotizacionesRef = useRef({})
+
+  useEffect(() => { dolarRateRef.current = dolarRate },   [dolarRate])
+  useEffect(() => { cotizacionesRef.current = cotizaciones }, [cotizaciones])
+
+  // ── Fetch de precios ─────────────────────────────────────────
+  const actualizarPrecios = useCallback(async (invs) => {
+    if (!invs || invs.length === 0) return
+    const invConPrecio = invs.filter(i => i.simbolo && i.tipo !== 'fci' && i.tipo !== 'otro')
+    if (invConPrecio.length === 0) {
+      // Aún así buscamos el dólar para el portfolio vacío
+      try {
+        const dolar = await fetchDolarRate()
+        setDolarRate(dolar)
+        setPortfolio(calcularPortfolio(invs, {}, dolar))
+      } catch {}
+      return
+    }
+
+    setCargandoPrecios(true)
+    try {
+      const [precios, dolar] = await Promise.all([
+        fetchPrecios(invConPrecio),
+        fetchDolarRate(),
+      ])
+      setCotizaciones(precios)
+      setDolarRate(dolar)
+      setPortfolio(calcularPortfolio(invs, precios, dolar))
+    } catch (e) {
+      console.error('Error actualizando precios:', e)
+    } finally {
+      setCargandoPrecios(false)
+    }
+  }, []) // sin deps externas que causen re-render
+
+  // ── Carga inicial ────────────────────────────────────────────
   const cargar = useCallback(async () => {
     try {
       setCargando(true)
@@ -33,41 +75,23 @@ export function useInversiones() {
     }
   }, [])
 
-  // ── Fetch de precios ─────────────────────────
-  const actualizarPrecios = useCallback(async (invs) => {
-    if (!invs || invs.length === 0) return
-    const invConPrecio = invs.filter(i => i.simbolo && i.tipo !== 'fci' && i.tipo !== 'otro')
-    if (invConPrecio.length === 0) return
-
-    setCargandoPrecios(true)
-    try {
-      const [precios, dolar] = await Promise.all([
-        fetchPrecios(invConPrecio),
-        fetchDolarRate(),
-      ])
-      setCotizaciones(precios)
-      setDolarRate(dolar)
-      setPortfolio(calcularPortfolio(invs, precios, dolar))
-    } catch (e) {
-      console.error('Error actualizando precios:', e)
-    } finally {
-      setCargandoPrecios(false)
-    }
-  }, [])
-
-  // ── Efectos ──────────────────────────────────
+  // ── Cargar al montar ─────────────────────────────────────────
   useEffect(() => { cargar() }, [cargar])
 
+  // ── Actualizar precios cuando cambian las inversiones ────────
+  // FIX: usamos una ref flag para no disparar en el render inicial (cargando=true)
+  const primeraVezRef = useRef(true)
   useEffect(() => {
-    if (inversiones.length > 0) {
+    if (cargando) return // esperar a que termine la carga inicial
+    if (primeraVezRef.current) {
+      primeraVezRef.current = false
       actualizarPrecios(inversiones)
-    } else if (!cargando) {
-      fetchDolarRate().then(setDolarRate).catch(console.error)
-      setPortfolio(calcularPortfolio([], {}, null))
+      return
     }
-  }, [inversiones, cargando, actualizarPrecios])
+    // Solo actualizamos si las inversiones cambiaron (no en cada re-render)
+  }, [inversiones, cargando]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── CRUD inversiones ─────────────────────────
+  // ── CRUD inversiones ─────────────────────────────────────────
   const crear = async (datos, usuario_id) => {
     if (!usuario_id) throw new Error('No se encontró sesión de usuario')
     const nueva = await crearInversion({ ...datos, usuario_id })
@@ -89,36 +113,26 @@ export function useInversiones() {
     await borrarInversion(id)
     const nuevaLista = inversiones.filter(i => i.id !== id)
     setInversiones(nuevaLista)
-    if (nuevaLista.length > 0) {
-      setPortfolio(calcularPortfolio(nuevaLista, cotizaciones, dolarRate))
-    } else {
-      setPortfolio(calcularPortfolio([], {}, dolarRate))
-    }
+    setPortfolio(calcularPortfolio(nuevaLista, cotizacionesRef.current, dolarRateRef.current))
   }
 
-  // ── CRUD ventas ──────────────────────────────
+  // ── CRUD ventas ──────────────────────────────────────────────
   const registrarVenta = async (datos, usuario_id) => {
     if (!usuario_id) throw new Error('No se encontró sesión de usuario')
     const venta = await crearVenta({ ...datos, usuario_id })
     setVentas(prev => [venta, ...prev])
 
-    // Si la venta viene de una inversión existente,
-    // descontamos la cantidad o la eliminamos si vendió todo
     if (datos.inversion_id) {
       const inv = inversiones.find(i => i.id === datos.inversion_id)
       if (inv) {
         const cantidadRestante = Number(inv.cantidad) - Number(datos.cantidad)
         if (cantidadRestante <= 0.00000001) {
-          // Vendió todo: eliminamos la inversión
           await borrarInversion(datos.inversion_id)
           const nuevaLista = inversiones.filter(i => i.id !== datos.inversion_id)
           setInversiones(nuevaLista)
-          setPortfolio(calcularPortfolio(nuevaLista, cotizaciones, dolarRate))
+          setPortfolio(calcularPortfolio(nuevaLista, cotizacionesRef.current, dolarRateRef.current))
         } else {
-          // Venta parcial: actualizamos la cantidad
-          const actualizada = await editarInversion(datos.inversion_id, {
-            cantidad: cantidadRestante,
-          })
+          const actualizada = await editarInversion(datos.inversion_id, { cantidad: cantidadRestante })
           const nuevaLista = inversiones.map(i => i.id === datos.inversion_id ? actualizada : i)
           setInversiones(nuevaLista)
           actualizarPrecios(nuevaLista)

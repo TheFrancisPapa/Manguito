@@ -1,3 +1,4 @@
+// src/components/ui/index.js
 export { Button }                   from './Button'
 export { Input, Select }            from './Input'
 export { Card, CardHeader }         from './Card'
@@ -8,3 +9,4 @@ export { Modal }                    from './Modal'
 export { ChangelogModal }           from './ChangelogModal'
 export { ModalUpgrade }             from './ModalUpgrade'
 export { ErrorBoundary }            from './ErrorBoundary'
+export { TipFinanciero }            from './TipFinanciero'

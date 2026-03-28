@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabase'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { registrarUsuario } from '../../api/auth'
 import { Button, Input, Spinner } from '../../components/ui'
@@ -42,6 +42,10 @@ export function RegistroPage() {
     metaMonto: ''
   })
 
+  // Ref para evitar stale closures en el proceso de registro
+  const formDataRef = useRef(formData)
+  useEffect(() => { formDataRef.current = formData }, [formData])
+
   const handleChange = (campo, valor) => {
     setFormData(prev => ({ ...prev, [campo]: valor }))
     setError('')
@@ -63,39 +67,23 @@ export function RegistroPage() {
     setPaso(p => p + 1)
   }
 
-  // Efecto para la pantallita final de "Calibrando"
-  useEffect(() => {
-    if (paso === 5) {
-      const interval = setInterval(() => {
-        setFraseIndex(prev => {
-          if (prev < FRASES_CALIBRACION.length - 1) return prev + 1
-          clearInterval(interval)
-          return prev
-        })
-      }, 1200) // Cambia la frase cada 1.2s
-
-      // Ejecutamos el registro de fondo mientras ve la animación
-      finalizarRegistro()
-
-      return () => clearInterval(interval)
-    }
-  }, [paso])
-
-  const finalizarRegistro = async () => {
+  // Definimos finalizarRegistro con useCallback para evitar re-creación innecesaria
+  const finalizarRegistro = useCallback(async () => {
+    const datos = formDataRef.current // Usamos la ref para tener el valor real al momento de la ejecución
     try {
       // 1. Registramos al usuario en Supabase
-      await registrarUsuario(formData)
+      await registrarUsuario(datos)
 
       // 2. Si armó una meta inicial, la guardamos
-      if (formData.metaActiva && formData.metaNombre && formData.metaMonto) {
+      if (datos.metaActiva && datos.metaNombre && datos.metaMonto) {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           await supabase.from('metas').insert({
             usuario_id: session.user.id,
-            nombre: formData.metaNombre,
-            monto_objetivo: Number(formData.metaMonto),
+            nombre: datos.metaNombre,
+            monto_objetivo: Number(datos.metaMonto),
             monto_actual: 0,
-            icono: formData.metaEmoji || '🎯',
+            icono: datos.metaEmoji || '🎯',
             color: '#F59E0B',
             estado: 'activa',
             prioridad: 1,
@@ -113,7 +101,25 @@ export function RegistroPage() {
       setError(err.message || 'Hubo un error al crear tu cuenta.')
       setPaso(1) // Lo volvemos al inicio si falla
     }
-  }
+  }, [navigate])
+
+  // Efecto para la pantallita final de "Calibrando"
+  useEffect(() => {
+    if (paso !== 5) return
+
+    const interval = setInterval(() => {
+      setFraseIndex(prev => {
+        if (prev < FRASES_CALIBRACION.length - 1) return prev + 1
+        clearInterval(interval)
+        return prev
+      })
+    }, 1200) // Cambia la frase cada 1.2s
+
+    // Ejecutamos el registro de fondo mientras ve la animación
+    finalizarRegistro()
+
+    return () => clearInterval(interval)
+  }, [paso, finalizarRegistro])
 
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] overflow-hidden">
