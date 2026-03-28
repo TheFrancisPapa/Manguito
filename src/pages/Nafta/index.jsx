@@ -48,6 +48,16 @@ function fmtFecha(isoStr) {
   })
 }
 
+// Transforma datos planos de la DB al formato anidado de la app
+const transformarPrecios = (data) => {
+  const mapa = {}
+  data.forEach(item => {
+    if (!mapa[item.tipo]) mapa[item.tipo] = {}
+    mapa[item.tipo][item.compania] = Number(item.precio)
+  })
+  return mapa
+}
+
 // ── Hook para cargar precios ─────────────────────────────────
 function usePrecios(provincia) {
   const STORAGE_KEY = `nafta_precios_${provincia}`
@@ -63,16 +73,6 @@ function usePrecios(provincia) {
   const [ultimaActualizacion, setUltimaActualizacion] = useState(() => {
     return localStorage.getItem(`nafta_fecha_${provincia}`) || null
   })
-
-  // Transforma datos planos de la DB al formato anidado de la app
-  const transformarPrecios = (data) => {
-    const mapa = {}
-    data.forEach(item => {
-      if (!mapa[item.tipo]) mapa[item.tipo] = {}
-      mapa[item.tipo][item.compania] = Number(item.precio)
-    })
-    return mapa
-  }
 
   // 2. Cargar desde API externa
   const cargarDesdeAPI = useCallback(async () => {
@@ -94,7 +94,6 @@ function usePrecios(provincia) {
     return null
   }, [provincia])
 
-  // 3. Orquestador de actualización (Combina API + Comunidad)
   const refresh = useCallback(async () => {
     setCargando(true)
     try {
@@ -129,7 +128,7 @@ function usePrecios(provincia) {
     } finally {
       setCargando(false)
     }
-  }, [provincia, STORAGE_KEY, cargarDesdeAPI, transformarPrecios])
+  }, [provincia, STORAGE_KEY, cargarDesdeAPI])
 
   // Lógica de carga inicial
   useEffect(() => {
