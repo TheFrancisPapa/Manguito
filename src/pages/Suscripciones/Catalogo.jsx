@@ -202,11 +202,9 @@ function TablaPreciosMetodos({ servicio, preciosComunitarios, onActualizar }) {
 }
 
 // ── Tarjeta de servicio del catálogo ─────────────────────────
-function TarjetaServicio({ servicio, preciosComunitarios, onAgregar, metodoPagoFiltro }) {
+function TarjetaServicio({ servicio, preciosComunitarios, onAgregar, metodoPagoFiltro, onActualizarPrecio }) {
   const [expandido, setExpandido] = useState(false)
   const [modalPrecio, setModalPrecio] = useState(null) // { metodo, precio, moneda }
-
-  const { actualizarPrecio } = usePreciosComunitarios()
 
   // Precio del método seleccionado (si hay filtro)
   const precioDestacado = useMemo(() => {
@@ -316,7 +314,7 @@ function TarjetaServicio({ servicio, preciosComunitarios, onAgregar, metodoPagoF
           servicio={servicio}
           metodo={modalPrecio.metodo}
           precioActual={modalPrecio.precio}
-          onGuardar={(precio) => actualizarPrecio(servicio.id, modalPrecio.metodo, precio, modalPrecio.moneda)}
+          onGuardar={(precio) => onActualizarPrecio(servicio.id, modalPrecio.metodo, precio, modalPrecio.moneda)}
           onCerrar={() => setModalPrecio(null)}
         />
       )}
@@ -551,6 +549,7 @@ export function CatalogoSuscripciones({ onAgregarSuscripcion }) {
                 servicio={s}
                 preciosComunitarios={preciosComunitarios[s.id]}
                 metodoPagoFiltro={metodoPagoFiltro}
+                onActualizarPrecio={actualizarPrecio}
                 onAgregar={(servicio, precios) => setModalAgregar({ servicio, precios })}
               />
             ))}
