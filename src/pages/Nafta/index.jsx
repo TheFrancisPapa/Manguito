@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, CardHeader, Button } from '../../components/ui'
-import { supabase } from '../../api/supabase'
+import { supabase } from '../../lib/supabase'
 
 // ── Provincias argentinas ────────────────────────────────────
 const PROVINCIAS = [
