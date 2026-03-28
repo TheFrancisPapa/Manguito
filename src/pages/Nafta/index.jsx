@@ -74,30 +74,8 @@ function usePrecios(provincia) {
     return mapa
   }
 
-  // 1. Cargar desde la base comunitaria de Supabase
-  const cargarDesdeDB = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('precios_nafta')
-      .select('*')
-      .eq('provincia', provincia)
-
-    if (data && data.length > 0) {
-      const preciosMap = transformarPrecios(data)
-      setPrecios(preciosMap)
-      setFuente('comunidad')
-      // Buscamos la fecha más reciente de los items traídos
-      const fecha = data.reduce((max, curr) => (curr.updated_at > (max || '') ? curr.updated_at : max), null)
-      setUltimaActualizacion(fecha)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(preciosMap))
-      localStorage.setItem(`nafta_fecha_${provincia}`, fecha)
-      return true
-    }
-    return false
-  }, [provincia, STORAGE_KEY])
-
-  // 2. Cargar desde API externa (y actualizar la DB)
+  // 2. Cargar desde API externa
   const cargarDesdeAPI = useCallback(async () => {
-    setCargando(true)
     try {
       const res = await fetch(`/api/nafta?provincia=${encodeURIComponent(provincia)}`)
       if (!res.ok) throw new Error('Error del servidor')
@@ -105,53 +83,58 @@ function usePrecios(provincia) {
 
       if (data.precios && Array.isArray(data.precios)) {
         const preciosMap = {}
-        const itemsParaDB = []
-        const ahora = new Date().toISOString()
-
         data.precios.forEach(p => {
           preciosMap[p.codigo] = p.precios
-          // Preparamos items para guardar en la base compartida
-          Object.entries(p.precios).forEach(([compania, precio]) => {
-            itemsParaDB.push({
-              provincia,
-              tipo: p.codigo,
-              compania,
-              precio: Number(precio),
-              updated_at: ahora
-            })
-          })
         })
-
-        setPrecios(preciosMap)
-        setFuente(data.fuente || 'combustibles.ar')
-        setUltimaActualizacion(ahora)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(preciosMap))
-        localStorage.setItem(`nafta_fecha_${provincia}`, ahora)
-
-        // Actualizamos la base comunitaria de fondo
-        supabase.from('precios_nafta').upsert(itemsParaDB).then()
-        
-        return true
+        return { map: preciosMap, fuente: data.fuente || 'combustibles.ar' }
       }
     } catch (err) {
       console.error("Error cargando API:", err)
-      setFuente('local')
+    }
+    return null
+  }, [provincia])
+
+  // 3. Orquestador de actualización (Combina API + Comunidad)
+  const refresh = useCallback(async () => {
+    setCargando(true)
+    try {
+      // Cargamos de ambas fuentes en paralelo
+      const [blobAPI, { data: dataDB }] = await Promise.all([
+        cargarDesdeAPI(),
+        supabase.from('precios_nafta').select('*').eq('provincia', provincia)
+      ])
+
+      const mapAPI = blobAPI?.map || {}
+      const mapDB = dataDB ? transformarPrecios(dataDB) : {}
+
+      // Mezclamos: la DB (comunidad) tiene prioridad si existe el dato
+      const fusion = { ...mapAPI }
+      Object.keys(mapDB).forEach(tipo => {
+        fusion[tipo] = { ...(fusion[tipo] || {}), ...mapDB[tipo] }
+      })
+
+      setPrecios(fusion)
+      
+      // Determinamos fuente y fecha
+      if (dataDB && dataDB.length > 0) {
+        setFuente('comunidad')
+        const fecha = dataDB.reduce((max, curr) => (curr.updated_at > (max || '') ? curr.updated_at : max), null)
+        setUltimaActualizacion(fecha)
+      } else {
+        setFuente(blobAPI?.fuente || 'referencia')
+        setUltimaActualizacion(new Date().toISOString())
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(fusion))
     } finally {
       setCargando(false)
     }
-    return false
-  }, [provincia, STORAGE_KEY])
+  }, [provincia, STORAGE_KEY, cargarDesdeAPI, transformarPrecios])
 
-  // Lógica de carga inicial: DB -> API
+  // Lógica de carga inicial
   useEffect(() => {
-    const iniciar = async () => {
-      const hayEnDB = await cargarDesdeDB()
-      if (!hayEnDB) {
-        await cargarDesdeAPI()
-      }
-    }
-    iniciar()
-  }, [provincia, cargarDesdeDB, cargarDesdeAPI])
+    refresh()
+  }, [provincia, refresh])
 
   // Actualizar un precio manualmente
   const actualizarPrecio = async (tipo, compania, nuevoPrecio) => {
@@ -163,7 +146,7 @@ function usePrecios(provincia) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevos))
     localStorage.setItem(`nafta_fecha_${provincia}`, fecha)
 
-    // Guardar en la base de datos para que sea compartido
+    // Guardar en la base de datos para que sea compartido y persistente
     await supabase.from('precios_nafta').upsert({
       provincia,
       tipo,
@@ -173,7 +156,7 @@ function usePrecios(provincia) {
     })
   }
 
-  return { prices: precios, cargando, fuente, ultimaActualizacion, refresh: cargarDesdeAPI, actualizarPrecio }
+  return { prices: precios, cargando, fuente, ultimaActualizacion, refresh, actualizarPrecio }
 }
 
 // ── Calculadora de tanque ────────────────────────────────────
