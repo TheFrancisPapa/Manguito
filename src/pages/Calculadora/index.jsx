@@ -1,9 +1,10 @@
 // src/pages/Calculadora/index.jsx
-// ACTUALIZADO: agrega la calculadora de Fondo de Emergencia como segunda pestaña
+// Actualizado: agrega División de Cuenta como tercera pestaña
 import { useState, useMemo } from 'react'
 import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card } from '../../components/ui'
 import { useBalance } from '../../hooks/useMovimientos'
+import { CalculadoraDivision } from '../../components/ui'
 
 // ─── Helpers ─────────────────────────────────────────────────
 const fmtPesos = (n) =>
@@ -59,10 +60,9 @@ function CalculadoraFondoEmergencia() {
   const [gastoManual, setGastoManual] = useState('')
   const [ahorroActual, setAhorroActual] = useState('')
 
-  // Usar gasto promedio de los últimos meses si está disponible
   const gastoPromedio = useMemo(() => {
     if (gastoManual) return Number(gastoManual)
-    if (balance?.total_gastos) return Number(balance.total_gastos) / 3 // promedio ~3 meses
+    if (balance?.total_gastos) return Number(balance.total_gastos) / 3
     return 0
   }, [balance, gastoManual])
 
@@ -74,18 +74,15 @@ function CalculadoraFondoEmergencia() {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Intro */}
       <div className="bg-emerald-50/60 dark:bg-emerald-900/10 rounded-2xl px-4 py-3 border border-emerald-200/60 dark:border-emerald-800/30">
         <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-          🛡️ El fondo de emergencia es tu colchón financiero. Debería cubrir entre <b>3 y 6 meses</b> de gastos
-          para que cualquier imprevisto no te destruya. Es la base de toda planificación financiera sana.
+          🛡️ El fondo de emergencia es tu colchón financiero. Debería cubrir entre <b>3 y 6 meses</b> de gastos.
         </p>
       </div>
 
       <Card>
         <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mb-4">⚙️ Configuración</h3>
         <div className="flex flex-col gap-4">
-          {/* Meses de cobertura */}
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
@@ -105,7 +102,6 @@ function CalculadoraFondoEmergencia() {
             </div>
           </div>
 
-          {/* Gasto mensual */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
               Gasto mensual promedio
@@ -129,7 +125,6 @@ function CalculadoraFondoEmergencia() {
             </div>
           </div>
 
-          {/* Ahorro actual */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
               ¿Cuánto ya tenés ahorrado? (opcional)
@@ -150,10 +145,8 @@ function CalculadoraFondoEmergencia() {
         </div>
       </Card>
 
-      {/* Resultado */}
       {gastoPromedio > 0 && (
         <>
-          {/* Barra de progreso */}
           <div className={`rounded-2xl border-2 p-5 ${
             pct >= 100
               ? 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-300 dark:border-emerald-700/50'
@@ -190,26 +183,19 @@ function CalculadoraFondoEmergencia() {
               </div>
               <div>
                 <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mb-0.5">Te falta</p>
-                <p className={`text-lg font-black ${
-                  falta === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
-                }`}>
+                <p className={`text-lg font-black ${falta === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                   {falta === 0 ? '¡Nada! ✅' : fmtPesos(falta)}
                 </p>
                 {mesesParaLograr > 0 && (
-                  <p className="text-[10px] text-zinc-400">
-                    ~{mesesParaLograr} meses ahorrando el 10%
-                  </p>
+                  <p className="text-[10px] text-zinc-400">~{mesesParaLograr} meses ahorrando el 10%</p>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Sugerencias */}
           {pct < 100 && (
             <Card>
-              <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mb-3">
-                💡 Para armar tu fondo
-              </h3>
+              <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-100 mb-3">💡 Para armar tu fondo</h3>
               <div className="flex flex-col gap-2">
                 {[
                   { pct: 5,  label: 'Ahorro conservador (5%)', monto: gastoPromedio * 0.05 },
@@ -230,9 +216,6 @@ function CalculadoraFondoEmergencia() {
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-zinc-400 mt-3">
-                💡 Guardá el fondo en un plazo fijo o cuenta remunerada para que no pierda contra la inflación.
-              </p>
             </Card>
           )}
         </>
@@ -241,7 +224,7 @@ function CalculadoraFondoEmergencia() {
   )
 }
 
-// ─── Calculadora Cuotas vs Contado (código original) ─────────
+// ─── Calculadora Cuotas vs Contado ────────────────────────────
 function BarraComparacion({ label, valor, maximo, color, emoji }) {
   const pct = maximo > 0 ? Math.min((valor / maximo) * 100, 100) : 0
   return (
@@ -300,11 +283,9 @@ function FormCalculadora({ valores, onChange }) {
             rounded-xl px-3 py-2.5 text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40" />
       </div>
       <div className="flex flex-col gap-1 sm:col-span-2">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            📈 Inflación mensual estimada: <span className="font-bold text-zinc-700 dark:text-zinc-200">{valores.inflacionMensual}%</span>
-          </label>
-        </div>
+        <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          📈 Inflación mensual estimada: <span className="font-bold text-zinc-700 dark:text-zinc-200">{valores.inflacionMensual}%</span>
+        </label>
         <input type="range" min="2" max="20" step="0.5" value={valores.inflacionMensual}
           onChange={set('inflacionMensual')} className="accent-amber-400 w-full" />
         <div className="flex justify-between text-[10px] text-zinc-400">
@@ -377,22 +358,43 @@ export function CalculadoraPage() {
         {/* Tabs */}
         <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1 mb-6">
           <button onClick={() => setTab('cuotas')}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
               tab === 'cuotas'
                 ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
                 : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}>
-            💳 Cuotas vs Contado
+            💳 Cuotas
           </button>
           <button onClick={() => setTab('fondo')}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
               tab === 'fondo'
                 ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
                 : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}>
-            🛡️ Fondo de Emergencia
+            🛡️ Emergencia
+          </button>
+          <button onClick={() => setTab('division')}
+            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
+              tab === 'division'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'}`}>
+            👥 División
           </button>
         </div>
 
         {tab === 'fondo' && <CalculadoraFondoEmergencia />}
+
+        {/* ── DIVISIÓN DE CUENTA ── */}
+        {tab === 'division' && (
+          <div className="flex flex-col gap-4">
+            <div className="bg-blue-50/60 dark:bg-blue-900/10 rounded-2xl px-4 py-3 border border-blue-200/60 dark:border-blue-800/30">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                👥 Dividí gastos de manera justa. Podés excluir personas, marcar quién pagó y ver cuánto debe cada uno.
+              </p>
+            </div>
+            <Card>
+              <CalculadoraDivision />
+            </Card>
+          </div>
+        )}
 
         {tab === 'cuotas' && (
           <>

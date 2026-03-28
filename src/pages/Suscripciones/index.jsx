@@ -1,4 +1,5 @@
 // src/pages/Suscripciones/index.jsx
+// Actualizado con pestaña de Catálogo (impuestito-style con precios por billetera)
 import { useState } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { useSuscripciones } from '../../hooks/useSuscripciones'
@@ -6,6 +7,7 @@ import { SUSCRIPCIONES_POPULARES } from '../../api/suscripciones'
 import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, CardHeader, Button, EmptyState, Modal, Input, Select } from '../../components/ui'
 import { exportarSuscripcionesCSV } from '../../lib/exportar'
+import { CatalogoSuscripciones } from './Catalogo'
 
 const CATEGORIAS = [
   { id: 'streaming', label: 'Streaming',  icono: '🎬' },
@@ -16,6 +18,7 @@ const CATEGORIAS = [
   { id: 'salud',     label: 'Salud/Gym',  icono: '🏋️' },
   { id: 'educacion', label: 'Educación',  icono: '📚' },
   { id: 'juegos',    label: 'Juegos',     icono: '🎮' },
+  { id: 'deportes',  label: 'Deportes',   icono: '⚽' },
   { id: 'otro',      label: 'Otro',       icono: '📦' },
 ]
 
@@ -34,7 +37,7 @@ function FormSuscripcion({ onSubmit, onCancel, inicial = null }) {
   const [form, setForm]     = useState(inicial ? {
     nombre: inicial.nombre, monto: inicial.monto, moneda: inicial.moneda,
     icono: inicial.icono, color: inicial.color, ciclo: inicial.ciclo,
-    dia_cobro: inicial.dia_cobro ?? '', categoria: inicial.categoria,
+    dia_cobro: inicial.dia_cobro ?? '', categoria: inicial.categoria || 'otro',
     url: inicial.url ?? '', notas: inicial.notas ?? '',
   } : FORM_INIT)
   const [cargando, setCargando] = useState(false)
@@ -173,10 +176,14 @@ function TarjetaSuscripcion({ s, costoMensual, onEditar, onToggle }) {
         {s.icono}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-sm text-zinc-900 dark:text-white truncate leading-tight">{s.nombre}</p>
+        <p className="font-bold text-sm text-zinc-900 dark:text-white truncate leading-tight">
+          {s.nombre}
+          {s.plan && <span className="text-zinc-400 font-normal ml-1 text-xs">({s.plan})</span>}
+        </p>
         <p className="text-xs text-zinc-400 mt-0.5">
           {monedaSimbolo}{Number(s.monto).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{cicloLabel}
           {s.dia_cobro && ` · día ${s.dia_cobro}`}
+          {s.notas && ` · ${s.notas}`}
         </p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
@@ -184,7 +191,7 @@ function TarjetaSuscripcion({ s, costoMensual, onEditar, onToggle }) {
           <p className="text-sm font-bold" style={{ color: s.activa ? s.color : '#9CA3AF' }}>
             {fmtMes(costoMensual)}/mes
           </p>
-          <p className="text-[10px] text-zinc-400">aprox. en ARS</p>
+          <p className="text-[10px] text-zinc-400">aprox. ARS</p>
         </div>
         {/* Toggle activa */}
         <button onClick={onToggle}
@@ -211,8 +218,10 @@ function TarjetaSuscripcion({ s, costoMensual, onEditar, onToggle }) {
 export function SuscripcionesPage() {
   const { usuario } = useAuthContext()
   const { suscripciones, resumen, cargando, crear, editar, borrar, toggleActiva } = useSuscripciones()
-  const [modalNuevo, setModalNuevo]   = useState(false)
-  const [seleccionada, setSeleccionada] = useState(null)
+  const [tab, setTab]                     = useState('mis') // 'mis' | 'catalogo'
+  const [modalNuevo, setModalNuevo]       = useState(false)
+  const [seleccionada, setSeleccionada]   = useState(null)
+  const [exito, setExito]                 = useState(null)
 
   const handleGuardar = async (datos) => {
     if (seleccionada) {
@@ -222,6 +231,17 @@ export function SuscripcionesPage() {
     }
     setModalNuevo(false)
     setSeleccionada(null)
+  }
+
+  // Llamada desde el catálogo
+  const handleAgregarDesdeCatalogo = async (datos) => {
+    try {
+      await crear({ ...datos, usuario_id: usuario?.id })
+      setExito(datos.nombre)
+      setTimeout(() => setExito(null), 3000)
+    } catch (err) {
+      console.error(err)
+    }
   }
 
   const handleEliminar = async () => {
@@ -241,83 +261,143 @@ export function SuscripcionesPage() {
           subtitulo="¿Cuánto gastás en servicios digitales?"
           accion={
             <div className="flex gap-2">
-              {suscripciones.length > 0 && (
+              {suscripciones.length > 0 && tab === 'mis' && (
                 <Button variante="secondary" tamaño="sm"
                   onClick={() => exportarSuscripcionesCSV(suscripciones)}>
-                  📤 CSV
+                  📤
                 </Button>
               )}
-              <Button icono="+" onClick={() => { setSeleccionada(null); setModalNuevo(true) }}>
-                Agregar
-              </Button>
+              {tab === 'mis' && (
+                <Button icono="+" onClick={() => { setSeleccionada(null); setModalNuevo(true) }}>
+                  Manual
+                </Button>
+              )}
             </div>
           }
         />
 
-        {/* Resumen */}
-        {resumen.activas > 0 && (
-          <div className="grid grid-cols-3 gap-3 mb-5">
-            <div className="bg-purple-50 dark:bg-purple-900/15 border border-purple-100 dark:border-purple-900/20 rounded-2xl p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-0.5">Activas</p>
-              <p className="text-2xl font-black text-purple-700 dark:text-purple-400">{resumen.activas}</p>
-            </div>
-            <div className="bg-red-50 dark:bg-red-900/15 border border-red-100 dark:border-red-900/20 rounded-2xl p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 mb-0.5">Por mes</p>
-              <p className="text-lg font-black text-red-700 dark:text-red-400 leading-tight">
-                ${Math.round(resumen.totalMensualARS / 1000)}K
-              </p>
-              <p className="text-[9px] text-red-500/60">
-                ${Number(resumen.totalMensualARS).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
-              </p>
-            </div>
-            <div className="bg-amber-50 dark:bg-amber-900/15 border border-amber-100 dark:border-amber-900/20 rounded-2xl p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-0.5">Al año</p>
-              <p className="text-lg font-black text-amber-700 dark:text-amber-400 leading-tight">
-                ${Math.round(resumen.totalAnualARS / 1000)}K
-              </p>
-            </div>
+        {/* Tabs */}
+        <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1 mb-5">
+          <button
+            onClick={() => setTab('mis')}
+            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              tab === 'mis'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+            }`}
+          >
+            📱 Mis suscripciones
+            {suscripciones.length > 0 && (
+              <span className="ml-1.5 text-[10px] bg-zinc-200 dark:bg-zinc-700 px-1.5 py-0.5 rounded-full">
+                {suscripciones.filter(s => s.activa).length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setTab('catalogo')}
+            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              tab === 'catalogo'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+            }`}
+          >
+            🏪 Catálogo
+          </button>
+        </div>
+
+        {/* Toast de éxito al agregar desde catálogo */}
+        {exito && (
+          <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-emerald-50 dark:bg-emerald-900/20
+            border border-emerald-200 dark:border-emerald-800/40 rounded-2xl text-sm
+            text-emerald-700 dark:text-emerald-400 font-medium animate-in slide-in-from-top-2">
+            ✅ {exito} agregado a tus suscripciones
           </div>
         )}
 
-        {/* Lista */}
-        {cargando ? (
-          <div className="flex flex-col gap-3">
-            {[0,1,2].map(i => <div key={i} className="h-20 bg-zinc-100 dark:bg-zinc-800 rounded-2xl animate-pulse" />)}
-          </div>
-        ) : suscripciones.length === 0 ? (
-          <Card className="py-12">
-            <EmptyState
-              icono="📱"
-              titulo="Sin suscripciones cargadas"
-              descripcion="Agregá tus servicios mensuales para ver cuánto estás gastando realmente."
-              accion={<Button icono="+" onClick={() => setModalNuevo(true)}>Agregar suscripción</Button>}
-            />
-          </Card>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {resumen.detalle.map(s => (
-              <TarjetaSuscripcion
-                key={s.id}
-                s={s}
-                costoMensual={s.costoMensualARS}
-                onEditar={() => { setSeleccionada(s); setModalNuevo(true) }}
-                onToggle={() => toggleActiva(s.id)}
-              />
-            ))}
-            {/* Suscripciones inactivas */}
-            {suscripciones.filter(s => !s.activa).map(s => {
-              const costoMensual = s.ciclo === 'mensual' ? s.monto : s.ciclo === 'trimestral' ? s.monto / 3 : s.monto / 12
-              return (
-                <TarjetaSuscripcion
-                  key={s.id}
-                  s={s}
-                  costoMensual={costoMensual * (s.moneda === 'ARS' ? 1 : 1000)}
-                  onEditar={() => { setSeleccionada(s); setModalNuevo(true) }}
-                  onToggle={() => toggleActiva(s.id)}
-                />
-              )
-            })}
-          </div>
+        {/* ── Mis suscripciones ── */}
+        {tab === 'mis' && (
+          <>
+            {/* Resumen */}
+            {resumen.activas > 0 && (
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                <div className="bg-purple-50 dark:bg-purple-900/15 border border-purple-100 dark:border-purple-900/20 rounded-2xl p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-0.5">Activas</p>
+                  <p className="text-2xl font-black text-purple-700 dark:text-purple-400">{resumen.activas}</p>
+                </div>
+                <div className="bg-red-50 dark:bg-red-900/15 border border-red-100 dark:border-red-900/20 rounded-2xl p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 mb-0.5">Por mes</p>
+                  <p className="text-lg font-black text-red-700 dark:text-red-400 leading-tight">
+                    ${Math.round(resumen.totalMensualARS / 1000)}K
+                  </p>
+                  <p className="text-[9px] text-red-500/60">
+                    ${Number(resumen.totalMensualARS).toLocaleString('es-AR', { maximumFractionDigits: 0 })}
+                  </p>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-900/15 border border-amber-100 dark:border-amber-900/20 rounded-2xl p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-0.5">Al año</p>
+                  <p className="text-lg font-black text-amber-700 dark:text-amber-400 leading-tight">
+                    ${Math.round(resumen.totalAnualARS / 1000)}K
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Lista */}
+            {cargando ? (
+              <div className="flex flex-col gap-3">
+                {[0,1,2].map(i => <div key={i} className="h-20 bg-zinc-100 dark:bg-zinc-800 rounded-2xl animate-pulse" />)}
+              </div>
+            ) : suscripciones.length === 0 ? (
+              <div className="flex flex-col gap-4">
+                <div className="text-center py-8">
+                  <p className="text-3xl mb-2">📱</p>
+                  <p className="font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Sin suscripciones todavía</p>
+                  <p className="text-xs text-zinc-400 mb-4">
+                    Agregá desde el catálogo o manualmente
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Button variante="secondary" onClick={() => setTab('catalogo')}>
+                      🏪 Ver catálogo
+                    </Button>
+                    <Button icono="+" onClick={() => setModalNuevo(true)}>
+                      Manual
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {/* Activas */}
+                {resumen.detalle.map(s => (
+                  <TarjetaSuscripcion
+                    key={s.id}
+                    s={s}
+                    costoMensual={s.costoMensualARS}
+                    onEditar={() => { setSeleccionada(s); setModalNuevo(true) }}
+                    onToggle={() => toggleActiva(s.id)}
+                  />
+                ))}
+                {/* Pausadas */}
+                {suscripciones.filter(s => !s.activa).map(s => {
+                  const costoMensual = s.ciclo === 'mensual' ? s.monto : s.ciclo === 'trimestral' ? s.monto / 3 : s.monto / 12
+                  return (
+                    <TarjetaSuscripcion
+                      key={s.id}
+                      s={s}
+                      costoMensual={costoMensual * (s.moneda === 'ARS' ? 1 : 1300)}
+                      onEditar={() => { setSeleccionada(s); setModalNuevo(true) }}
+                      onToggle={() => toggleActiva(s.id)}
+                    />
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Catálogo ── */}
+        {tab === 'catalogo' && (
+          <CatalogoSuscripciones onAgregarSuscripcion={handleAgregarDesdeCatalogo} />
         )}
       </PageWrapper>
 

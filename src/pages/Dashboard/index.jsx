@@ -1,16 +1,18 @@
 // src/pages/Dashboard/index.jsx
-// Actualizado: alertas de gasto crítico + vencimientos próximos en el home
+// Actualizado: alertas de gasto crítico + vencimientos próximos + InsightsFinancieros
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuthContext } from '../../context/AuthContext'
-import { useBalance, useUltimosMovimientos, useEvolucionMensual, useGastosXCategoria } from '../../hooks/useMovimientos'
+import { useBalance, useUltimosMovimientos, useEvolucionMensual } from '../../hooks/useMovimientos'
 import { useVencimientos } from '../../hooks/useVencimientos'
 import { usePresupuestos } from '../../hooks/usePresupuestos'
+import { useMetas } from '../../hooks/useMetas'
 import { getVencimientosProximos } from '../../api/vencimientos'
 import { PageWrapper, MovCard } from '../../components/layout'
 import { Card } from '../../components/ui'
-import { ResumenBalance, LineaTemporal } from '../../components/charts'
+import { ResumenBalance, LineaTemporal, InsightsFinancieros } from '../../components/charts'
 import { exportarMovimientosCSV } from '../../lib/exportar'
+import { useMovimientos } from '../../hooks/useMovimientos'
 
 function useRangoMes() {
   return useMemo(() => {
@@ -25,7 +27,6 @@ function useRangoMes() {
 // Componente de alerta de presupuesto excedido
 function AlertaGastoCritico({ presupuestos }) {
   const criticos = presupuestos.filter(p => {
-    // Alerta si superó el 75% antes del día 20 del mes
     const diaActual = new Date().getDate()
     return p.porcentaje >= 75 && diaActual <= 20 && p.porcentaje < 100
   })
@@ -43,7 +44,7 @@ function AlertaGastoCritico({ presupuestos }) {
             <p className="text-sm font-bold text-red-700 dark:text-red-400 truncate">
               Excediste el límite de {p.categoria_nombre}
             </p>
-            <p className="text-xs text-red-500 dark:text-red-500">
+            <p className="text-xs text-red-500">
               Gastaste el {p.porcentaje.toFixed(0)}% del presupuesto
             </p>
           </div>
@@ -76,7 +77,7 @@ function AlertaGastoCritico({ presupuestos }) {
   )
 }
 
-// Componente de vencimientos próximos
+// Widget de vencimientos próximos
 function VencimientosWidget({ vencimientos }) {
   const proximos = useMemo(() => getVencimientosProximos(vencimientos, 7), [vencimientos])
   if (proximos.length === 0) return null
@@ -122,11 +123,13 @@ export function DashboardPage() {
   const { usuario } = useAuthContext()
   const { desde, hasta } = useRangoMes()
 
-  const { balance, cargando: cBal }             = useBalance(desde, hasta)
-  const { datos: evolucion, cargando: cEvo }    = useEvolucionMensual(6)
-  const { movimientos, cargando: cMovs }        = useUltimosMovimientos(5)
-  const { presupuestos }                        = usePresupuestos()
-  const { vencimientos }                        = useVencimientos()
+  const { balance, cargando: cBal }          = useBalance(desde, hasta)
+  const { datos: evolucion, cargando: cEvo } = useEvolucionMensual(6)
+  const { movimientos, cargando: cMovs }     = useUltimosMovimientos(5)
+  const { movimientos: todosMovs }           = useMovimientos({ desde, hasta })
+  const { presupuestos }                     = usePresupuestos()
+  const { vencimientos }                     = useVencimientos()
+  const { metas }                            = useMetas('activa')
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -162,10 +165,23 @@ export function DashboardPage() {
           </Card>
         </div>
 
-        {/* 3. VENCIMIENTOS PRÓXIMOS */}
+        {/* 3. INSIGHTS DE SALUD FINANCIERA */}
+        <div className="mb-6">
+          <Card className="p-4 shadow-sm border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+            <InsightsFinancieros
+              balance={balance}
+              movimientos={todosMovs}
+              presupuestos={presupuestos}
+              metas={metas}
+              moneda={usuario?.moneda}
+            />
+          </Card>
+        </div>
+
+        {/* 4. VENCIMIENTOS PRÓXIMOS */}
         <VencimientosWidget vencimientos={vencimientos} />
 
-        {/* 4. ACCESO RÁPIDO */}
+        {/* 5. ACCESO RÁPIDO */}
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
           {[
             { to: '/movimientos',   emoji: '💸', label: 'Movimientos', bg: 'bg-blue-50 dark:bg-blue-900/20' },
@@ -186,7 +202,7 @@ export function DashboardPage() {
           ))}
         </div>
 
-        {/* 5. ÚLTIMOS MOVIMIENTOS */}
+        {/* 6. ÚLTIMOS MOVIMIENTOS */}
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
             <h2 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Últimos movimientos</h2>

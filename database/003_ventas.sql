@@ -6,7 +6,7 @@
 create table if not exists ventas (
   id              uuid primary key default uuid_generate_v4(),
   usuario_id      uuid not null references usuarios(id) on delete cascade,
-  inversion_id    uuid not null references inversiones(id) on delete cascade,
+  inversion_id    uuid references inversiones(id) on delete set null,
 
   cantidad        numeric(18,8) not null check (cantidad > 0),
   precio_venta    numeric(18,4) not null check (precio_venta > 0),
