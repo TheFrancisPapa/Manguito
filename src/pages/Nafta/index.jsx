@@ -1,7 +1,7 @@
-// src/pages/Nafta/index.jsx
 import { useState, useEffect, useCallback } from 'react'
 import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, CardHeader, Button } from '../../components/ui'
+import { supabase } from '../../api/supabase'
 
 // ── Provincias argentinas ────────────────────────────────────
 const PROVINCIAS = [
@@ -64,38 +64,97 @@ function usePrecios(provincia) {
     return localStorage.getItem(`nafta_fecha_${provincia}`) || null
   })
 
-  const cargar = useCallback(async () => {
+  // Transforma datos planos de la DB al formato anidado de la app
+  const transformarPrecios = (data) => {
+    const mapa = {}
+    data.forEach(item => {
+      if (!mapa[item.tipo]) mapa[item.tipo] = {}
+      mapa[item.tipo][item.compania] = Number(item.precio)
+    })
+    return mapa
+  }
+
+  // 1. Cargar desde la base comunitaria de Supabase
+  const cargarDesdeDB = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('precios_nafta')
+      .select('*')
+      .eq('provincia', provincia)
+
+    if (data && data.length > 0) {
+      const preciosMap = transformarPrecios(data)
+      setPrecios(preciosMap)
+      setFuente('comunidad')
+      // Buscamos la fecha más reciente de los items traídos
+      const fecha = data.reduce((max, curr) => (curr.updated_at > (max || '') ? curr.updated_at : max), null)
+      setUltimaActualizacion(fecha)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(preciosMap))
+      localStorage.setItem(`nafta_fecha_${provincia}`, fecha)
+      return true
+    }
+    return false
+  }, [provincia, STORAGE_KEY])
+
+  // 2. Cargar desde API externa (y actualizar la DB)
+  const cargarDesdeAPI = useCallback(async () => {
     setCargando(true)
     try {
       const res = await fetch(`/api/nafta?provincia=${encodeURIComponent(provincia)}`)
       if (!res.ok) throw new Error('Error del servidor')
       const data = await res.json()
 
-      // Si el API devuelve precios estructurados, los usamos
       if (data.precios && Array.isArray(data.precios)) {
         const preciosMap = {}
+        const itemsParaDB = []
+        const ahora = new Date().toISOString()
+
         data.precios.forEach(p => {
           preciosMap[p.codigo] = p.precios
+          // Preparamos items para guardar en la base compartida
+          Object.entries(p.precios).forEach(([compania, precio]) => {
+            itemsParaDB.push({
+              provincia,
+              tipo: p.codigo,
+              compania,
+              precio: Number(precio),
+              updated_at: ahora
+            })
+          })
         })
+
         setPrecios(preciosMap)
         setFuente(data.fuente || 'combustibles.ar')
-        const fecha = new Date().toISOString()
-        setUltimaActualizacion(fecha)
+        setUltimaActualizacion(ahora)
         localStorage.setItem(STORAGE_KEY, JSON.stringify(preciosMap))
-        localStorage.setItem(`nafta_fecha_${provincia}`, fecha)
-      } else {
-        // Fallback a defaults con mensaje
-        setFuente('referencia')
+        localStorage.setItem(`nafta_fecha_${provincia}`, ahora)
+
+        // Actualizamos la base comunitaria de fondo
+        supabase.from('precios_nafta').upsert(itemsParaDB).then()
+        
+        return true
       }
-    } catch {
+    } catch (err) {
+      console.error("Error cargando API:", err)
       setFuente('local')
     } finally {
       setCargando(false)
     }
+    return false
   }, [provincia, STORAGE_KEY])
 
+  // Lógica de carga inicial: DB -> API
+  useEffect(() => {
+    const iniciar = async () => {
+      const hayEnDB = await cargarDesdeDB()
+      if (!hayEnDB) {
+        await cargarDesdeAPI()
+      }
+    }
+    iniciar()
+  }, [provincia, cargarDesdeDB, cargarDesdeAPI])
+
   // Actualizar un precio manualmente
-  const actualizarPrecio = (tipo, compania, nuevoPrecio) => {
+  const actualizarPrecio = async (tipo, compania, nuevoPrecio) => {
     const nuevos = { ...precios, [tipo]: { ...precios[tipo], [compania]: nuevoPrecio } }
     setPrecios(nuevos)
     const fecha = new Date().toISOString()
@@ -103,9 +162,18 @@ function usePrecios(provincia) {
     setFuente('comunidad')
     localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevos))
     localStorage.setItem(`nafta_fecha_${provincia}`, fecha)
+
+    // Guardar en la base de datos para que sea compartido
+    await supabase.from('precios_nafta').upsert({
+      provincia,
+      tipo,
+      compania,
+      precio: Number(nuevoPrecio),
+      updated_at: fecha
+    })
   }
 
-  return { precios, cargando, fuente, ultimaActualizacion, cargar, actualizarPrecio }
+  return { prices: precios, cargando, fuente, ultimaActualizacion, refresh: cargarDesdeAPI, actualizarPrecio }
 }
 
 // ── Calculadora de tanque ────────────────────────────────────
@@ -313,7 +381,7 @@ export function NaftaPage() {
     return localStorage.getItem('nafta_provincia') || 'Corrientes'
   })
 
-  const { precios, cargando, fuente, ultimaActualizacion, cargar, actualizarPrecio } = usePrecios(provincia)
+  const { prices: precios, cargando, fuente, ultimaActualizacion, refresh: cargar, actualizarPrecio } = usePrecios(provincia)
   const [modalActualizar, setModalActualizar] = useState(null) // { tipo, compania, precio }
 
   const handleProvinciaChange = (nueva) => {
