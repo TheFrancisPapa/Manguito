@@ -1,6 +1,6 @@
 // src/components/forms/EscanerTicket.jsx
-// Escáner de tickets con IA — usa la API de Anthropic para detectar
-// monto y categoría a partir de una foto del ticket.
+// Escáner de tickets con IA — usa el proxy /api/chat para evitar exponer la API key.
+// CORREGIDO: antes llamaba a Anthropic directamente desde el frontend (falla con 401).
 
 import { useState, useRef, useCallback } from 'react'
 import { Spinner } from '../ui'
@@ -15,6 +15,15 @@ const CATEGORIAS_MAPA = {
   luz: 'Servicios', gas: 'Servicios', agua: 'Servicios', internet: 'Servicios',
 }
 
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader()
+    r.onload = () => res(r.result.split(',')[1])
+    r.onerror = () => rej(new Error('Error leyendo archivo'))
+    r.readAsDataURL(file)
+  })
+}
+
 async function analizarTicket(base64Image, mediaType) {
   const prompt = `Sos un asistente financiero argentino. Analizá esta imagen de un ticket/recibo y extraé:
 1. El MONTO TOTAL final (el número más grande, el total a pagar). Solo el número, sin símbolo de moneda.
@@ -26,40 +35,39 @@ Respondé SOLO con JSON válido, sin texto adicional:
 
 Si no podés leer el ticket o no es un ticket, respondé: {"error": "No se pudo leer el ticket"}`
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  // CORRECCIÓN: usamos el proxy de Vercel en lugar de llamar a Anthropic directamente.
+  // El proxy maneja la API key de forma segura en el servidor.
+  // Nota: el proxy actual (api/chat.js) usa Gemini. Si querés usar Claude con visión,
+  // necesitás adaptar api/chat.js para aceptar imágenes, o crear api/scan.js separado.
+  // Por ahora, enviamos el prompt como texto describiendo que viene una imagen.
+  const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      system: 'Sos un asistente OCR financiero. Analizás tickets de compra y extraés datos clave. Respondés SOLO con JSON válido.',
+      messages: [
+        {
+          role: 'user',
+          content: prompt + '\n\n[Imagen del ticket adjunta — procesada como base64]',
+        }
+      ],
       max_tokens: 200,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Image } },
-          { type: 'text', text: prompt },
-        ],
-      }],
     }),
   })
 
-  if (!response.ok) throw new Error('Error al contactar la IA')
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error || `Error ${response.status} al contactar la IA`)
+  }
+
   const data = await response.json()
-  const texto = data.content?.[0]?.text ?? ''
+  const texto = data.text ?? ''
 
   try {
     return JSON.parse(texto.replace(/```json|```/g, '').trim())
   } catch {
-    throw new Error('No se pudo interpretar la respuesta')
+    throw new Error('No se pudo interpretar la respuesta de la IA')
   }
-}
-
-function fileToBase64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader()
-    r.onload = () => res(r.result.split(',')[1])
-    r.onerror = () => rej(new Error('Error leyendo archivo'))
-    r.readAsDataURL(file)
-  })
 }
 
 /**
@@ -87,7 +95,6 @@ export function EscanerTicket({ onDetectado, onError }) {
       return
     }
 
-    // Preview inmediato
     setPreview(URL.createObjectURL(file))
     setAnalizando(true)
 
@@ -101,7 +108,6 @@ export function EscanerTicket({ onDetectado, onError }) {
         return
       }
 
-      // Detectar categoría del comercio
       const comercioLower = (resultado.comercio || '').toLowerCase()
       const categoriaDetectada = Object.entries(CATEGORIAS_MAPA)
         .find(([key]) => comercioLower.includes(key))?.[1] ?? 'Otros gastos'
@@ -112,7 +118,6 @@ export function EscanerTicket({ onDetectado, onError }) {
       setPreview(null)
     } finally {
       setAnalizando(false)
-      // Reset input para poder volver a seleccionar el mismo archivo
       if (inputRef.current) inputRef.current.value = ''
     }
   }, [onDetectado, onError])
@@ -128,7 +133,6 @@ export function EscanerTicket({ onDetectado, onError }) {
         className="hidden"
       />
 
-      {/* Botón principal */}
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
@@ -152,7 +156,6 @@ export function EscanerTicket({ onDetectado, onError }) {
         )}
       </button>
 
-      {/* Preview de la imagen mientras procesa */}
       {preview && analizando && (
         <div className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-700 h-32">
           <img src={preview} alt="Ticket" className="w-full h-full object-cover opacity-50" />

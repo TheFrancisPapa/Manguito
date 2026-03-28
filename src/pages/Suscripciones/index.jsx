@@ -2,10 +2,10 @@
 import { useState } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { useSuscripciones } from '../../hooks/useSuscripciones'
-import { SUSCRIPCIONES_POPULARES, exportarSuscripcionesCSV } from '../../api/suscripciones'
+import { SUSCRIPCIONES_POPULARES } from '../../api/suscripciones'
 import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, CardHeader, Button, EmptyState, Modal, Input, Select } from '../../components/ui'
-import { exportarSuscripcionesCSV as exportarCSV } from '../../lib/exportar'
+import { exportarSuscripcionesCSV } from '../../lib/exportar'
 
 const CATEGORIAS = [
   { id: 'streaming', label: 'Streaming',  icono: '🎬' },
@@ -243,7 +243,7 @@ export function SuscripcionesPage() {
             <div className="flex gap-2">
               {suscripciones.length > 0 && (
                 <Button variante="secondary" tamaño="sm"
-                  onClick={() => exportarCSV(suscripciones)}>
+                  onClick={() => exportarSuscripcionesCSV(suscripciones)}>
                   📤 CSV
                 </Button>
               )}
