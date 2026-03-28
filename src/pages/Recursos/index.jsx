@@ -74,7 +74,7 @@ const CUENTAS_INSTAGRAM = [
     descripcion: 'Charlas de inversiones simples, como una conversación con un amigo. CEDEARs, bonos y FCI explicados sin jerga.',
     temas:       ['CEDEARs', 'Bonos', 'FCI', 'Casual'],
     url:         'https://www.instagram.com/inversiones_con_cafe',
-    emoji:       ☕,
+    emoji:       '☕',
     color:       '#795548',
   },
 ]
