@@ -1,11 +1,11 @@
 export function Card({ children, className = '', onClick }) {
   const clickable = onClick
-    ? 'cursor-pointer hover:border-[var(--mango)]/50 hover:shadow-md active:scale-[0.98] transition-all duration-200'
+    ? 'cursor-pointer hover:shadow-md hover:border-[var(--mango)]/20 active:scale-[0.99] transition-all duration-200'
     : ''
 
   return (
     <div
-      className={`bg-white dark:bg-zinc-900 shadow-sm border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 w-full ${clickable} ${className}`}
+      className={`bg-white dark:bg-[var(--dark-card)] shadow-[var(--shadow-sm)] border border-zinc-100/80 dark:border-[var(--dark-border)] rounded-2xl p-4 w-full ${clickable} ${className}`}
       onClick={onClick}
     >
       {children}
@@ -16,12 +16,12 @@ export function Card({ children, className = '', onClick }) {
 export function CardHeader({ titulo, subtitulo = null, accion = null }) {
   return (
     <div className="flex items-start justify-between gap-2 mb-3">
-      <div className="flex-1 min-w-0"> {/* min-w-0 evita que textos largos empujen el layout */}
-        <h2 className="text-xs uppercase font-bold tracking-wider text-zinc-500 dark:text-zinc-400 mb-1 leading-tight">
+      <div className="flex-1 min-w-0">
+        <h2 className="text-[10px] uppercase font-bold tracking-[0.08em] text-zinc-400 dark:text-zinc-500 mb-1 leading-tight">
           {titulo}
         </h2>
         {subtitulo && (
-          <p className="text-xl sm:text-2xl font-bold text-[var(--charcoal)] dark:text-white leading-tight truncate">
+          <p className="text-xl sm:text-2xl font-bold font-display text-zinc-900 dark:text-white leading-tight truncate">
             {subtitulo}
           </p>
         )}

@@ -2,63 +2,154 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ═══════════════════════════════════════════════════
-   🥭  MANGUITO — Design System
-   Paleta extraída del logo (Mango.png)
+   🥭  MANGUITO — Design System v2
+   Premium Warm Fintech Aesthetic
+   Fonts: Outfit (display) + DM Sans (body)
    ═══════════════════════════════════════════════════ */
 
 :root {
-  /* Mango — dorado vibrante del cuerpo del mango */
-  --mango:        #F5C842;
-  --mango-dark:   #E8A317;
-  --mango-light:  #F7D96B;
+  /* ── Brand Colors ── */
+  --mango:        #F5A623;
+  --mango-dark:   #E8850F;
+  --mango-light:  #FBBF24;
+  --mango-glow:   rgba(245, 166, 35, 0.35);
 
-  /* Crema — fondo cálido (del background del logo) */
-  --cream:        #FCEBD3;
-  --cream-soft:   #FEF6EC;
+  /* ── Surfaces ── */
+  --cream:        #FDF3E3;
+  --cream-soft:   #FEFAF4;
+  --cream-deep:   #F5E8CC;
 
-  /* Hoja — verde natural del tallo */
-  --leaf:         #6BA34A;
-  --leaf-light:   #E8F5E0;
-  --leaf-dark:    #4A8C2F;
+  /* ── Greens ── */
+  --leaf:         #059669;
+  --leaf-light:   #D1FAE5;
+  --leaf-dark:    #047857;
 
-  /* Nuevo Acento "Vibrante" — Verde Dinero Moderno */
+  /* ── Dark Mode Surfaces ── */
+  --dark-bg:      #0D0C0B;
+  --dark-surface: #161412;
+  --dark-card:    #1E1B18;
+  --dark-border:  rgba(255,255,255,0.07);
+
+  /* ── Typography ── */
+  --font-display: 'Outfit', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+
+  /* ── Shadows ── */
+  --shadow-mango:   0 8px 32px rgba(245, 166, 35, 0.30);
+  --shadow-sm:      0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:      0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
+  --shadow-lg:      0 12px 40px rgba(0,0,0,0.12), 0 4px 14px rgba(0,0,0,0.08);
+
+  /* ── Gradients ── */
+  --gradient-mango:   linear-gradient(135deg, #F5A623 0%, #E8850F 100%);
+  --gradient-surface: linear-gradient(135deg, #FEFAF4 0%, #FDF3E3 100%);
+
+  /* ── Legacy compat ── */
+  --charcoal:     #1C1917;
   --primary-vibrant: #4ADE80;
   --primary-soft:    #DCFCE7;
-  
-  /* Grises premium para fondos oscuros */
-  --dark-bg:      #111827; /* Gris azulado muy oscuro */
-  --dark-card:    #1F2937; /* Gris para tarjetas en modo oscuro */
-
-  /* Carbón — outline del mango, textos sobre dorado */
-  --charcoal:     #2D2D2D;
-
-  /* Sombras de marca */
-  --shadow-mango: 0 4px 14px rgba(245, 200, 66, 0.25);
-  --shadow-soft:  0 2px 8px rgba(0,0,0,0.04);
 }
 
+/* ── Global Base ───────────────────────────────────── */
 @layer base {
+  html {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
-    @apply bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] text-zinc-800 dark:text-zinc-100 antialiased;
+    @apply bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] text-zinc-800 dark:text-zinc-100;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6,
+  .font-display {
+    font-family: var(--font-display);
   }
 
   ::selection {
-    background: var(--mango-light);
+    background: rgba(245, 166, 35, 0.25);
     color: var(--charcoal);
   }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.3); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(245,166,35,0.6); }
 }
 
-/* ── Utilidades de marca ──────────────────────────── */
-.bg-mango       { background-color: var(--mango); }
-.bg-mango-dark  { background-color: var(--mango-dark); }
-.bg-cream       { background-color: var(--cream); }
-.text-mango     { color: var(--mango); }
-.text-mango-dark{ color: var(--mango-dark); }
-.text-leaf      { color: var(--leaf); }
-.border-mango   { border-color: var(--mango); }
-.shadow-mango   { box-shadow: var(--shadow-mango); }
+/* ── Grain texture overlay ─────────────────────────── */
+.grain::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 9999;
+}
 
-/* ── Animaciones ──────────────────────────────────── */
+/* ── Glassmorphism ─────────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.5);
+}
+
+.glass-dark {
+  background: rgba(22,20,18,0.80);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+/* ── Premium Card ──────────────────────────────────── */
+.card-premium {
+  background: #FFFFFF;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-sm);
+  border-radius: 20px;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.dark .card-premium {
+  background: var(--dark-card);
+  border-color: var(--dark-border);
+}
+
+.card-premium:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Glow effects ──────────────────────────────────── */
+.glow-mango {
+  box-shadow: 0 0 24px var(--mango-glow), var(--shadow-mango);
+}
+
+/* ── Button base ───────────────────────────────────── */
+.btn-primary {
+  background: var(--gradient-mango);
+  box-shadow: 0 4px 16px var(--mango-glow);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 24px var(--mango-glow), 0 2px 8px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px var(--mango-glow);
+}
+
+/* ── Animations ────────────────────────────────────── */
 @keyframes blob {
   0%   { transform: translate(0px, 0px) scale(1); }
   33%  { transform: translate(30px, -50px) scale(1.1); }
@@ -68,7 +159,7 @@
 
 @keyframes float {
   0%   { transform: translateY(0px); }
-  50%  { transform: translateY(-8px); }
+  50%  { transform: translateY(-10px); }
   100% { transform: translateY(0px); }
 }
 
@@ -77,13 +168,89 @@
   100% { background-position: 200% 0; }
 }
 
-.animate-blob   { animation: blob 7s infinite; }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(0.9); opacity: 1; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.animate-blob   { animation: blob 8s infinite; }
 .animate-float  { animation: float 6s ease-in-out infinite; }
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent 25%, rgba(245,200,66,0.08) 50%, transparent 75%);
+  background: linear-gradient(90deg, transparent 25%, rgba(245,166,35,0.1) 50%, transparent 75%);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
+.animate-fade-up    { animation: fadeInUp 0.6s ease forwards; }
+.animate-scale-in   { animation: scaleIn 0.4s ease forwards; }
+.animate-slide-right { animation: slideInRight 0.5s ease forwards; }
+.animate-pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
 
+.animation-delay-100  { animation-delay: 100ms; }
+.animation-delay-200  { animation-delay: 200ms; }
+.animation-delay-300  { animation-delay: 300ms; }
+.animation-delay-400  { animation-delay: 400ms; }
+.animation-delay-500  { animation-delay: 500ms; }
 .animation-delay-2000 { animation-delay: 2s; }
 .animation-delay-4000 { animation-delay: 4s; }
+
+/* ── Brand utilities ───────────────────────────────── */
+.bg-mango        { background-color: var(--mango); }
+.bg-mango-dark   { background-color: var(--mango-dark); }
+.bg-cream        { background-color: var(--cream); }
+.text-mango      { color: var(--mango); }
+.text-mango-dark { color: var(--mango-dark); }
+.text-leaf       { color: var(--leaf); }
+.border-mango    { border-color: var(--mango); }
+.shadow-mango    { box-shadow: var(--shadow-mango); }
+
+/* ── Gradient text ─────────────────────────────────── */
+.text-gradient-mango {
+  background: var(--gradient-mango);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #F5A623 0%, #FCD34D 50%, #E8850F 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── Mesh gradient backgrounds ─────────────────────── */
+.mesh-bg {
+  background: 
+    radial-gradient(ellipse at 20% 20%, rgba(245,166,35,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(16,185,129,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 60% 10%, rgba(245,166,35,0.06) 0%, transparent 50%);
+}
+
+.dark .mesh-bg {
+  background: 
+    radial-gradient(ellipse at 20% 20%, rgba(245,166,35,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(16,185,129,0.04) 0%, transparent 60%),
+    var(--dark-bg);
+}
+
+/* ── Hide scrollbar utility ─────────────────────────── */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
