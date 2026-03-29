@@ -74,3 +74,15 @@ export const router = createBrowserRouter([
     ]
   }
 ])
+// Prefetch de las rutas más visitadas cuando el navegador esté idle
+if (typeof window !== 'undefined') {
+  const prefetchRoutes = [
+    () => import('../pages/Dashboard'),
+    () => import('../pages/Movimientos'),
+    () => import('../pages/Cotizaciones'),
+  ]
+
+  window.requestIdleCallback?.(() => {
+    prefetchRoutes.forEach(fn => fn().catch(() => { }))
+  }, { timeout: 3000 })
+}
