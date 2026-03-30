@@ -3,6 +3,7 @@
 // CORREGIDO: antes llamaba a Anthropic directamente desde el frontend (falla con 401).
 
 import { useState, useRef, useCallback } from 'react'
+import { supabase } from '../../lib/supabase'
 import { Spinner } from '../ui'
 
 const CATEGORIAS_MAPA = {
@@ -40,9 +41,14 @@ Si no podés leer el ticket o no es un ticket, respondé: {"error": "No se pudo 
   // Nota: el proxy actual (api/chat.js) usa Gemini. Si querés usar Claude con visión,
   // necesitás adaptar api/chat.js para aceptar imágenes, o crear api/scan.js separado.
   // Por ahora, enviamos el prompt como texto describiendo que viene una imagen.
+  const { data: { session } } = await supabase.auth.getSession()
+
   const response = await fetch('/api/chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token ?? ''}`,
+    },
     body: JSON.stringify({
       system: 'Sos un asistente OCR financiero. Analizás tickets de compra y extraés datos clave. Respondés SOLO con JSON válido.',
       messages: [

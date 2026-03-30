@@ -3,6 +3,7 @@
 // Llama al proxy /api/chat con los datos del usuario.
 
 import { useState, useCallback } from 'react'
+import { supabase } from '../../lib/supabase'
 import { Spinner } from '../ui'
 
 const EMOJIS_INSIGHT = {
@@ -81,9 +82,14 @@ Usuario argentino. Moneda: ${moneda}. Mes actual.
 - Metas de ahorro: ${metasResumen || 'sin metas'}
       `.trim()
 
+      const { data: { session } } = await supabase.auth.getSession()
+
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token ?? ''}`,
+        },
         body: JSON.stringify({
           system: `Sos ManguitoAI, un asesor financiero personal para argentinos. 
 Analizás los datos financieros del usuario y generás 4-5 insights CONCRETOS y ACCIONABLES.

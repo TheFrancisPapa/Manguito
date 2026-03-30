@@ -1,11 +1,38 @@
 // api/chat.js
-// Proxy serverless para la API de Google Gemini — evita exponer la API key en el frontend.
-// Se ejecuta en los servidores de Vercel (serverless function).
+import { createClient } from '@supabase/supabase-js'
+
+// Verifica que el Bearer token pertenece a un usuario real de Supabase.
+// Devuelve el user object o null.
+async function getAuthUser(req) {
+  const authHeader = req.headers.authorization ?? ''
+  if (!authHeader.startsWith('Bearer ')) return null
+
+  const token = authHeader.slice(7).trim()
+  if (!token) return null
+
+  // Usamos el service-role key para validar el JWT del usuario
+  // sin exponerlo al frontend.
+  const supabase = createClient(
+    process.env.VITE_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  )
+
+  const { data: { user }, error } = await supabase.auth.getUser(token)
+  if (error || !user) return null
+  return user
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' })
   }
+
+  // ── NUEVO: autenticación obligatoria ──────────────────────────
+  const user = await getAuthUser(req)
+  if (!user) {
+    return res.status(401).json({ error: 'No autorizado. Iniciá sesión para usar el asistente.' })
+  }
+  // ─────────────────────────────────────────────────────────────
 
   const { system, messages, max_tokens = 1000 } = req.body
 
@@ -13,34 +40,31 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Se requiere el campo "messages" (array)' })
   }
 
+  // Limitamos max_tokens server-side sin importar lo que mande el cliente
+  const tokensLimitados = Math.min(Number(max_tokens) || 1000, 1500)
+
   const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    console.error('[chat] Falta la variable de entorno GEMINI_API_KEY')
+    console.error('[chat] Falta GEMINI_API_KEY')
     return res.status(500).json({ error: 'El servidor no está configurado correctamente' })
   }
 
   try {
-    // Gemini usa "model" en lugar de "assistant" para el rol del asistente
     const contents = messages.map(m => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }],
     }))
 
     const body = {
-      // System prompt va aparte en Gemini
-      system_instruction: system
-        ? { parts: [{ text: system }] }
-        : undefined,
+      system_instruction: system ? { parts: [{ text: system }] } : undefined,
       contents,
       generationConfig: {
-        maxOutputTokens: max_tokens,
+        maxOutputTokens: tokensLimitados,
         temperature: 0.7,
       },
     }
 
-    // gemini-2.0-flash es el modelo rápido actual de Google
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`
-
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -56,14 +80,9 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json()
-
-    // Extraemos el texto de la respuesta de Gemini
-    const text = data.candidates?.[0]?.content?.parts
-      ?.map(p => p.text)
-      .join('\n') || ''
+    const text = data.candidates?.[0]?.content?.parts?.map(p => p.text).join('\n') || ''
 
     if (!text) {
-      // Puede pasar si Gemini bloquea la respuesta por safety filters
       const blockReason = data.candidates?.[0]?.finishReason
       console.warn('[chat] Respuesta vacía de Gemini, motivo:', blockReason)
       return res.status(200).json({
@@ -76,8 +95,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('[chat] Error interno:', error.message)
-    return res.status(500).json({
-      error: 'Error interno del servidor. Intentá de nuevo.',
-    })
+    return res.status(500).json({ error: 'Error interno del servidor. Intentá de nuevo.' })
   }
 }
