@@ -1,235 +1,464 @@
-// src/pages/Dashboard/index.jsx
-import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { useAuthContext } from '../../context/AuthContext'
-import { useBalance, useUltimosMovimientos, useEvolucionMensual, useMovimientos } from '../../hooks/useMovimientos'
-import { useVencimientos } from '../../hooks/useVencimientos'
-import { usePresupuestos } from '../../hooks/usePresupuestos'
-import { useMetas } from '../../hooks/useMetas'
-import { getVencimientosProximos } from '../../api/vencimientos'
-import { PageWrapper, MovCard } from '../../components/layout'
-import { Card } from '../../components/ui'
-import { ResumenBalance, LineaTemporal, InsightsFinancieros } from '../../components/charts'
-import { exportarMovimientosCSV } from '../../lib/exportar'
+// src/pages/Dashboard/index.jsx — Rediseño App-Like
+// Reemplazá el contenido de src/pages/Dashboard/index.jsx con este archivo.
 
-function useRangoMes() {
+import { useState, useMemo, useCallback } from 'react'
+import { Link }                           from 'react-router-dom'
+import { useAuthContext }                 from '../../context/AuthContext'
+import {
+  useBalance,
+  useEvolucionMensual,
+  useMovimientos,
+}                                         from '../../hooks/useMovimientos'
+import { usePresupuestos }                from '../../hooks/usePresupuestos'
+import { PageWrapper }                    from '../../components/layout'
+import { MovCard }                        from '../../components/layout/MovCard'
+import { Modal }                          from '../../components/ui/Modal'
+import { FormMovimiento }                 from '../../components/forms/FormMovimiento'
+
+// ─── Utilidades ──────────────────────────────────────────────
+function useRangoMes(offsetMeses = 0) {
   return useMemo(() => {
     const hoy = new Date()
-    return {
-      desde: new Date(hoy.getFullYear(), hoy.getMonth(), 1).toLocaleDateString('sv-SE'),
-      hasta: hoy.toLocaleDateString('sv-SE'),
-    }
-  }, [])
+    const d   = new Date(hoy.getFullYear(), hoy.getMonth() + offsetMeses, 1)
+    const desde = d.toLocaleDateString('sv-SE')
+    const hasta =
+      offsetMeses === 0
+        ? hoy.toLocaleDateString('sv-SE')
+        : new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString('sv-SE')
+    return { desde, hasta }
+  }, [offsetMeses])
 }
 
-function AlertaGastoCritico({ presupuestos }) {
-  const criticos  = presupuestos.filter(p => p.porcentaje >= 75 && new Date().getDate() <= 20 && p.porcentaje < 100)
+function fmtAbrev(n) {
+  const abs = Math.abs(n)
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (abs >= 100_000)   return `${(n / 1_000).toFixed(0)}K`
+  return Number(n).toLocaleString('es-AR', { maximumFractionDigits: 0 })
+}
+
+function fmtFull(n) {
+  return `$\u00A0${Number(n).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`
+}
+
+// ─── Gráfico de evolución integrado ──────────────────────────
+function ChartEvolucion({ datos = [], cargando }) {
+  if (cargando) {
+    return <div className="w-full h-24 rounded-xl bg-white/8 animate-pulse" />
+  }
+  if (!datos.length) return null
+
+  const W = 400, H = 88
+  const PL = 8, PR = 8, PT = 4, PB = 20
+  const iW = W - PL - PR
+  const iH = H - PT - PB
+  const maxV = Math.max(...datos.flatMap(d => [d.ingresos, d.gastos]), 1)
+  const xS  = datos.length > 1 ? iW / (datos.length - 1) : iW
+  const px  = (i) => PL + i * xS
+  const py  = (v) => PT + iH - (v / maxV) * iH
+
+  const areaD = [
+    `M ${px(0)} ${PT + iH}`,
+    ...datos.map((d, i) => `L ${px(i)} ${py(d.ingresos)}`),
+    `L ${px(datos.length - 1)} ${PT + iH} Z`,
+  ].join(' ')
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="overflow-visible">
+      <defs>
+        <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor="rgba(255,255,255,0.22)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.01)" />
+        </linearGradient>
+      </defs>
+
+      {/* Área */}
+      <path d={areaD} fill="url(#g1)" />
+
+      {/* Línea gastos — punteada roja */}
+      <polyline
+        points={datos.map((d, i) => `${px(i)},${py(d.gastos)}`).join(' ')}
+        fill="none" stroke="rgba(252,165,165,0.55)"
+        strokeWidth="1.5" strokeDasharray="4 3" strokeLinecap="round"
+      />
+
+      {/* Línea ingresos */}
+      <polyline
+        points={datos.map((d, i) => `${px(i)},${py(d.ingresos)}`).join(' ')}
+        fill="none" stroke="rgba(255,255,255,0.85)"
+        strokeWidth="2" strokeLinecap="round"
+      />
+
+      {/* Puntos y etiquetas */}
+      {datos.map((d, i) => (
+        <g key={i}>
+          <circle cx={px(i)} cy={py(d.ingresos)} r="2.5" fill="white" opacity="0.65" />
+          <text x={px(i)} y={H - 4} textAnchor="middle" fontSize="8"
+            fill="rgba(255,255,255,0.32)">
+            {d.label}
+          </text>
+        </g>
+      ))}
+    </svg>
+  )
+}
+
+// ─── Alerta presupuesto ───────────────────────────────────────
+function AlertaPresupuesto({ presupuestos }) {
   const excedidos = presupuestos.filter(p => p.porcentaje >= 100)
-  if (criticos.length === 0 && excedidos.length === 0) return null
+  const alertas   = presupuestos.filter(p => p.porcentaje >= p.alerta_pct && p.porcentaje < 100)
+  if (!excedidos.length && !alertas.length) return null
+
+  const n   = excedidos.length + alertas.length
+  const mal = excedidos.length > 0
 
   return (
-    <div className="flex flex-col gap-2 mb-5">
-      {excedidos.map(p => (
-        <Link key={p.id} to="/presupuestos"
-          className="flex items-center gap-3 px-4 py-3
-            bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 rounded-2xl
-            hover:shadow-md transition-all">
-          <span className="text-xl flex-shrink-0">🚨</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-red-700 dark:text-red-400 truncate">
-              Excediste el límite de {p.categoria_nombre}
-            </p>
-            <p className="text-xs text-red-500">{p.porcentaje.toFixed(0)}% del presupuesto usado</p>
-          </div>
-          <span className="text-xs font-bold text-red-500 flex-shrink-0">Ver →</span>
-        </Link>
-      ))}
-      {criticos.map(p => (
-        <Link key={p.id} to="/presupuestos"
-          className="flex items-center gap-3 px-4 py-3
-            bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-800/40 rounded-2xl
-            hover:shadow-md transition-all">
-          <span className="text-xl flex-shrink-0">⚠️</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-amber-700 dark:text-amber-400 truncate">
-              Venís rápido con {p.categoria_nombre}
-            </p>
-            <p className="text-xs text-amber-600 dark:text-amber-500">
-              {p.porcentaje.toFixed(0)}% usado · día {new Date().getDate()}
-            </p>
-          </div>
-          <span className="text-xs font-bold text-amber-600 flex-shrink-0">Ver →</span>
-        </Link>
-      ))}
-    </div>
+    <Link to="/presupuestos"
+      className={`flex items-center gap-3 px-4 py-3 rounded-2xl mb-4 border active:scale-[0.98] transition-all
+        ${mal
+          ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/40'
+          : 'bg-amber-50 dark:bg-amber-900/15 border-amber-200 dark:border-amber-800/30'}`}
+    >
+      <span className="text-xl">{mal ? '🚨' : '⚠️'}</span>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-bold ${mal ? 'text-red-700 dark:text-red-400' : 'text-amber-700 dark:text-amber-500'}`}>
+          {mal
+            ? `${excedidos.length} presupuesto${excedidos.length > 1 ? 's' : ''} excedido${excedidos.length > 1 ? 's' : ''}`
+            : `${n} presupuesto${n > 1 ? 's' : ''} cerca del límite`}
+        </p>
+        <p className="text-[10px] text-zinc-400 mt-0.5">Tocá para revisar →</p>
+      </div>
+    </Link>
   )
 }
 
-function VencimientosWidget({ vencimientos }) {
-  const proximos = useMemo(() => getVencimientosProximos(vencimientos, 7), [vencimientos])
-  if (proximos.length === 0) return null
-
+// ─── FAB ─────────────────────────────────────────────────────
+function FAB({ onClick }) {
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-3 px-1">
-        <h2 className="text-sm font-bold font-display text-zinc-800 dark:text-zinc-200">📅 Vencen pronto</h2>
-        <Link to="/vencimientos" className="text-xs font-bold text-[var(--mango-dark)] dark:text-[var(--mango)] hover:underline">
-          Ver agenda
-        </Link>
-      </div>
-      <div className="flex flex-col gap-2">
-        {proximos.slice(0, 3).map(v => (
-          <Link key={v.id} to="/vencimientos"
-            className="flex items-center gap-3 px-4 py-3
-              bg-white dark:bg-[var(--dark-card)] border border-zinc-100 dark:border-[var(--dark-border)] rounded-2xl
-              hover:border-zinc-200 dark:hover:border-zinc-600 hover:shadow-sm transition-all">
-            <span className="text-lg flex-shrink-0">{v.icono}</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate">{v.nombre}</p>
-              {v.monto && <p className="text-xs text-zinc-400">${Number(v.monto).toLocaleString('es-AR', { maximumFractionDigits: 0 })}</p>}
-            </div>
-            <span className={`text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${
-              v.diasRestantes === 0
-                ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                : v.diasRestantes <= 3
-                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'
-            }`}>
-              {v.diasRestantes === 0 ? 'Hoy' : `${v.diasRestantes}d`}
-            </span>
-          </Link>
-        ))}
-      </div>
-    </div>
+    <button
+      onClick={onClick}
+      aria-label="Agregar movimiento"
+      className="fixed bottom-24 right-4 z-40 md:bottom-8 md:right-8
+        w-[60px] h-[60px] rounded-[20px] flex items-center justify-center
+        active:scale-90 transition-transform duration-150"
+      style={{
+        background: 'linear-gradient(145deg, #F8B133 0%, #D4730A 100%)',
+        boxShadow:
+          '0 6px 24px rgba(245,166,35,0.65), 0 2px 8px rgba(0,0,0,0.2)',
+      }}
+    >
+      <svg width="26" height="26" viewBox="0 0 24 24"
+        fill="none" stroke="#1C1410" strokeWidth="2.8" strokeLinecap="round">
+        <line x1="12" y1="4" x2="12" y2="20" />
+        <line x1="4"  y1="12" x2="20" y2="12" />
+      </svg>
+    </button>
   )
 }
 
+// ─── Períodos ─────────────────────────────────────────────────
+const PERIODOS = [
+  { label: 'Este mes', offset: 0 },
+  { label: 'Anterior', offset: -1 },
+  { label: 'Hace 2',   offset: -2 },
+]
+
+// ─── PÁGINA ──────────────────────────────────────────────────
 export function DashboardPage() {
-  const { usuario } = useAuthContext()
-  const { desde, hasta } = useRangoMes()
+  const { usuario }                         = useAuthContext()
+  const [periodoIdx, setPeriodoIdx]         = useState(0)
+  const [modalAbierto, setModalAbierto]     = useState(false)
+  const [tipoDefault, setTipoDefault]       = useState('gasto')
+
+  const offset           = PERIODOS[periodoIdx].offset
+  const { desde, hasta } = useRangoMes(offset)
 
   const { balance, cargando: cBal }          = useBalance(desde, hasta)
   const { datos: evolucion, cargando: cEvo } = useEvolucionMensual(6)
-  const { movimientos, cargando: cMovs }     = useUltimosMovimientos(5)
-  const { movimientos: todosMovs }           = useMovimientos({ desde, hasta })
   const { presupuestos }                     = usePresupuestos()
-  const { vencimientos }                     = useVencimientos()
-  const { metas }                            = useMetas('activa')
+  const { movimientos, cargando: cMovs, agregar } = useMovimientos({ desde, hasta })
 
-  const mesActual = new Date().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+  const saldo   = (balance?.total_ingresos ?? 0) - (balance?.total_gastos ?? 0)
+  const positivo = saldo >= 0
 
+  const mesLabel = useMemo(() => {
+    const d = new Date()
+    d.setMonth(d.getMonth() + offset)
+    return d.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+  }, [offset])
+
+  const abrirModal = useCallback((tipo = 'gasto') => {
+    setTipoDefault(tipo)
+    setModalAbierto(true)
+  }, [])
+
+  const handleGuardar = useCallback(async (datos) => {
+    await agregar({ ...datos, usuario_id: usuario?.id })
+    setModalAbierto(false)
+  }, [agregar, usuario?.id])
+
+  return (
+    <>
+
+      {/* ════════════════════════════════════════
+          HERO — balance + gráfico
+      ════════════════════════════════════════ */}
+      <div
+        className="relative overflow-hidden rounded-[28px] mb-4 p-5"
+        style={{
+          background: 'linear-gradient(150deg, #1A1208 0%, #291A07 48%, #1A1108 100%)',
+        }}
+      >
+        {/* Halo ambiental */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden style={{
+          background:
+            'radial-gradient(ellipse at 18% 55%, rgba(245,166,35,0.15) 0%, transparent 52%), ' +
+            'radial-gradient(ellipse at 82% 18%, rgba(245,166,35,0.07) 0%, transparent 48%)',
+        }} />
+
+        {/* Selector período */}
+        <div className="relative z-10 flex items-center gap-1.5 mb-5">
+          {PERIODOS.map((p, i) => (
+            <button key={i} onClick={() => setPeriodoIdx(i)}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all ${
+                periodoIdx === i
+                  ? 'bg-[#F5A623] text-[#1C1410]'
+                  : 'bg-white/10 text-white/40 hover:bg-white/15'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+          <span className="ml-auto text-[9px] text-white/22 capitalize truncate max-w-[100px]">
+            {mesLabel}
+          </span>
+        </div>
+
+        {/* Saldo principal */}
+        <div className="relative z-10 mb-4">
+          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/30 mb-2">
+            Saldo del período
+          </p>
+          {cBal ? (
+            <div className="h-12 w-40 rounded-xl bg-white/10 animate-pulse" />
+          ) : (
+            <>
+              <div className="flex items-baseline gap-1">
+                <span className="text-lg font-bold text-white/30 leading-none self-end mb-0.5">$</span>
+                <span
+                  className={`leading-none font-black tracking-tighter ${positivo ? 'text-white' : 'text-red-300'}`}
+                  style={{ fontSize: 'clamp(2.6rem, 9vw, 3.4rem)', fontFamily: 'var(--font-display)' }}
+                >
+                  {fmtAbrev(Math.abs(saldo))}
+                </span>
+                {!positivo && (
+                  <span className="text-xs font-bold text-red-400/70 ml-1 self-end mb-1">negativo</span>
+                )}
+              </div>
+              <p className="text-[10px] text-white/18 mt-1 tabular-nums">
+                {fmtFull(Math.abs(saldo))} ARS
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Pills ing/gas */}
+        <div className="relative z-10 flex gap-2.5 mb-5">
+          {[
+            { label: 'Ingresos', val: balance?.total_ingresos ?? 0, emoji: '📥', color: 'text-emerald-300' },
+            { label: 'Gastos',   val: balance?.total_gastos   ?? 0, emoji: '📤', color: 'text-red-300'     },
+          ].map(({ label, val, emoji, color }) => (
+            <div key={label}
+              className="flex-1 bg-white/8 rounded-2xl p-3 border border-white/8">
+              <div className="flex items-center gap-1 mb-0.5">
+                <span className="text-sm">{emoji}</span>
+                <span className="text-[9px] font-bold text-white/35 uppercase tracking-wide">{label}</span>
+              </div>
+              <p className={`text-[15px] font-black leading-none ${color}`}>
+                ${fmtAbrev(val)}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Gráfico */}
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-white/22">
+              Evolución · 6 meses
+            </p>
+            <div className="flex gap-3">
+              {[
+                { c: 'bg-white/60', l: 'Ingresos' },
+                { c: 'bg-red-300/50', l: 'Gastos', dashed: true },
+              ].map(({ c, l, dashed }) => (
+                <div key={l} className="flex items-center gap-1">
+                  {dashed
+                    ? <div style={{ width: 12, borderTop: '1.5px dashed rgba(252,165,165,0.55)', height: 0 }} />
+                    : <div className={`w-3 h-0.5 ${c} rounded-full`} />
+                  }
+                  <span className="text-[8px] text-white/28">{l}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <ChartEvolucion datos={evolucion} cargando={cEvo} />
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════
+          BOTONES RÁPIDOS ingreso / gasto
+      ════════════════════════════════════════ */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        {[
+          {
+            tipo: 'ingreso',
+            emoji: '💰',
+            label: 'Ingreso',
+            sub: 'Sueldo, cobro…',
+            hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700/50',
+            hoverBg: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-900/10',
+            iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+          },
+          {
+            tipo: 'gasto',
+            emoji: '💸',
+            label: 'Gasto',
+            sub: 'Compra, servicio…',
+            hoverBorder: 'hover:border-red-300 dark:hover:border-red-700/50',
+            hoverBg: 'hover:bg-red-50/60 dark:hover:bg-red-900/10',
+            iconBg: 'bg-red-100 dark:bg-red-900/40',
+          },
+        ].map(({ tipo, emoji, label, sub, hoverBorder, hoverBg, iconBg }) => (
+          <button
+            key={tipo}
+            onClick={() => abrirModal(tipo)}
+            className={`group flex items-center gap-3 p-4 rounded-2xl text-left
+              bg-white dark:bg-zinc-900
+              border border-zinc-100 dark:border-zinc-800
+              ${hoverBorder} ${hoverBg}
+              active:scale-[0.97] transition-all shadow-sm`}
+          >
+            <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0
+              ${iconBg} group-hover:scale-110 transition-transform`}>
+              {emoji}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-zinc-900 dark:text-white leading-tight">{label}</p>
+              <p className="text-[10px] text-zinc-400 font-medium mt-0.5">{sub}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Alerta presupuesto ── */}
+      {presupuestos.length > 0 && <AlertaPresupuesto presupuestos={presupuestos} />}
+
+      {/* ════════════════════════════════════════
+          ACCESOS RÁPIDOS
+      ════════════════════════════════════════ */}
+      <div className="mb-5">
+        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-2.5">
+          Acceso rápido
+        </p>
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { to: '/movimientos',  emoji: '📋', label: 'Historial', bg: 'bg-zinc-100 dark:bg-zinc-800/70' },
+            { to: '/presupuestos', emoji: '📊', label: 'Límites',   bg: 'bg-amber-50 dark:bg-amber-900/20' },
+            { to: '/inversiones',  emoji: '📈', label: 'Inversiones',bg:'bg-emerald-50 dark:bg-emerald-900/20'},
+            { to: '/cotizaciones', emoji: '💱', label: 'Dólar',     bg: 'bg-violet-50 dark:bg-violet-900/20' },
+          ].map(({ to, emoji, label, bg }) => (
+            <Link key={to} to={to}
+              className={`${bg} rounded-2xl p-3 flex flex-col items-center gap-1.5
+                border border-zinc-100/50 dark:border-zinc-800/30
+                hover:scale-105 active:scale-95 transition-all`}
+            >
+              <span className="text-[22px]">{emoji}</span>
+              <span className="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 text-center leading-tight">
+                {label}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════════
+          MOVIMIENTOS RECIENTES
+      ════════════════════════════════════════ */}
+      <div>
+        <div className="flex items-center justify-between mb-2.5">
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400">
+            Movimientos recientes
+          </p>
+          <Link to="/movimientos"
+            className="text-[11px] font-bold text-[var(--mango-dark)] dark:text-[var(--mango)] hover:underline">
+            Ver todos →
+          </Link>
+        </div>
+
+        {cMovs ? (
+          <div className="flex flex-col gap-2">
+            {[0,1,2].map(i => (
+              <div key={i} className="h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+            ))}
+          </div>
+        ) : movimientos.length === 0 ? (
+          <button
+            onClick={() => abrirModal('gasto')}
+            className="w-full flex flex-col items-center py-10 rounded-2xl
+              border-2 border-dashed border-zinc-200 dark:border-zinc-800
+              hover:border-[var(--mango)]/40 hover:bg-[var(--mango)]/3
+              active:scale-[0.98] transition-all"
+          >
+            <span className="text-3xl mb-2">💸</span>
+            <p className="text-sm font-semibold text-zinc-500">Sin movimientos este período</p>
+            <p className="text-[11px] text-zinc-400 mt-0.5">Tocá para registrar el primero →</p>
+          </button>
+        ) : (
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+            {movimientos.slice(0, 7).map((m, i) => (
+              <div key={m.id}
+                className={i > 0 ? 'border-t border-zinc-50 dark:border-zinc-800/50' : ''}>
+                <MovCard movimiento={m} compact />
+              </div>
+            ))}
+            {movimientos.length > 7 && (
+              <Link to="/movimientos"
+                className="block text-center py-3 text-[11px] font-bold text-zinc-400
+                  hover:text-[var(--mango-dark)] dark:hover:text-[var(--mango)]
+                  border-t border-zinc-50 dark:border-zinc-800/50 transition-colors">
+                Ver {movimientos.length - 7} movimientos más →
+              </Link>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ─── FAB ─── */}
+      <FAB onClick={() => abrirModal('gasto')} />
+
+      {/* ─── Modal ─── */}
+      <Modal
+        abierto={modalAbierto}
+        onCerrar={() => setModalAbierto(false)}
+        titulo={tipoDefault === 'ingreso' ? '💰 Registrar ingreso' : '💸 Registrar gasto'}
+        ancho="max-w-md"
+      >
+        <FormMovimiento
+          valoresIniciales={{ tipo: tipoDefault }}
+          onSubmit={handleGuardar}
+          onCancel={() => setModalAbierto(false)}
+        />
+      </Modal>
+    </>
+  )
+}
+
+// ─── Wrapper con PageWrapper (mantiene compatibilidad con router) ─
+export default function DashboardPageWrapped() {
   return (
     <div className="animate-in fade-in duration-500">
       <PageWrapper>
-
-        {/* Alertas críticas */}
-        {presupuestos.length > 0 && <AlertaGastoCritico presupuestos={presupuestos} />}
-
-        {/* ── BALANCE ── */}
-        <div className="mb-5">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400">
-              Balance del mes
-            </p>
-            <button
-              onClick={() => exportarMovimientosCSV(movimientos, mesActual)}
-              className="text-xs font-semibold text-zinc-400 hover:text-[var(--mango-dark)]
-                dark:hover:text-[var(--mango)] transition-colors flex items-center gap-1"
-              title="Exportar a CSV"
-            >
-              📤 Exportar
-            </button>
-          </div>
-          <ResumenBalance balance={balance} moneda={usuario?.moneda} cargando={cBal} />
-        </div>
-
-        {/* ── EVOLUCIÓN ── */}
-        <div className="mb-5">
-          <Card className="p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold font-display text-zinc-800 dark:text-zinc-200">
-                Evolución de los últimos 6 meses
-              </h2>
-            </div>
-            <LineaTemporal datos={evolucion} moneda={usuario?.moneda} cargando={cEvo} />
-          </Card>
-        </div>
-
-        {/* ── INSIGHTS IA ── */}
-        <div className="mb-5">
-          <Card className="p-5">
-            <InsightsFinancieros
-              balance={balance}
-              movimientos={todosMovs}
-              presupuestos={presupuestos}
-              metas={metas}
-              moneda={usuario?.moneda}
-            />
-          </Card>
-        </div>
-
-        {/* ── VENCIMIENTOS ── */}
-        <VencimientosWidget vencimientos={vencimientos} />
-
-        {/* ── ACCESO RÁPIDO ── */}
-        <div className="mb-5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400 mb-3 px-1">
-            Acceso rápido
-          </p>
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { to: '/movimientos',   emoji: '💸', label: 'Movimientos', bg: 'bg-blue-50 dark:bg-blue-900/20',    color: 'text-blue-600 dark:text-blue-400'   },
-              { to: '/inversiones',   emoji: '📈', label: 'Inversiones', bg: 'bg-emerald-50 dark:bg-emerald-900/20', color: 'text-emerald-600 dark:text-emerald-400' },
-              { to: '/presupuestos',  emoji: '📊', label: 'Límites',     bg: 'bg-amber-50 dark:bg-amber-900/20',  color: 'text-amber-600 dark:text-amber-400' },
-              { to: '/cotizaciones',  emoji: '💱', label: 'Dólar',       bg: 'bg-purple-50 dark:bg-purple-900/20',color: 'text-purple-600 dark:text-purple-400'},
-            ].map(({ to, emoji, label, bg, color }) => (
-              <Link key={to} to={to}
-                className="bg-white dark:bg-[var(--dark-card)] border border-zinc-100 dark:border-[var(--dark-border)]
-                  rounded-2xl p-3 flex flex-col items-center gap-2
-                  hover:shadow-md hover:border-zinc-200 dark:hover:border-zinc-600
-                  active:scale-95 transition-all">
-                <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center text-xl`}>
-                  {emoji}
-                </div>
-                <span className={`text-[10px] font-bold text-center leading-tight ${color}`}>
-                  {label}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* ── ÚLTIMOS MOVIMIENTOS ── */}
-        <div>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <h2 className="text-sm font-bold font-display text-zinc-800 dark:text-zinc-200">
-              Últimos movimientos
-            </h2>
-            <Link to="/movimientos"
-              className="text-xs font-bold text-[var(--mango-dark)] dark:text-[var(--mango)] hover:underline">
-              Ver todos
-            </Link>
-          </div>
-          <Card className="p-0 overflow-hidden">
-            {cMovs ? (
-              <div className="p-5 text-center text-sm text-zinc-400">Cargando…</div>
-            ) : movimientos.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-2xl mb-2">💸</p>
-                <p className="text-sm text-zinc-400 font-medium">Sin movimientos recientes</p>
-              </div>
-            ) : (
-              <div>
-                {movimientos.map((m, i) => (
-                  <div key={m.id} className={`${i !== movimientos.length - 1 ? 'border-b border-zinc-50 dark:border-zinc-800/60' : ''}`}>
-                    <MovCard movimiento={m} compact />
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-        </div>
-
+        <DashboardPage />
       </PageWrapper>
     </div>
   )
