@@ -1,32 +1,34 @@
-export function Input({ label, error, className = '', prefijo = null, ...props }) {
+export function Input({ label, error, className = '', prefijo = null, sufijo = null, ...props }) {
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
-        <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 tracking-wide">
+        <label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 pl-1">
           {label}
         </label>
       )}
       <div className="relative flex items-center">
         {prefijo && (
-          <span className="absolute left-3.5 text-zinc-400 text-sm font-medium pointer-events-none">
+          <span className="absolute left-3.5 text-zinc-400 text-sm font-semibold pointer-events-none select-none z-10">
             {prefijo}
           </span>
         )}
         <input
-          className={`w-full bg-zinc-50/80 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60
-            rounded-xl px-3.5 py-2.5 text-sm font-medium
-            focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/30 focus:border-[var(--mango)]/60
-            dark:focus:ring-[var(--mango)]/20 dark:focus:border-[var(--mango)]/40
-            transition-all duration-150
-            text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500
-            placeholder:font-normal
-            ${prefijo ? 'pl-9' : ''}
-            ${error ? 'border-red-400 focus:ring-red-400/30 focus:border-red-400' : ''}`}
+          className={`
+            field-base
+            ${prefijo ? 'pl-8' : 'pl-4'}
+            ${sufijo ? 'pr-10' : 'pr-4'}
+            ${error ? 'field-error' : ''}
+          `}
           {...props}
         />
+        {sufijo && (
+          <span className="absolute right-3.5 text-zinc-400 text-sm pointer-events-none select-none">
+            {sufijo}
+          </span>
+        )}
       </div>
       {error && (
-        <span className="text-xs text-red-500 font-medium flex items-center gap-1">
+        <span className="text-[11px] text-red-500 font-semibold pl-1 flex items-center gap-1">
           <span>⚠</span> {error}
         </span>
       )}
@@ -38,30 +40,26 @@ export function Select({ label, error, className = '', children, ...props }) {
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
-        <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 tracking-wide">
+        <label className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 pl-1">
           {label}
         </label>
       )}
       <div className="relative">
         <select
-          className={`w-full bg-zinc-50/80 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60
-            rounded-xl px-3.5 py-2.5 pr-9 text-sm font-medium
-            focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/30 focus:border-[var(--mango)]/60
-            transition-all duration-150 appearance-none cursor-pointer
-            text-zinc-900 dark:text-white
-            ${error ? 'border-red-400 focus:ring-red-400/30' : ''}`}
+          className={`field-base field-select ${error ? 'field-error' : ''}`}
           {...props}
         >
           {children}
         </select>
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-            <path d="M6 8L1 3h10L6 8z"/>
+        {/* Chevron personalizado */}
+        <div className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded-md bg-zinc-100 dark:bg-zinc-700/80">
+          <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+            <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500 dark:text-zinc-400"/>
           </svg>
         </div>
       </div>
       {error && (
-        <span className="text-xs text-red-500 font-medium">{error}</span>
+        <span className="text-[11px] text-red-500 font-semibold pl-1">⚠ {error}</span>
       )}
     </div>
   )

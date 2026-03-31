@@ -189,9 +189,7 @@ function ConversorDolar({ dolares }) {
         <select
           value={tipo}
           onChange={e => setTipo(e.target.value)}
-          className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
-            rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
-            text-zinc-900 dark:text-white appearance-none cursor-pointer"
+          className="field-base field-select"
         >
           {dolares.map(d => {
             const meta = DOLAR_META[d.casa]
@@ -288,9 +286,7 @@ function ConversorDivisas({ cotizaciones }) {
         <select
           value={moneda}
           onChange={e => setMoneda(e.target.value)}
-          className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 
-            rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
-            text-zinc-900 dark:text-white appearance-none cursor-pointer"
+          className="field-base field-select"
         >
           {cotizaciones.map(c => (
             <option key={c.moneda} value={c.moneda}>

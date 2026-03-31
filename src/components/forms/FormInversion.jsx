@@ -300,9 +300,7 @@ export function FormInversion({ onSubmit, onCancel }) {
             <select
               value={form.moneda_compra}
               onChange={set('moneda_compra')}
-              className="bg-zinc-50/80 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60
-                rounded-xl px-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 w-16
-                focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/30 cursor-pointer"
+              className="field-base field-select !w-[90px]"
             >
               <option value="USD">USD</option>
               <option value="ARS">ARS</option>

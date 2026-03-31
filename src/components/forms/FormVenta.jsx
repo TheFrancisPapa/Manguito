@@ -223,9 +223,7 @@ export function FormVenta({ inversiones = [], dolarRate, onSubmit, onCancel, inv
           <select
             value={invSeleccionada}
             onChange={e => handleSelectInversion(e.target.value)}
-            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
-              rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
-              text-zinc-900 dark:text-white appearance-none cursor-pointer"
+            className="field-base field-select"
           >
             <option value="">— Ingresá el símbolo manualmente —</option>
             <optgroup label="Mis inversiones">
@@ -412,9 +410,7 @@ export function FormVenta({ inversiones = [], dolarRate, onSubmit, onCancel, inv
             <select
               value={form.moneda_venta}
               onChange={set('moneda_venta')}
-              className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
-                rounded-xl px-2 text-xs text-zinc-700 dark:text-zinc-300 w-16
-                focus:outline-none focus:ring-2 focus:ring-red-400/40 cursor-pointer"
+              className="field-base field-select !w-[90px]"
             >
               <option value="USD">USD</option>
               <option value="ARS">ARS</option>

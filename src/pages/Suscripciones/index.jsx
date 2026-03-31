@@ -113,9 +113,7 @@ function FormSuscripcion({ onSubmit, onCancel, inicial = null }) {
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Moneda</label>
           <select value={form.moneda} onChange={set('moneda')}
-            className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
-              rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
-              text-zinc-900 dark:text-white appearance-none cursor-pointer">
+            className="field-base field-select">
             <option value="ARS">$ ARS</option>
             <option value="USD">U$D USD</option>
             <option value="EUR">€ EUR</option>

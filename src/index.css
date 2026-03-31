@@ -254,3 +254,188 @@
   scrollbar-width: none;
 }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ═══════════════════════════════════════════════════
+   🥭  FORM FIELDS — Native App Feel
+   ═══════════════════════════════════════════════════ */
+
+/* ── Base compartida para todos los campos ── */
+.field-base {
+  @apply w-full
+    bg-white dark:bg-zinc-800/70
+    border-2 border-zinc-100 dark:border-zinc-700/50
+    rounded-2xl
+    py-3 
+    text-[15px] font-medium
+    text-zinc-900 dark:text-white
+    placeholder:text-zinc-300 dark:placeholder:text-zinc-600
+    transition-all duration-200
+    outline-none;
+
+  /* Sombra interna sutil — la que da sensación de "hundido" */
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  /* Evitar que el navegador pinte sus propios estilos */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Focus: ring con color mango */
+.field-base:focus {
+  @apply border-[var(--mango)]/60 bg-white dark:bg-zinc-800;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.04),
+    0 0 0 3px rgba(245, 166, 35, 0.15);
+}
+
+/* Disabled */
+.field-base:disabled {
+  @apply opacity-50 cursor-not-allowed bg-zinc-50 dark:bg-zinc-800/30;
+}
+
+/* Error */
+.field-error {
+  @apply border-red-400 dark:border-red-500/60;
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.04),
+    0 0 0 3px rgba(239, 68, 68, 0.12) !important;
+}
+
+/* ── Select: quitar flecha nativa ── */
+.field-select {
+  @apply pr-10 cursor-pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: none !important; /* anula fondos del sistema */
+}
+
+/* ── Inputs de tipo date / time — normalización cross-browser ── */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"] {
+  -webkit-appearance: none;
+  appearance: none;
+  /* Evitar que iOS pinte fondo azul en el ícono de calendario */
+  color-scheme: light dark;
+}
+
+/* Ocultar el ícono nativo de calendario en Webkit y hacerlo invisible */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* Contenedor wrapper para date con ícono propio (ver componente DateInput) */
+.field-date-wrapper {
+  @apply relative;
+}
+.field-date-wrapper::after {
+  content: "📅";
+  font-size: 16px;
+  line-height: 1;
+  @apply absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none;
+}
+.field-date-wrapper input[type="date"] {
+  @apply pr-10;
+}
+
+/* Icono reloj para time */
+.field-time-wrapper::after {
+  content: "🕐";
+  font-size: 16px;
+  @apply absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none;
+}
+
+/* ── Textarea ── */
+textarea.field-base {
+  @apply py-3.5 resize-none;
+  min-height: 96px;
+}
+
+/* ── Range slider — pill con mango ── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  @apply w-full h-1.5 rounded-full bg-zinc-100 dark:bg-zinc-700 outline-none cursor-pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--gradient-mango);
+  box-shadow: 0 2px 8px rgba(245, 166, 35, 0.45);
+  border: 2px solid white;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.18);
+  box-shadow: 0 4px 14px rgba(245, 166, 35, 0.55);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--gradient-mango);
+  border: 2px solid white;
+  cursor: pointer;
+}
+
+/* ── Checkbox / Radio personalizados ── */
+input[type="checkbox"],
+input[type="radio"] {
+  -webkit-appearance: none;
+  appearance: none;
+  @apply w-5 h-5 border-2 border-zinc-200 dark:border-zinc-600
+    bg-white dark:bg-zinc-800 cursor-pointer
+    transition-all duration-150 outline-none flex-shrink-0;
+}
+input[type="checkbox"] { @apply rounded-lg; }
+input[type="radio"]    { @apply rounded-full; }
+
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  background: var(--gradient-mango);
+  @apply border-[var(--mango)];
+}
+input[type="checkbox"]:checked::after {
+  content: "✓";
+  @apply flex items-center justify-center text-[10px] font-black text-white w-full h-full;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+input[type="radio"]:checked::after {
+  content: "";
+  @apply block w-2 h-2 rounded-full bg-white m-auto;
+}
+input[type="checkbox"]:focus,
+input[type="radio"]:focus {
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.2);
+}
+
+/* ── Label flotante opcional (si lo usás en algún form) ── */
+.field-group {
+  @apply relative;
+}
+.field-group .field-base:not(:placeholder-shown) + label,
+.field-group .field-base:focus + label {
+  @apply text-[10px] top-2 text-[var(--mango-dark)];
+}
+
+/* ── iOS: quitar estilos propios en inputs dentro de formularios ── */
+@supports (-webkit-touch-callout: none) {
+  .field-base {
+    /* Evita el zoom automático en iOS cuando el font-size < 16px */
+    font-size: 16px;
+  }
+}

@@ -189,9 +189,7 @@ function CalculadoraTanque({ precios }) {
             <select
               value={tipo}
               onChange={e => setTipo(e.target.value)}
-              className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
-                rounded-xl px-3 py-2.5 text-sm text-zinc-900 dark:text-white
-                focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40 appearance-none cursor-pointer"
+              className="field-base field-select"
             >
               {TIPOS_COMBUSTIBLE.filter(t => t.id !== 'gnc').map(t => (
                 <option key={t.id} value={t.id}>{t.emoji} {t.nombre}</option>
@@ -404,9 +402,7 @@ export function NaftaPage() {
           <select
             value={provincia}
             onChange={e => handleProvinciaChange(e.target.value)}
-            className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700
-              rounded-xl px-3 py-2.5 text-sm text-zinc-900 dark:text-white
-              focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40 appearance-none cursor-pointer"
+            className="field-base field-select"
           >
             {PROVINCIAS.map(p => <option key={p} value={p}>{p}</option>)}
           </select>

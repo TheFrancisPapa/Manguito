@@ -237,9 +237,7 @@ export function ConfiguracionPage() {
                 <select
                   value={moneda}
                   onChange={e => setMoneda(e.target.value)}
-                  className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
-                    rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
-                    text-zinc-900 dark:text-white appearance-none">
+                  className="field-base field-select">
                   {MONEDAS.map(m => (
                     <option key={m.codigo} value={m.codigo}>
                       {m.simbolo} · {m.nombre} ({m.codigo})
