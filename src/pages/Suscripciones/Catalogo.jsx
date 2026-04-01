@@ -1,6 +1,6 @@
 // src/pages/Suscripciones/Catalogo.jsx
-// Vista agrupada: una tarjeta por servicio → Modal con planes y precios.
-// La comunidad puede actualizar precios desde el modal.
+// Catálogo comunitario de suscripciones con precios en ARS (Mercado Pago).
+// Los usuarios pueden registrar servicios nuevos y crear categorías custom.
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
@@ -9,39 +9,29 @@ import {
   CATALOGO_SUSCRIPCIONES,
   CATEGORIAS_CATALOGO,
   METODOS_PAGO,
+  CICLOS_DISPONIBLES,
 } from '../../data/catalogo-suscripciones'
 
 // ── Helpers ──────────────────────────────────────────────────
-const fmtPrecio = (n, moneda) => {
+const fmtPrecio = (n) => {
   if (n == null) return null
-  if (moneda === 'USD') {
-    return `U$D ${Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
   return `$${Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 }
 
-/** Dado un servicio, devuelve el precio más bajo en cualquier método de pago */
 function precioMinimo(servicio, preciosComunitarios = {}) {
   let min = null
-  let minMoneda = 'ARS'
   servicio.planes?.forEach(plan => {
-    METODOS_PAGO.forEach(m => {
-      const pc = preciosComunitarios[plan.id]?.[m.id]
-      const pb = plan.precios?.[m.id]
-      const precio = pc ?? pb
-      if (precio == null) return
-      // Comparar en USD aproximado para encontrar el mínimo real
-      const enUSD = m.moneda === 'USD' ? precio : precio / 1300
-      const minEnUSD = min != null ? (minMoneda === 'USD' ? min : min / 1300) : Infinity
-      if (enUSD < minEnUSD) { min = precio; minMoneda = m.moneda }
-    })
+    const pc = preciosComunitarios[plan.id]?.ars_mp
+    const pb = plan.precios?.ars_mp
+    const precio = pc ?? pb
+    if (precio != null && (min == null || precio < min)) min = precio
   })
-  return min != null ? fmtPrecio(min, minMoneda) : null
+  return min != null ? fmtPrecio(min) : null
 }
 
 // ── Hook para cargar precios comunitarios ─────────────────────
 function usePreciosComunitarios() {
-  const [precios, setPrecios] = useState({})   // { plan_id: { metodo: precio } }
+  const [precios, setPrecios] = useState({})
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
@@ -49,6 +39,7 @@ function usePreciosComunitarios() {
     supabase
       .from('catalogo_precios_billetera')
       .select('*')
+      .eq('metodo_pago', 'ars_mp')
       .then(({ data }) => {
         if (!mounted || !data) return
         const mapa = {}
@@ -63,7 +54,7 @@ function usePreciosComunitarios() {
     return () => { mounted = false }
   }, [])
 
-  const actualizarPrecio = useCallback(async (planId, metodoPago, nuevoPrecio, moneda) => {
+  const actualizarPrecio = useCallback(async (planId, nuevoPrecio) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return false
 
@@ -71,9 +62,9 @@ function usePreciosComunitarios() {
       .from('catalogo_precios_billetera')
       .upsert({
         servicio_id: planId,
-        metodo_pago: metodoPago,
+        metodo_pago: 'ars_mp',
         precio: Number(nuevoPrecio),
-        moneda,
+        moneda: 'ARS',
         votos_ok: 1,
         votos_desactual: 0,
         updated_by: user.id,
@@ -83,7 +74,7 @@ function usePreciosComunitarios() {
     if (!error) {
       setPrecios(prev => ({
         ...prev,
-        [planId]: { ...(prev[planId] || {}), [metodoPago]: Number(nuevoPrecio) },
+        [planId]: { ...(prev[planId] || {}), ars_mp: Number(nuevoPrecio) },
       }))
       return true
     }
@@ -93,8 +84,62 @@ function usePreciosComunitarios() {
   return { precios, cargando, actualizarPrecio }
 }
 
-// ── Fila de precio editable ───────────────────────────────────
-function FilaPrecio({ planId, metodo, precio, esComunidad, onEditar }) {
+// ── Hook para cargar servicios custom de Supabase ──────────────
+function useServiciosCustom() {
+  const [servicios, setServicios] = useState([])
+  const [categoriasCustom, setCategoriasCustom] = useState([])
+
+  const cargar = useCallback(async () => {
+    // Cargar servicios custom con sus planes
+    const { data: svcs } = await supabase
+      .from('catalogo_servicios_custom')
+      .select('*, catalogo_planes_custom(*)')
+      .eq('aprobado', true)
+      .order('created_at', { ascending: false })
+
+    if (svcs) {
+      const mapped = svcs.map(s => ({
+        id:        `custom-${s.id}`,
+        nombre:    s.nombre,
+        icono:     s.icono,
+        color:     s.color,
+        categoria: s.categoria,
+        ciclo:     s.ciclo,
+        url:       s.url,
+        imagen:    s.imagen,
+        esCustom:  true,
+        planes: (s.catalogo_planes_custom || []).map(p => ({
+          id:          `custom-plan-${p.id}`,
+          nombre:      p.nombre,
+          descripcion: p.descripcion,
+          precios:     { ars_mp: p.precio_ars_mp },
+        })),
+      }))
+      setServicios(mapped)
+    }
+
+    // Cargar categorías custom
+    const { data: cats } = await supabase
+      .from('categorias_catalogo_custom')
+      .select('*')
+      .order('created_at', { ascending: true })
+
+    if (cats) {
+      setCategoriasCustom(cats.map(c => ({
+        id:    c.label.toLowerCase().replace(/\s+/g, '-'),
+        label: c.label,
+        emoji: c.emoji,
+      })))
+    }
+  }, [])
+
+  useEffect(() => { cargar() }, [cargar])
+
+  return { servicios, categoriasCustom, recargar: cargar }
+}
+
+// ── Fila de precio editable (simplificada: solo Mercado Pago) ──
+function FilaPrecio({ planId, precio, esComunidad, onEditar }) {
   const [editando, setEditando] = useState(false)
   const [valor, setValor]       = useState(precio?.toString() || '')
   const [guardando, setGuardando] = useState(false)
@@ -102,17 +147,32 @@ function FilaPrecio({ planId, metodo, precio, esComunidad, onEditar }) {
   const confirmar = async () => {
     if (!valor || isNaN(valor) || Number(valor) <= 0) return
     setGuardando(true)
-    const ok = await onEditar(planId, metodo.id, valor, metodo.moneda)
+    const ok = await onEditar(planId, valor)
     setGuardando(false)
     if (ok) setEditando(false)
+  }
+
+  if (precio == null && !editando) {
+    return (
+      <div className="flex items-center gap-2 py-2">
+        <span className="text-base w-7 text-center flex-shrink-0">💙</span>
+        <span className="text-xs text-zinc-400 flex-1">Mercado Pago</span>
+        <button
+          onClick={() => setEditando(true)}
+          className="text-[10px] font-bold text-[var(--mango)] hover:underline"
+        >
+          + Agregar precio
+        </button>
+      </div>
+    )
   }
 
   if (editando) {
     return (
       <div className="flex items-center gap-2 py-2">
-        <span className="text-base w-7 text-center flex-shrink-0">{metodo.emoji}</span>
+        <span className="text-base w-7 text-center flex-shrink-0">💙</span>
         <span className="text-xs text-zinc-500 dark:text-zinc-400 flex-1 min-w-0 truncate">
-          {metodo.label}
+          Mercado Pago
         </span>
         <input
           type="number"
@@ -120,7 +180,8 @@ function FilaPrecio({ planId, metodo, precio, esComunidad, onEditar }) {
           onChange={e => setValor(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') confirmar(); if (e.key === 'Escape') setEditando(false) }}
           autoFocus
-          step={metodo.moneda === 'USD' ? '0.01' : '1'}
+          step="1"
+          placeholder="Ej: 4699"
           className="w-24 bg-zinc-50 dark:bg-zinc-800 border border-[var(--mango)]/60
             rounded-lg px-2 py-1 text-xs text-right font-bold text-zinc-900 dark:text-white
             focus:outline-none focus:ring-1 focus:ring-[var(--mango)]"
@@ -146,9 +207,9 @@ function FilaPrecio({ planId, metodo, precio, esComunidad, onEditar }) {
 
   return (
     <div className="flex items-center gap-2 py-2 group/row">
-      <span className="text-base w-7 text-center flex-shrink-0">{metodo.emoji}</span>
+      <span className="text-base w-7 text-center flex-shrink-0">💙</span>
       <span className="text-xs text-zinc-500 dark:text-zinc-400 flex-1 min-w-0 truncate">
-        {metodo.label}
+        Mercado Pago
       </span>
       {esComunidad && (
         <span className="text-[9px] bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600
@@ -156,16 +217,9 @@ function FilaPrecio({ planId, metodo, precio, esComunidad, onEditar }) {
           👥
         </span>
       )}
-      <div className="flex flex-col items-end justify-center flex-shrink-0">
-        <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 leading-none">
-          {fmtPrecio(precio, metodo.moneda)}
-        </span>
-        {metodo.moneda === 'ARS' && precio != null && (
-          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium mt-0.5">
-            (~U$D {(precio / 1300).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-          </span>
-        )}
-      </div>
+      <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 flex-shrink-0">
+        {fmtPrecio(precio)}
+      </span>
       <button
         onClick={() => { setValor(precio?.toString() || ''); setEditando(true) }}
         title="Actualizar precio"
@@ -182,20 +236,9 @@ function FilaPrecio({ planId, metodo, precio, esComunidad, onEditar }) {
 
 // ── Tarjeta de plan dentro del modal ─────────────────────────
 function TarjetaPlan({ plan, preciosComunitarios, onAgregar, onEditarPrecio }) {
-  const metodosConPrecio = METODOS_PAGO.filter(m => {
-    const pc = preciosComunitarios?.[m.id]
-    const pb = plan.precios?.[m.id]
-    return (pc ?? pb) != null
-  })
-
-  const [metodoPagoSeleccionado, setMetodoPago] = useState(
-    metodosConPrecio[0]?.id || 'ars_mp'
-  )
-
-  const metaM = METODOS_PAGO.find(m => m.id === metodoPagoSeleccionado)
-  const precioCom = preciosComunitarios?.[metodoPagoSeleccionado]
-  const precioBase = plan.precios?.[metodoPagoSeleccionado]
-  const precioFinal = precioCom ?? precioBase
+  const pc = preciosComunitarios?.ars_mp
+  const pb = plan.precios?.ars_mp
+  const precio = pc ?? pb
 
   return (
     <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800
@@ -213,86 +256,45 @@ function TarjetaPlan({ plan, preciosComunitarios, onAgregar, onEditarPrecio }) {
         )}
       </div>
 
-      {/* Precios por método */}
-      <div className={`px-4 divide-y divide-zinc-100 dark:divide-zinc-800/60 ${metodosConPrecio.length > 0 ? 'pb-1' : 'pb-4'}`}>
-        {metodosConPrecio.map(m => {
-          const pc = preciosComunitarios?.[m.id]
-          const pb = plan.precios?.[m.id]
-          const precio = pc ?? pb
-          // Prevent null/undefined from causing empty lines
-          if (precio == null) return null;
-          
-          return (
-            <FilaPrecio
-              key={m.id}
-              planId={plan.id}
-              metodo={m}
-              precio={precio}
-              esComunidad={pc != null && pc !== pb}
-              onEditar={onEditarPrecio}
-            />
-          )
-        })}
+      {/* Precio Mercado Pago */}
+      <div className="px-4 pb-1">
+        <FilaPrecio
+          planId={plan.id}
+          precio={precio}
+          esComunidad={pc != null && pc !== pb}
+          onEditar={onEditarPrecio}
+        />
       </div>
 
-      {/* Selector de método + botón agregar */}
-      {metodosConPrecio.length > 0 && (
-        <div className="px-4 pb-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
-            Agregar con
-          </p>
-          <div className="flex gap-1.5 flex-wrap mb-3">
-            {metodosConPrecio.map(m => (
-              <button
-                key={m.id}
-                onClick={() => setMetodoPago(m.id)}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all ${
-                  metodoPagoSeleccionado === m.id
-                    ? 'border-[var(--mango)] bg-[var(--mango)]/10 text-[var(--mango-dark)] dark:text-[var(--mango)]'
-                    : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-300'
-                }`}
-              >
-                {m.emoji} {m.label}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={() => onAgregar(plan, metodoPagoSeleccionado, precioFinal, metaM?.moneda)}
-            className="w-full py-2.5 rounded-xl text-sm font-bold
-              bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
-              text-[var(--charcoal)] hover:opacity-90 active:scale-[0.98] transition-all
-              flex items-center justify-center gap-2"
-          >
-            <span>+ Agregar a mis suscripciones</span>
-            {precioFinal && (
-              <span className="text-[11px] font-bold text-zinc-800/70 opacity-90 flex items-center">
-                <span className="mx-1.5 opacity-50">•</span> 
-                {fmtPrecio(precioFinal, metaM?.moneda)}
-                {metaM?.moneda === 'ARS' && (
-                  <span className="font-medium opacity-80 ml-1">
-                    (~U$D {(precioFinal / 1300).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
-                  </span>
-                )}
-              </span>
-            )}
-          </button>
-        </div>
-      )}
+      {/* Botón agregar */}
+      <div className="px-4 pb-4 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
+        <button
+          onClick={() => onAgregar(plan, precio)}
+          className="w-full py-2.5 rounded-xl text-sm font-bold
+            bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
+            text-[var(--charcoal)] hover:opacity-90 active:scale-[0.98] transition-all
+            flex items-center justify-center gap-2"
+        >
+          <span>+ Agregar a mis suscripciones</span>
+          {precio != null && (
+            <span className="text-[11px] font-bold text-zinc-800/70 opacity-90">
+              • {fmtPrecio(precio)}
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   )
 }
 
 // ── Modal de planes de un servicio ───────────────────────────
 function ModalPlanes({ servicio, preciosComunitarios, onAgregar, onEditarPrecio, onCerrar }) {
-  // Cerrar con Escape
   useEffect(() => {
     const fn = (e) => { if (e.key === 'Escape') onCerrar() }
     window.addEventListener('keydown', fn)
     return () => window.removeEventListener('keydown', fn)
   }, [onCerrar])
 
-  // Bloquear scroll del body
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
@@ -303,10 +305,8 @@ function ModalPlanes({ servicio, preciosComunitarios, onAgregar, onEditarPrecio,
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4"
       onClick={onCerrar}
     >
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" />
 
-      {/* Panel */}
       <div
         className="relative w-full max-w-lg bg-white dark:bg-[var(--dark-card)]
           rounded-3xl shadow-2xl border border-zinc-100/80 dark:border-[var(--dark-border)]
@@ -340,6 +340,12 @@ function ModalPlanes({ servicio, preciosComunitarios, onAgregar, onEditarPrecio,
             <p className="text-xs text-zinc-400 mt-0.5">
               {servicio.planes?.length} plan{servicio.planes?.length !== 1 ? 'es' : ''} disponibles
               · Ciclo {servicio.ciclo}
+              {servicio.esCustom && (
+                <span className="ml-1 px-1.5 py-0.5 bg-violet-100 dark:bg-violet-900/20
+                  text-violet-600 dark:text-violet-400 text-[9px] font-bold rounded">
+                  COMUNIDAD
+                </span>
+              )}
             </p>
           </div>
           <button
@@ -380,6 +386,433 @@ function ModalPlanes({ servicio, preciosComunitarios, onAgregar, onEditarPrecio,
   )
 }
 
+// ── Modal para crear una suscripción nueva ────────────────────
+function ModalNuevaSuscripcion({ categorias, onGuardar, onCerrar }) {
+  const [paso, setPaso] = useState(1)
+  const [guardando, setGuardando] = useState(false)
+  const [creandoCat, setCreandoCat] = useState(false)
+  const [nuevaCatLabel, setNuevaCatLabel] = useState('')
+  const [nuevaCatEmoji, setNuevaCatEmoji] = useState('📦')
+
+  // Datos del servicio
+  const [nombre, setNombre]       = useState('')
+  const [categoria, setCategoria] = useState('')
+  const [ciclo, setCiclo]         = useState('mensual')
+  const [url, setUrl]             = useState('')
+  const [icono, setIcono]         = useState('📱')
+
+  // Datos del plan
+  const [planNombre, setPlanNombre]   = useState('')
+  const [planDesc, setPlanDesc]       = useState('')
+  const [planPrecio, setPlanPrecio]   = useState('')
+
+  const categoriasDisponibles = categorias.filter(c => c.id !== 'todos')
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  useEffect(() => {
+    const fn = (e) => { if (e.key === 'Escape') onCerrar() }
+    window.addEventListener('keydown', fn)
+    return () => window.removeEventListener('keydown', fn)
+  }, [onCerrar])
+
+  const puedePaso2 = nombre.trim() && categoria
+  const puedePaso3 = planNombre.trim() && planPrecio && Number(planPrecio) > 0
+
+  const handleGuardar = async () => {
+    setGuardando(true)
+    await onGuardar({
+      nombre: nombre.trim(),
+      icono,
+      categoria,
+      ciclo,
+      url: url.trim() || null,
+      plan: {
+        nombre: planNombre.trim(),
+        descripcion: planDesc.trim() || null,
+        precio: Number(planPrecio),
+      },
+    })
+    setGuardando(false)
+  }
+
+  const handleCrearCategoria = async () => {
+    if (!nuevaCatLabel.trim()) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    await supabase.from('categorias_catalogo_custom').insert({
+      label: nuevaCatLabel.trim(),
+      emoji: nuevaCatEmoji || '📦',
+      created_by: user.id,
+    })
+
+    setCategoria(nuevaCatLabel.trim().toLowerCase().replace(/\s+/g, '-'))
+    setCreandoCat(false)
+    setNuevaCatLabel('')
+    setNuevaCatEmoji('📦')
+  }
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4"
+      onClick={onCerrar}
+    >
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" />
+
+      <div
+        className="relative w-full max-w-lg bg-white dark:bg-[var(--dark-card)]
+          rounded-3xl shadow-2xl border border-zinc-100/80 dark:border-[var(--dark-border)]
+          max-h-[90vh] flex flex-col
+          animate-in slide-in-from-bottom-4 fade-in duration-300"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Línea decorativa */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-14 h-1
+          bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)] rounded-full" />
+
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 pt-5 pb-4 flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--mango)] to-[var(--mango-dark)]
+            flex items-center justify-center text-lg text-[var(--charcoal)] font-black flex-shrink-0">
+            +
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-black text-zinc-900 dark:text-white leading-tight">
+              Nueva suscripción
+            </h2>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              Paso {paso} de 3
+            </p>
+          </div>
+          <button
+            onClick={onCerrar}
+            className="w-8 h-8 flex items-center justify-center rounded-xl
+              text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200
+              hover:bg-zinc-100 dark:hover:bg-zinc-700/60 transition-all text-sm"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mx-5 mb-4 flex gap-1.5">
+          {[1, 2, 3].map(p => (
+            <div
+              key={p}
+              className={`h-1 rounded-full flex-1 transition-all duration-300 ${
+                p <= paso
+                  ? 'bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]'
+                  : 'bg-zinc-100 dark:bg-zinc-800'
+              }`}
+            />
+          ))}
+        </div>
+
+        {/* Contenido por paso */}
+        <div className="overflow-y-auto flex-1 px-5 pb-5 min-h-0">
+
+          {/* PASO 1: Datos del servicio */}
+          {paso === 1 && (
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5 block">
+                  Nombre del servicio *
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const emojis = ['📱', '🎬', '🎵', '☁️', '🤖', '💻', '🎮', '⚽', '📚', '🎨', '🔐', '📺', '🛡️', '🦉', '📊']
+                      const idx = emojis.indexOf(icono)
+                      setIcono(emojis[(idx + 1) % emojis.length])
+                    }}
+                    className="w-11 h-11 rounded-xl border-2 border-zinc-200 dark:border-zinc-700
+                      flex items-center justify-center text-xl hover:border-[var(--mango)]
+                      transition-colors flex-shrink-0"
+                    title="Cambiar icono"
+                  >
+                    {icono}
+                  </button>
+                  <input
+                    type="text"
+                    value={nombre}
+                    onChange={e => setNombre(e.target.value)}
+                    placeholder="Ej: Tidal, Mubi, Crunchyroll..."
+                    className="flex-1 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
+                      rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2
+                      focus:ring-[var(--mango)]/40 text-zinc-900 dark:text-white placeholder:text-zinc-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5 block">
+                  Categoría *
+                </label>
+                <div className="flex gap-1.5 flex-wrap">
+                  {categoriasDisponibles.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setCategoria(cat.id)}
+                      className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border-2 transition-all ${
+                        categoria === cat.id
+                          ? 'border-[var(--mango)] bg-[var(--mango)]/10 text-[var(--mango-dark)] dark:text-[var(--mango)]'
+                          : 'border-zinc-100 dark:border-zinc-800 text-zinc-500 hover:border-zinc-200'
+                      }`}
+                    >
+                      {cat.emoji} {cat.label}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setCreandoCat(true)}
+                    className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold border-2 border-dashed
+                      border-zinc-300 dark:border-zinc-700 text-zinc-400 hover:border-[var(--mango)]
+                      hover:text-[var(--mango)] transition-all"
+                  >
+                    ➕ Nueva
+                  </button>
+                </div>
+
+                {/* Mini-form para crear categoría */}
+                {creandoCat && (
+                  <div className="mt-2 p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl
+                    border border-zinc-200 dark:border-zinc-700 flex gap-2 items-end">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={nuevaCatLabel}
+                        onChange={e => setNuevaCatLabel(e.target.value)}
+                        placeholder="Nombre de la categoría"
+                        autoFocus
+                        className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700
+                          rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1
+                          focus:ring-[var(--mango)] text-zinc-900 dark:text-white placeholder:text-zinc-400"
+                      />
+                    </div>
+                    <input
+                      type="text"
+                      value={nuevaCatEmoji}
+                      onChange={e => setNuevaCatEmoji(e.target.value)}
+                      className="w-10 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700
+                        rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:ring-1
+                        focus:ring-[var(--mango)]"
+                      maxLength={2}
+                    />
+                    <button
+                      onClick={handleCrearCategoria}
+                      className="px-2.5 py-1.5 rounded-lg bg-[var(--mango)] text-[var(--charcoal)]
+                        text-[10px] font-black hover:opacity-90 transition-all"
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={() => setCreandoCat(false)}
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-700
+                        text-zinc-500 text-[10px] font-bold"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5 block">
+                    Ciclo de facturación
+                  </label>
+                  <select
+                    value={ciclo}
+                    onChange={e => setCiclo(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
+                      rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2
+                      focus:ring-[var(--mango)]/40 text-zinc-900 dark:text-white appearance-none"
+                  >
+                    {CICLOS_DISPONIBLES.map(c => (
+                      <option key={c.id} value={c.id}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5 block">
+                    URL (opcional)
+                  </label>
+                  <input
+                    type="url"
+                    value={url}
+                    onChange={e => setUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
+                      rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2
+                      focus:ring-[var(--mango)]/40 text-zinc-900 dark:text-white placeholder:text-zinc-400"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* PASO 2: Plan y precio */}
+          {paso === 2 && (
+            <div className="flex flex-col gap-4">
+              <div className="p-3 bg-zinc-50 dark:bg-zinc-800/30 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                <p className="text-xs text-zinc-500">
+                  <span className="text-xl mr-2">{icono}</span>
+                  Registrando plan para <span className="font-bold text-zinc-800 dark:text-white">{nombre}</span>
+                </p>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5 block">
+                  Nombre del plan *
+                </label>
+                <input
+                  type="text"
+                  value={planNombre}
+                  onChange={e => setPlanNombre(e.target.value)}
+                  placeholder="Ej: Individual, Familiar, Premium..."
+                  className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
+                    rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2
+                    focus:ring-[var(--mango)]/40 text-zinc-900 dark:text-white placeholder:text-zinc-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5 block">
+                  Descripción (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={planDesc}
+                  onChange={e => setPlanDesc(e.target.value)}
+                  placeholder="Ej: Incluye 4 pantallas, calidad 4K..."
+                  className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
+                    rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2
+                    focus:ring-[var(--mango)]/40 text-zinc-900 dark:text-white placeholder:text-zinc-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5 block">
+                  Precio en ARS (Mercado Pago) *
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm font-bold">$</span>
+                  <input
+                    type="number"
+                    value={planPrecio}
+                    onChange={e => setPlanPrecio(e.target.value)}
+                    placeholder="4699"
+                    step="1"
+                    min="0"
+                    className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
+                      rounded-xl pl-7 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2
+                      focus:ring-[var(--mango)]/40 text-zinc-900 dark:text-white placeholder:text-zinc-400
+                      font-bold"
+                  />
+                </div>
+                <p className="text-[10px] text-zinc-400 mt-1">
+                  💙 Precio con Mercado Pago. La comunidad podrá actualizarlo.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* PASO 3: Confirmación */}
+          {paso === 3 && (
+            <div className="flex flex-col gap-4">
+              <p className="text-xs text-zinc-400 font-medium text-center mb-1">
+                Revisá los datos antes de publicar
+              </p>
+
+              {/* Preview card */}
+              <div className="rounded-2xl border-2 border-[var(--mango)]/30 bg-white dark:bg-zinc-900/60 overflow-hidden">
+                <div className="flex items-center gap-3 p-4 border-b border-zinc-100 dark:border-zinc-800">
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                    style={{ background: '#8B5CF618' }}
+                  >
+                    {icono}
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm text-zinc-900 dark:text-white">{nombre}</p>
+                    <p className="text-[10px] text-zinc-400">
+                      {categoriasDisponibles.find(c => c.id === categoria)?.emoji}{' '}
+                      {categoriasDisponibles.find(c => c.id === categoria)?.label || categoria}
+                      {' · '}
+                      {CICLOS_DISPONIBLES.find(c => c.id === ciclo)?.label}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-4">
+                  <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">{planNombre}</p>
+                  {planDesc && (
+                    <p className="text-[11px] text-zinc-400 mt-0.5">{planDesc}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-base">💙</span>
+                    <span className="text-xs text-zinc-500">Mercado Pago</span>
+                    <span className="text-sm font-bold text-zinc-800 dark:text-white ml-auto">
+                      {fmtPrecio(Number(planPrecio))}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-zinc-400 text-center leading-relaxed">
+                🌐 Tu suscripción será visible para toda la comunidad.
+                <br />
+                Otros usuarios podrán actualizar el precio si cambia.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer con botones de navegación */}
+        <div className="px-5 pb-5 pt-2 flex gap-3 flex-shrink-0">
+          {paso > 1 && (
+            <button
+              onClick={() => setPaso(p => p - 1)}
+              className="px-4 py-2.5 rounded-xl text-sm font-bold
+                border-2 border-zinc-200 dark:border-zinc-700
+                text-zinc-600 dark:text-zinc-300 hover:border-zinc-300 transition-all"
+            >
+              ← Atrás
+            </button>
+          )}
+          {paso < 3 ? (
+            <button
+              onClick={() => setPaso(p => p + 1)}
+              disabled={paso === 1 ? !puedePaso2 : !puedePaso3}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold
+                bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
+                text-[var(--charcoal)] hover:opacity-90 active:scale-[0.98] transition-all
+                disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Siguiente →
+            </button>
+          ) : (
+            <button
+              onClick={handleGuardar}
+              disabled={guardando}
+              className="flex-1 py-2.5 rounded-xl text-sm font-bold
+                bg-gradient-to-r from-emerald-500 to-emerald-600
+                text-white hover:opacity-90 active:scale-[0.98] transition-all
+                disabled:opacity-40"
+            >
+              {guardando ? 'Guardando…' : '✓ Publicar suscripción'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 // ── Tarjeta de servicio (lista principal) ─────────────────────
 function TarjetaServicio({ servicio, preciosComunitarios, onAbrir }) {
   const precioDesde = useMemo(
@@ -410,8 +843,14 @@ function TarjetaServicio({ servicio, preciosComunitarios, onAbrir }) {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-sm text-zinc-900 dark:text-white leading-tight">
+        <p className="font-bold text-sm text-zinc-900 dark:text-white leading-tight flex items-center gap-1.5">
           {servicio.nombre}
+          {servicio.esCustom && (
+            <span className="px-1 py-0.5 bg-violet-100 dark:bg-violet-900/20
+              text-violet-600 dark:text-violet-400 text-[8px] font-bold rounded">
+              COM
+            </span>
+          )}
         </p>
         <p className="text-[11px] text-zinc-400 mt-0.5">
           {cantPlanes} plan{cantPlanes !== 1 ? 'es' : ''}
@@ -452,36 +891,49 @@ function TarjetaServicio({ servicio, preciosComunitarios, onAbrir }) {
 export function CatalogoSuscripciones({ onAgregarSuscripcion }) {
   const [categoriaActiva, setCategoriaActiva] = useState('todos')
   const [busqueda, setBusqueda]               = useState('')
-  const [servicioAbierto, setServicioAbierto] = useState(null) // objeto servicio
+  const [servicioAbierto, setServicioAbierto] = useState(null)
+  const [modalNuevo, setModalNuevo]           = useState(false)
   const [toastMsg, setToastMsg]               = useState(null)
 
   const { precios: preciosComunitarios, actualizarPrecio } = usePreciosComunitarios()
+  const { servicios: serviciosCustom, categoriasCustom, recargar: recargarCustom } = useServiciosCustom()
 
-  // Filtrar servicios (un objeto por servicio, no por plan)
+  // Merge categorías estáticas + custom (sin duplicados)
+  const todasCategorias = useMemo(() => {
+    const ids = new Set(CATEGORIAS_CATALOGO.map(c => c.id))
+    const extra = categoriasCustom.filter(c => !ids.has(c.id))
+    return [...CATEGORIAS_CATALOGO, ...extra]
+  }, [categoriasCustom])
+
+  // Merge servicios estáticos + custom
+  const todosServicios = useMemo(() => {
+    return [...CATALOGO_SUSCRIPCIONES, ...serviciosCustom]
+  }, [serviciosCustom])
+
+  // Filtrar
   const serviciosFiltrados = useMemo(() => {
-    return CATALOGO_SUSCRIPCIONES.filter(s => {
+    return todosServicios.filter(s => {
       const matchCat  = categoriaActiva === 'todos' || s.categoria === categoriaActiva
       const matchBusq = !busqueda ||
         s.nombre.toLowerCase().includes(busqueda.toLowerCase())
       return matchCat && matchBusq
     })
-  }, [categoriaActiva, busqueda])
+  }, [categoriaActiva, busqueda, todosServicios])
 
-  const handleAgregarDesdeModal = (plan, metodoPago, precio, moneda) => {
+  const handleAgregarDesdeModal = (plan, precio) => {
     const servicio = servicioAbierto
-    const metaM = METODOS_PAGO.find(m => m.id === metodoPago)
 
     onAgregarSuscripcion({
       nombre:    servicio.nombre,
       plan:      plan.nombre,
       monto:     precio,
-      moneda:    moneda || 'ARS',
+      moneda:    'ARS',
       icono:     servicio.icono,
       color:     servicio.color,
       ciclo:     servicio.ciclo,
       categoria: servicio.categoria,
       url:       servicio.url,
-      notas:     `Método: ${metaM?.label || metodoPago}`,
+      notas:     'Método: Mercado Pago',
       activa:    true,
     })
 
@@ -490,8 +942,44 @@ export function CatalogoSuscripciones({ onAgregarSuscripcion }) {
     setTimeout(() => setToastMsg(null), 3000)
   }
 
-  const handleEditarPrecio = async (planId, metodoPago, precio, moneda) => {
-    return actualizarPrecio(planId, metodoPago, precio, moneda)
+  const handleEditarPrecio = async (planId, precio) => {
+    return actualizarPrecio(planId, precio)
+  }
+
+  const handleGuardarNuevo = async (datos) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    // 1. Crear servicio
+    const { data: svc, error: errSvc } = await supabase
+      .from('catalogo_servicios_custom')
+      .insert({
+        nombre:     datos.nombre,
+        icono:      datos.icono,
+        color:      '#8B5CF6',
+        categoria:  datos.categoria,
+        ciclo:      datos.ciclo,
+        url:        datos.url,
+        created_by: user.id,
+      })
+      .select('id')
+      .single()
+
+    if (errSvc || !svc) return
+
+    // 2. Crear plan
+    await supabase.from('catalogo_planes_custom').insert({
+      servicio_id:  svc.id,
+      nombre:       datos.plan.nombre,
+      descripcion:  datos.plan.descripcion,
+      precio_ars_mp: datos.plan.precio,
+      created_by:   user.id,
+    })
+
+    setModalNuevo(false)
+    recargarCustom()
+    setToastMsg(`${datos.nombre} publicado en el catálogo ✅`)
+    setTimeout(() => setToastMsg(null), 3000)
   }
 
   return (
@@ -525,7 +1013,7 @@ export function CatalogoSuscripciones({ onAgregarSuscripcion }) {
 
         {/* Categorías */}
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
-          {CATEGORIAS_CATALOGO.map(cat => (
+          {todasCategorias.map(cat => (
             <button
               key={cat.id}
               onClick={() => setCategoriaActiva(cat.id)}
@@ -541,20 +1029,33 @@ export function CatalogoSuscripciones({ onAgregarSuscripcion }) {
           ))}
         </div>
 
-        {/* Contador */}
+        {/* Contador + botón agregar */}
         <div className="flex items-center justify-between px-1">
           <p className="text-xs text-zinc-400 font-medium">
             {serviciosFiltrados.length} servicio{serviciosFiltrados.length !== 1 ? 's' : ''}
           </p>
-          <p className="text-[10px] text-zinc-400">
-            Tocá una tarjeta para ver planes y precios
-          </p>
+          <button
+            onClick={() => setModalNuevo(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold
+              bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
+              text-[var(--charcoal)] hover:opacity-90 active:scale-95 transition-all shadow-sm"
+          >
+            <span className="text-sm">➕</span>
+            Agregar suscripción
+          </button>
         </div>
 
         {/* Lista de servicios */}
         {serviciosFiltrados.length === 0 ? (
           <div className="text-center py-12 text-zinc-400 text-sm">
             No encontramos servicios para esa búsqueda 🔍
+            <br />
+            <button
+              onClick={() => setModalNuevo(true)}
+              className="mt-3 text-[var(--mango)] font-bold hover:underline"
+            >
+              ¿Querés agregar uno nuevo?
+            </button>
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">
@@ -571,9 +1072,9 @@ export function CatalogoSuscripciones({ onAgregarSuscripcion }) {
 
         {/* Nota al pie */}
         <p className="text-[10px] text-zinc-400 text-center mt-2">
-          Precios actualizados por la comunidad · Última actualización según datos locales.
+          Precios actualizados por la comunidad · Método: Mercado Pago (ARS).
           <br />
-          Los precios son orientativos y pueden variar por región.
+          Los precios son orientativos y pueden variar.
         </p>
       </div>
 
@@ -596,6 +1097,15 @@ export function CatalogoSuscripciones({ onAgregarSuscripcion }) {
           onAgregar={handleAgregarDesdeModal}
           onEditarPrecio={handleEditarPrecio}
           onCerrar={() => setServicioAbierto(null)}
+        />
+      )}
+
+      {/* Modal nueva suscripción */}
+      {modalNuevo && (
+        <ModalNuevaSuscripcion
+          categorias={todasCategorias}
+          onGuardar={handleGuardarNuevo}
+          onCerrar={() => setModalNuevo(false)}
         />
       )}
     </>
