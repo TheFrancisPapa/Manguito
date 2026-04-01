@@ -1,8 +1,9 @@
 // src/pages/Suscripciones/Catalogo.jsx
-// Catálogo de suscripciones con precios por método de pago.
-// La comunidad puede actualizar los precios.
+// Vista agrupada: una tarjeta por servicio → Modal con planes y precios.
+// La comunidad puede actualizar precios desde el modal.
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../../lib/supabase'
 import {
   CATALOGO_SUSCRIPCIONES,
@@ -19,9 +20,28 @@ const fmtPrecio = (n, moneda) => {
   return `$${Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
 }
 
+/** Dado un servicio, devuelve el precio más bajo en cualquier método de pago */
+function precioMinimo(servicio, preciosComunitarios = {}) {
+  let min = null
+  let minMoneda = 'ARS'
+  servicio.planes?.forEach(plan => {
+    METODOS_PAGO.forEach(m => {
+      const pc = preciosComunitarios[plan.id]?.[m.id]
+      const pb = plan.precios?.[m.id]
+      const precio = pc ?? pb
+      if (precio == null) return
+      // Comparar en USD aproximado para encontrar el mínimo real
+      const enUSD = m.moneda === 'USD' ? precio : precio / 1300
+      const minEnUSD = min != null ? (minMoneda === 'USD' ? min : min / 1300) : Infinity
+      if (enUSD < minEnUSD) { min = precio; minMoneda = m.moneda }
+    })
+  })
+  return min != null ? fmtPrecio(min, minMoneda) : null
+}
+
 // ── Hook para cargar precios comunitarios ─────────────────────
 function usePreciosComunitarios() {
-  const [precios, setPrecios] = useState({})
+  const [precios, setPrecios] = useState({})   // { plan_id: { metodo: precio } }
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
@@ -31,7 +51,6 @@ function usePreciosComunitarios() {
       .select('*')
       .then(({ data }) => {
         if (!mounted || !data) return
-        // Convertir a mapa { servicio_id: { metodo: precio } }
         const mapa = {}
         data.forEach(r => {
           if (!mapa[r.servicio_id]) mapa[r.servicio_id] = {}
@@ -41,18 +60,17 @@ function usePreciosComunitarios() {
         setCargando(false)
       })
       .catch(() => setCargando(false))
-
     return () => { mounted = false }
   }, [])
 
-  const actualizarPrecio = useCallback(async (servicioId, metodoPago, nuevoPrecio, moneda) => {
+  const actualizarPrecio = useCallback(async (planId, metodoPago, nuevoPrecio, moneda) => {
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) return false
 
     const { error } = await supabase
       .from('catalogo_precios_billetera')
       .upsert({
-        servicio_id: servicioId,
+        servicio_id: planId,
         metodo_pago: metodoPago,
         precio: Number(nuevoPrecio),
         moneda,
@@ -65,406 +83,394 @@ function usePreciosComunitarios() {
     if (!error) {
       setPrecios(prev => ({
         ...prev,
-        [servicioId]: { ...(prev[servicioId] || {}), [metodoPago]: Number(nuevoPrecio) }
+        [planId]: { ...(prev[planId] || {}), [metodoPago]: Number(nuevoPrecio) },
       }))
+      return true
     }
+    return false
   }, [])
 
   return { precios, cargando, actualizarPrecio }
 }
 
-// ── Modal de actualización de precio ─────────────────────────
-function ModalActualizarPrecio({ servicio, metodo, precioActual, onGuardar, onCerrar }) {
-  const [nuevo, setNuevo] = useState(precioActual?.toString() || '')
-  const metaMet = METODOS_PAGO.find(m => m.id === metodo)
+// ── Fila de precio editable ───────────────────────────────────
+function FilaPrecio({ planId, metodo, precio, esComunidad, onEditar }) {
+  const [editando, setEditando] = useState(false)
+  const [valor, setValor]       = useState(precio?.toString() || '')
+  const [guardando, setGuardando] = useState(false)
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCerrar}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <div
-        className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl p-6
-          border border-zinc-200 dark:border-zinc-800 shadow-2xl"
-        onClick={e => e.stopPropagation()}
-      >
-        <h3 className="font-bold text-zinc-900 dark:text-white mb-1 text-base">
-          Actualizar precio
-        </h3>
-        <p className="text-sm text-zinc-400 mb-4">
-          {servicio.nombre} {servicio.plan} · {metaMet?.emoji} {metaMet?.label}
-        </p>
+  const confirmar = async () => {
+    if (!valor || isNaN(valor) || Number(valor) <= 0) return
+    setGuardando(true)
+    const ok = await onEditar(planId, metodo.id, valor, metodo.moneda)
+    setGuardando(false)
+    if (ok) setEditando(false)
+  }
 
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-zinc-400 font-medium">
-              Nuevo precio ({metaMet?.moneda})
-            </label>
-            <input
-              type="number"
-              value={nuevo}
-              onChange={e => setNuevo(e.target.value)}
-              placeholder={metaMet?.moneda === 'USD' ? 'Ej: 15.49' : 'Ej: 7199'}
-              autoFocus
-              step={metaMet?.moneda === 'USD' ? '0.01' : '1'}
-              className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
-                rounded-xl px-3 py-2.5 text-sm text-zinc-900 dark:text-white
-                focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40"
-            />
-          </div>
-          <p className="text-[10px] text-zinc-400">
-            🙌 Tu actualización ayuda a toda la comunidad. ¡Gracias!
-          </p>
-          <div className="flex gap-3 mt-1">
-            <button
-              onClick={onCerrar}
-              className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700
-                text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={() => {
-                if (nuevo && !isNaN(nuevo) && Number(nuevo) > 0) {
-                  onGuardar(parseFloat(nuevo))
-                  onCerrar()
-                }
-              }}
-              className="flex-1 py-2.5 rounded-xl text-sm font-bold
-                bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
-                text-[var(--charcoal)] transition-all hover:opacity-90"
-            >
-              Guardar
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Tabla de precios por método de pago ───────────────────────
-function TablaPreciosMetodos({ servicio, preciosComunitarios, onActualizar }) {
-  const metodosDisponibles = METODOS_PAGO.filter(m => {
-    const precioBase = servicio.precios[m.id]
-    const precioCom = preciosComunitarios?.[m.id]
-    return precioBase !== undefined || precioCom !== undefined
-  })
-
-  return (
-    <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-2">
-        Precio por método de pago
-      </p>
-      <div className="flex flex-col gap-1.5">
-        {metodosDisponibles.map(m => {
-          const precioBase = servicio.precios[m.id]
-          const precioCom = preciosComunitarios?.[m.id]
-          const precio = precioCom ?? precioBase
-          const esComunidad = precioCom != null && precioCom !== precioBase
-
-          if (precio == null) return null
-
-          return (
-            <div
-              key={m.id}
-              className="flex items-center justify-between group"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-base w-6 text-center">{m.emoji}</span>
-                <span className="text-xs text-zinc-500 dark:text-zinc-400">{m.label}</span>
-                {esComunidad && (
-                  <span className="text-[9px] bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600
-                    px-1 py-0.5 rounded font-semibold">
-                    👥 comunidad
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100">
-                  {fmtPrecio(precio, m.moneda)}
-                </span>
-                <button
-                  onClick={e => { e.stopPropagation(); onActualizar(m.id, precio, m.moneda) }}
-                  title="Actualizar precio"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity
-                    text-[10px] w-5 h-5 rounded text-zinc-400 hover:text-zinc-700
-                    bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600
-                    flex items-center justify-center flex-shrink-0"
-                >
-                  ✏️
-                </button>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ── Tarjeta de servicio del catálogo ─────────────────────────
-function TarjetaServicio({ servicio, preciosComunitarios, onAgregar, metodoPagoFiltro, onActualizarPrecio }) {
-  const [expandido, setExpandido] = useState(false)
-  const [modalPrecio, setModalPrecio] = useState(null) // { metodo, precio, moneda }
-
-  // Precio del método seleccionado (si hay filtro)
-  const precioDestacado = useMemo(() => {
-    if (!metodoPagoFiltro) return null
-    const metaM = METODOS_PAGO.find(m => m.id === metodoPagoFiltro)
-    const precioCom = preciosComunitarios?.[metodoPagoFiltro]
-    const precioBase = servicio.precios[metodoPagoFiltro]
-    const precio = precioCom ?? precioBase
-    if (precio == null) return null
-    return { precio, moneda: metaM?.moneda, metodo: metaM }
-  }, [metodoPagoFiltro, preciosComunitarios, servicio.precios])
-
-  return (
-    <>
-      <div
-        className="flex flex-col bg-white dark:bg-zinc-900
-          border border-zinc-100 dark:border-zinc-800 rounded-2xl overflow-hidden
-          hover:border-zinc-200 dark:hover:border-zinc-700 hover:shadow-md
-          transition-all group"
-      >
-        {/* Header */}
-        <div
-          className="flex items-center gap-3 p-4 cursor-pointer"
-          onClick={() => setExpandido(e => !e)}
+  if (editando) {
+    return (
+      <div className="flex items-center gap-2 py-2">
+        <span className="text-base w-7 text-center flex-shrink-0">{metodo.emoji}</span>
+        <span className="text-xs text-zinc-500 dark:text-zinc-400 flex-1 min-w-0 truncate">
+          {metodo.label}
+        </span>
+        <input
+          type="number"
+          value={valor}
+          onChange={e => setValor(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') confirmar(); if (e.key === 'Escape') setEditando(false) }}
+          autoFocus
+          step={metodo.moneda === 'USD' ? '0.01' : '1'}
+          className="w-24 bg-zinc-50 dark:bg-zinc-800 border border-[var(--mango)]/60
+            rounded-lg px-2 py-1 text-xs text-right font-bold text-zinc-900 dark:text-white
+            focus:outline-none focus:ring-1 focus:ring-[var(--mango)]"
+        />
+        <button
+          onClick={confirmar}
+          disabled={guardando}
+          className="px-2 py-1 rounded-lg bg-[var(--mango)] text-[var(--charcoal)]
+            text-[10px] font-black hover:opacity-90 active:scale-95 transition-all"
         >
-          <div
-            className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
-            style={{ background: servicio.color + '18' }}
-          >
-            {servicio.icono}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm text-zinc-900 dark:text-white leading-tight">
-              {servicio.nombre}
-            </p>
-            <p className="text-xs text-zinc-400 mt-0.5">{servicio.plan}</p>
-          </div>
+          {guardando ? '…' : '✓'}
+        </button>
+        <button
+          onClick={() => { setEditando(false); setValor(precio?.toString() || '') }}
+          className="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-700
+            text-zinc-500 text-[10px] font-bold hover:bg-zinc-200 transition-colors"
+        >
+          ✕
+        </button>
+      </div>
+    )
+  }
 
-          {/* Precio destacado o precio más bajo */}
-          <div className="text-right flex-shrink-0">
-            {precioDestacado ? (
-              <p className="text-sm font-bold" style={{ color: servicio.color }}>
-                {fmtPrecio(precioDestacado.precio, precioDestacado.moneda)}
-              </p>
-            ) : (
-              (() => {
-                // Precio más bajo disponible
-                const precios = METODOS_PAGO
-                  .map(m => {
-                    const pc = preciosComunitarios?.[m.id]
-                    const pb = servicio.precios[m.id]
-                    const p = pc ?? pb
-                    return p != null ? { precio: p, moneda: m.moneda, metodo: m } : null
-                  })
-                  .filter(Boolean)
-
-                if (precios.length === 0) return <span className="text-xs text-zinc-400">Sin precio</span>
-
-                const min = precios.reduce((a, b) => {
-                  // Comparar en USD aproximado
-                  const toUSD = (p) => p.moneda === 'USD' ? p.precio : p.precio / 1300
-                  return toUSD(a) < toUSD(b) ? a : b
-                })
-
-                return (
-                  <div>
-                    <p className="text-sm font-bold" style={{ color: servicio.color }}>
-                      {fmtPrecio(min.precio, min.moneda)}
-                    </p>
-                    <p className="text-[9px] text-zinc-400">desde</p>
-                  </div>
-                )
-              })()
-            )}
-            <span className="text-[10px] text-zinc-400 mt-0.5 block">
-              {expandido ? '▲' : '▼'}
-            </span>
-          </div>
-        </div>
-
-        {/* Expandido: tabla de precios */}
-        {expandido && (
-          <div className="px-4 pb-4">
-            <p className="text-xs text-zinc-400 mb-2 leading-relaxed">{servicio.descripcion}</p>
-
-            <TablaPreciosMetodos
-              servicio={servicio}
-              preciosComunitarios={preciosComunitarios}
-              onActualizar={(metodo, precio, moneda) => setModalPrecio({ metodo, precio, moneda })}
-            />
-
-            <button
-              onClick={() => onAgregar(servicio, preciosComunitarios)}
-              className="w-full mt-4 py-2.5 rounded-xl text-sm font-bold
-                bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
-                text-[var(--charcoal)] hover:opacity-90 active:scale-[0.98] transition-all"
-            >
-              + Agregar a mis suscripciones
-            </button>
-          </div>
+  return (
+    <div className="flex items-center gap-2 py-2 group/row">
+      <span className="text-base w-7 text-center flex-shrink-0">{metodo.emoji}</span>
+      <span className="text-xs text-zinc-500 dark:text-zinc-400 flex-1 min-w-0 truncate">
+        {metodo.label}
+      </span>
+      {esComunidad && (
+        <span className="text-[9px] bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600
+          px-1 py-0.5 rounded font-bold flex-shrink-0">
+          👥
+        </span>
+      )}
+      <div className="flex flex-col items-end justify-center flex-shrink-0">
+        <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 leading-none">
+          {fmtPrecio(precio, metodo.moneda)}
+        </span>
+        {metodo.moneda === 'ARS' && precio != null && (
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium mt-0.5">
+            (~U$D {(precio / 1300).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+          </span>
         )}
       </div>
-
-      {/* Modal actualización precio */}
-      {modalPrecio && (
-        <ModalActualizarPrecio
-          servicio={servicio}
-          metodo={modalPrecio.metodo}
-          precioActual={modalPrecio.precio}
-          onGuardar={(precio) => onActualizarPrecio(servicio.id, modalPrecio.metodo, precio, modalPrecio.moneda)}
-          onCerrar={() => setModalPrecio(null)}
-        />
-      )}
-    </>
+      <button
+        onClick={() => { setValor(precio?.toString() || ''); setEditando(true) }}
+        title="Actualizar precio"
+        className="opacity-0 group-hover/row:opacity-100 focus:opacity-100 transition-opacity
+          w-6 h-6 rounded-md flex items-center justify-center text-[11px]
+          bg-zinc-100 dark:bg-zinc-700 text-zinc-500 hover:text-zinc-800
+          dark:hover:text-zinc-100 flex-shrink-0"
+      >
+        ✏️
+      </button>
+    </div>
   )
 }
 
-// ── Modal para elegir método de pago al agregar ───────────────
-function ModalElegirMetodo({ servicio, preciosComunitarios, onConfirmar, onCerrar }) {
-  const [metodoPago, setMetodoPago] = useState('ars_mp')
-
-  const metodosDisponibles = METODOS_PAGO.filter(m => {
-    const precioCom = preciosComunitarios?.[m.id]
-    const precioBase = servicio.precios[m.id]
-    return (precioCom ?? precioBase) != null
+// ── Tarjeta de plan dentro del modal ─────────────────────────
+function TarjetaPlan({ plan, preciosComunitarios, onAgregar, onEditarPrecio }) {
+  const metodosConPrecio = METODOS_PAGO.filter(m => {
+    const pc = preciosComunitarios?.[m.id]
+    const pb = plan.precios?.[m.id]
+    return (pc ?? pb) != null
   })
 
-  const metaSeleccionado = METODOS_PAGO.find(m => m.id === metodoPago)
-  const precioCom = preciosComunitarios?.[metodoPago]
-  const precioBase = servicio.precios[metodoPago]
+  const [metodoPagoSeleccionado, setMetodoPago] = useState(
+    metodosConPrecio[0]?.id || 'ars_mp'
+  )
+
+  const metaM = METODOS_PAGO.find(m => m.id === metodoPagoSeleccionado)
+  const precioCom = preciosComunitarios?.[metodoPagoSeleccionado]
+  const precioBase = plan.precios?.[metodoPagoSeleccionado]
   const precioFinal = precioCom ?? precioBase
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onCerrar}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <div
-        className="relative w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl p-6
-          border border-zinc-200 dark:border-zinc-800 shadow-2xl"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-            style={{ background: servicio.color + '18' }}>
-            {servicio.icono}
-          </div>
-          <div>
-            <p className="font-bold text-zinc-900 dark:text-white">{servicio.nombre}</p>
-            <p className="text-xs text-zinc-400">{servicio.plan}</p>
-          </div>
-        </div>
+    <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800
+      bg-zinc-50/60 dark:bg-zinc-800/30 overflow-hidden">
 
-        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
-          ¿Con qué método lo pagás?
+      {/* Encabezado del plan */}
+      <div className="px-4 pt-4 pb-3">
+        <p className="font-bold text-sm text-zinc-900 dark:text-white leading-tight">
+          {plan.nombre}
         </p>
+        {plan.descripcion && (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+            {plan.descripcion}
+          </p>
+        )}
+      </div>
 
-        <div className="flex flex-col gap-2 mb-4">
-          {metodosDisponibles.map(m => {
-            const pc = preciosComunitarios?.[m.id]
-            const pb = servicio.precios[m.id]
-            const precio = pc ?? pb
-            return (
-              <label
+      {/* Precios por método */}
+      <div className="px-4 divide-y divide-zinc-100 dark:divide-zinc-800/60">
+        {metodosConPrecio.map(m => {
+          const pc = preciosComunitarios?.[m.id]
+          const pb = plan.precios?.[m.id]
+          const precio = pc ?? pb
+          return (
+            <FilaPrecio
+              key={m.id}
+              planId={plan.id}
+              metodo={m}
+              precio={precio}
+              esComunidad={pc != null && pc !== pb}
+              onEditar={onEditarPrecio}
+            />
+          )
+        })}
+      </div>
+
+      {/* Selector de método + botón agregar */}
+      {metodosConPrecio.length > 0 && (
+        <div className="px-4 pb-4 pt-3 border-t border-zinc-100 dark:border-zinc-800/60">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
+            Agregar con
+          </p>
+          <div className="flex gap-1.5 flex-wrap mb-3">
+            {metodosConPrecio.map(m => (
+              <button
                 key={m.id}
-                className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                  metodoPago === m.id
-                    ? 'border-[var(--mango)] bg-[var(--mango)]/8'
-                    : 'border-zinc-100 dark:border-zinc-800 hover:border-zinc-200'
+                onClick={() => setMetodoPago(m.id)}
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+                  metodoPagoSeleccionado === m.id
+                    ? 'border-[var(--mango)] bg-[var(--mango)]/10 text-[var(--mango-dark)] dark:text-[var(--mango)]'
+                    : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-300'
                 }`}
               >
-                <input
-                  type="radio"
-                  name="metodo"
-                  value={m.id}
-                  checked={metodoPago === m.id}
-                  onChange={() => setMetodoPago(m.id)}
-                  className="accent-amber-400"
-                />
-                <span className="text-xl">{m.emoji}</span>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-zinc-800 dark:text-zinc-100">{m.label}</p>
-                  <p className="text-xs text-zinc-400">
-                    {precio != null ? fmtPrecio(precio, m.moneda) : '—'}
-                    {pc != null && pc !== pb ? ' (comunitario)' : ''}
-                  </p>
-                </div>
-              </label>
-            )
-          })}
-        </div>
+                {m.emoji} {m.label}
+              </button>
+            ))}
+          </div>
 
-        <div className="flex gap-3">
           <button
-            onClick={onCerrar}
-            className="flex-1 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700
-              text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={() => onConfirmar(servicio, metodoPago, precioFinal, metaSeleccionado?.moneda)}
-            className="flex-1 py-2.5 rounded-xl text-sm font-bold
+            onClick={() => onAgregar(plan, metodoPagoSeleccionado, precioFinal, metaM?.moneda)}
+            className="w-full py-2.5 rounded-xl text-sm font-bold
               bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
-              text-[var(--charcoal)] hover:opacity-90 transition-all"
+              text-[var(--charcoal)] hover:opacity-90 active:scale-[0.98] transition-all
+              flex items-center justify-center gap-2"
           >
-            Agregar
+            <span>+ Agregar a mis suscripciones</span>
+            {precioFinal && (
+              <span className="text-[11px] font-bold text-zinc-800/70 opacity-90 flex items-center">
+                <span className="mx-1.5 opacity-50">•</span> 
+                {fmtPrecio(precioFinal, metaM?.moneda)}
+                {metaM?.moneda === 'ARS' && (
+                  <span className="font-medium opacity-80 ml-1">
+                    (~U$D {(precioFinal / 1300).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                  </span>
+                )}
+              </span>
+            )}
           </button>
         </div>
-      </div>
+      )}
     </div>
   )
 }
 
-// ── Componente principal del catálogo ─────────────────────────
+// ── Modal de planes de un servicio ───────────────────────────
+function ModalPlanes({ servicio, preciosComunitarios, onAgregar, onEditarPrecio, onCerrar }) {
+  // Cerrar con Escape
+  useEffect(() => {
+    const fn = (e) => { if (e.key === 'Escape') onCerrar() }
+    window.addEventListener('keydown', fn)
+    return () => window.removeEventListener('keydown', fn)
+  }, [onCerrar])
+
+  // Bloquear scroll del body
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4"
+      onClick={onCerrar}
+    >
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" />
+
+      {/* Panel */}
+      <div
+        className="relative w-full max-w-lg bg-white dark:bg-[var(--dark-card)]
+          rounded-3xl shadow-2xl border border-zinc-100/80 dark:border-[var(--dark-border)]
+          max-h-[90vh] flex flex-col
+          animate-in slide-in-from-bottom-4 fade-in duration-300"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Línea decorativa */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-14 h-1
+          bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)] rounded-full" />
+
+        {/* Header */}
+        <div className="flex items-center gap-4 px-5 pt-5 pb-4 flex-shrink-0">
+          {servicio.imagen ? (
+            <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-zinc-100/80 dark:border-zinc-800 overflow-hidden flex-shrink-0 flex items-center justify-center p-1.5 relative">
+               <div className="absolute inset-0 bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-100 dark:to-zinc-200" />
+               <img src={servicio.imagen} alt={servicio.nombre} className="w-full h-full object-contain relative z-10" />
+            </div>
+          ) : (
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-800"
+              style={{ background: servicio.color + '18' }}
+            >
+              {servicio.icono}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-black text-zinc-900 dark:text-white leading-tight">
+              {servicio.nombre}
+            </h2>
+            <p className="text-xs text-zinc-400 mt-0.5">
+              {servicio.planes?.length} plan{servicio.planes?.length !== 1 ? 'es' : ''} disponibles
+              · Ciclo {servicio.ciclo}
+            </p>
+          </div>
+          <button
+            onClick={onCerrar}
+            className="w-8 h-8 flex items-center justify-center rounded-xl
+              text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200
+              hover:bg-zinc-100 dark:hover:bg-zinc-700/60 transition-all text-sm"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Info de precios comunitarios */}
+        <div className="mx-5 mb-3 px-3 py-2 bg-blue-50 dark:bg-blue-900/15
+          border border-blue-200 dark:border-blue-800/40 rounded-xl flex-shrink-0">
+          <p className="text-[10px] text-blue-700 dark:text-blue-300 leading-relaxed">
+            <span className="font-bold">✏️ Precios desactualizados?</span>{' '}
+            Pasá el cursor sobre cualquier precio y tocá el lápiz para corregirlo.
+            Tu corrección ayuda a toda la comunidad.
+          </p>
+        </div>
+
+        {/* Lista de planes — scrolleable */}
+        <div className="overflow-y-auto flex-1 px-5 pb-5 flex flex-col gap-4 min-h-0">
+          {servicio.planes?.map(plan => (
+            <TarjetaPlan
+              key={plan.id}
+              plan={plan}
+              preciosComunitarios={preciosComunitarios[plan.id]}
+              onAgregar={onAgregar}
+              onEditarPrecio={onEditarPrecio}
+            />
+          ))}
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
+// ── Tarjeta de servicio (lista principal) ─────────────────────
+function TarjetaServicio({ servicio, preciosComunitarios, onAbrir }) {
+  const precioDesde = useMemo(
+    () => precioMinimo(servicio, preciosComunitarios),
+    [servicio, preciosComunitarios]
+  )
+
+  const cantPlanes = servicio.planes?.length || 0
+
+  return (
+    <button
+      onClick={onAbrir}
+      className="w-full flex items-center gap-4 p-4 text-left
+        bg-white dark:bg-zinc-900 rounded-2xl
+        border border-zinc-100 dark:border-zinc-800
+        hover:border-[var(--mango)]/30 dark:hover:border-[var(--mango)]/20
+        hover:shadow-md active:scale-[0.98]
+        transition-all duration-200 group"
+    >
+      {/* Ícono */}
+      <div
+        className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0
+          group-hover:scale-105 transition-transform"
+        style={{ background: servicio.color + '18' }}
+      >
+        {servicio.icono}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-sm text-zinc-900 dark:text-white leading-tight">
+          {servicio.nombre}
+        </p>
+        <p className="text-[11px] text-zinc-400 mt-0.5">
+          {cantPlanes} plan{cantPlanes !== 1 ? 'es' : ''}
+          {' · '}
+          <span className="capitalize">{servicio.ciclo}</span>
+        </p>
+      </div>
+
+      {/* Precio desde + chevron */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="text-right">
+          {precioDesde ? (
+            <>
+              <p className="text-[9px] text-zinc-400 uppercase tracking-wider font-medium leading-none mb-0.5">
+                desde
+              </p>
+              <p className="text-sm font-black" style={{ color: servicio.color }}>
+                {precioDesde}
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-zinc-400 italic">Sin precio</p>
+          )}
+        </div>
+        <svg
+          width="16" height="16" viewBox="0 0 16 16" fill="none"
+          stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"
+          className="text-zinc-300 dark:text-zinc-600 group-hover:text-[var(--mango)] transition-colors flex-shrink-0"
+        >
+          <path d="M6 4l4 4-4 4" />
+        </svg>
+      </div>
+    </button>
+  )
+}
+
+// ── Componente principal ──────────────────────────────────────
 export function CatalogoSuscripciones({ onAgregarSuscripcion }) {
   const [categoriaActiva, setCategoriaActiva] = useState('todos')
   const [busqueda, setBusqueda]               = useState('')
-  const [metodoPagoFiltro, setMetodoPagoFiltro] = useState('')
-  const [modalAgregar, setModalAgregar]       = useState(null) // { servicio, precios }
+  const [servicioAbierto, setServicioAbierto] = useState(null) // objeto servicio
+  const [toastMsg, setToastMsg]               = useState(null)
 
   const { precios: preciosComunitarios, actualizarPrecio } = usePreciosComunitarios()
 
+  // Filtrar servicios (un objeto por servicio, no por plan)
   const serviciosFiltrados = useMemo(() => {
-    const catalogoPlano = []
-    CATALOGO_SUSCRIPCIONES.forEach(srv => {
-      if (srv.planes) {
-        srv.planes.forEach(pl => {
-          catalogoPlano.push({
-            ...srv,
-            id: pl.id, 
-            servicio_id: srv.id,
-            plan: pl.nombre,
-            descripcion: pl.descripcion,
-            precios: pl.precios
-          })
-        })
-      }
-    })
-
-    return catalogoPlano.filter(s => {
-      const matchCat = categoriaActiva === 'todos' || s.categoria === categoriaActiva
+    return CATALOGO_SUSCRIPCIONES.filter(s => {
+      const matchCat  = categoriaActiva === 'todos' || s.categoria === categoriaActiva
       const matchBusq = !busqueda ||
-        s.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-        (s.plan && s.plan.toLowerCase().includes(busqueda.toLowerCase()))
-      const matchMetodo = !metodoPagoFiltro || (() => {
-        const pc = preciosComunitarios[s.id]?.[metodoPagoFiltro]
-        const pb = s.precios?.[metodoPagoFiltro]
-        return (pc ?? pb) != null
-      })()
-      return matchCat && matchBusq && matchMetodo
+        s.nombre.toLowerCase().includes(busqueda.toLowerCase())
+      return matchCat && matchBusq
     })
-  }, [categoriaActiva, busqueda, metodoPagoFiltro, preciosComunitarios])
+  }, [categoriaActiva, busqueda])
 
-  const handleConfirmarAgregar = (servicio, metodoPago, precio, moneda) => {
-    const metaMet = METODOS_PAGO.find(m => m.id === metodoPago)
+  const handleAgregarDesdeModal = (plan, metodoPago, precio, moneda) => {
+    const servicio = servicioAbierto
+    const metaM = METODOS_PAGO.find(m => m.id === metodoPago)
 
-    // Preparar datos para el hook de suscripciones
     onAgregarSuscripcion({
       nombre:    servicio.nombre,
-      plan:      servicio.plan,
+      plan:      plan.nombre,
       monto:     precio,
       moneda:    moneda || 'ARS',
       icono:     servicio.icono,
@@ -472,71 +478,58 @@ export function CatalogoSuscripciones({ onAgregarSuscripcion }) {
       ciclo:     servicio.ciclo,
       categoria: servicio.categoria,
       url:       servicio.url,
-      notas:     `Método: ${metaMet?.label}`,
+      notas:     `Método: ${metaM?.label || metodoPago}`,
       activa:    true,
     })
 
-    setModalAgregar(null)
+    setServicioAbierto(null)
+    setToastMsg(`${servicio.nombre} — ${plan.nombre} agregado ✅`)
+    setTimeout(() => setToastMsg(null), 3000)
+  }
+
+  const handleEditarPrecio = async (planId, metodoPago, precio, moneda) => {
+    return actualizarPrecio(planId, metodoPago, precio, moneda)
   }
 
   return (
     <>
       <div className="flex flex-col gap-4">
+
         {/* Buscador */}
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">🔍</span>
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 text-sm pointer-events-none">
+            🔍
+          </span>
           <input
             type="text"
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
-            placeholder="Buscar Netflix, Spotify..."
+            placeholder="Buscar Netflix, Spotify, iCloud…"
             className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700
-              rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/40
-              text-zinc-900 dark:text-white placeholder:text-zinc-400"
+              rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2
+              focus:ring-[var(--mango)]/40 text-zinc-900 dark:text-white placeholder:text-zinc-400"
           />
-        </div>
-
-        {/* Filtro por método de pago */}
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
-            Ver precios para
-          </p>
-          <div className="flex gap-1.5 flex-wrap">
+          {busqueda && (
             <button
-              onClick={() => setMetodoPagoFiltro('')}
-              className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all ${
-                !metodoPagoFiltro
-                  ? 'border-[var(--mango)] bg-[var(--mango)]/8 text-[var(--mango-dark)] dark:text-[var(--mango)]'
-                  : 'border-zinc-100 dark:border-zinc-800 text-zinc-500 hover:border-zinc-200'
-              }`}
+              onClick={() => setBusqueda('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400
+                hover:text-zinc-600 transition-colors text-sm"
             >
-              🌐 Todos
+              ✕
             </button>
-            {METODOS_PAGO.map(m => (
-              <button
-                key={m.id}
-                onClick={() => setMetodoPagoFiltro(prev => prev === m.id ? '' : m.id)}
-                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all ${
-                  metodoPagoFiltro === m.id
-                    ? 'border-[var(--mango)] bg-[var(--mango)]/8 text-[var(--mango-dark)] dark:text-[var(--mango)]'
-                    : 'border-zinc-100 dark:border-zinc-800 text-zinc-500 hover:border-zinc-200'
-                }`}
-              >
-                {m.emoji} {m.label}
-              </button>
-            ))}
-          </div>
+          )}
         </div>
 
         {/* Categorías */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
           {CATEGORIAS_CATALOGO.map(cat => (
             <button
               key={cat.id}
               onClick={() => setCategoriaActiva(cat.id)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all whitespace-nowrap ${
+              className={`flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold
+                border-2 transition-all whitespace-nowrap ${
                 categoriaActiva === cat.id
-                  ? 'border-[var(--mango)] bg-[var(--mango)]/8 text-[var(--mango-dark)] dark:text-[var(--mango)]'
+                  ? 'border-[var(--mango)] bg-[var(--mango)]/10 text-[var(--mango-dark)] dark:text-[var(--mango)]'
                   : 'border-zinc-100 dark:border-zinc-800 text-zinc-500 hover:border-zinc-200'
               }`}
             >
@@ -545,41 +538,61 @@ export function CatalogoSuscripciones({ onAgregarSuscripcion }) {
           ))}
         </div>
 
-        {/* Info de comunidad */}
-        <div className="bg-blue-50 dark:bg-blue-900/15 border border-blue-200 dark:border-blue-800/40
-          rounded-2xl px-3 py-2.5 text-xs text-blue-700 dark:text-blue-300">
-          <span className="font-semibold">💡 Precios comunitarios:</span> Pasá el mouse sobre cualquier precio
-          y tocá ✏️ para actualizarlo. Todos los usuarios se benefician de tu corrección.
+        {/* Contador */}
+        <div className="flex items-center justify-between px-1">
+          <p className="text-xs text-zinc-400 font-medium">
+            {serviciosFiltrados.length} servicio{serviciosFiltrados.length !== 1 ? 's' : ''}
+          </p>
+          <p className="text-[10px] text-zinc-400">
+            Tocá una tarjeta para ver planes y precios
+          </p>
         </div>
 
-        {/* Grid de servicios */}
+        {/* Lista de servicios */}
         {serviciosFiltrados.length === 0 ? (
-          <div className="text-center py-8 text-zinc-400 text-sm">
-            No se encontraron servicios para esa búsqueda.
+          <div className="text-center py-12 text-zinc-400 text-sm">
+            No encontramos servicios para esa búsqueda 🔍
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3">
+          <div className="flex flex-col gap-2.5">
             {serviciosFiltrados.map(s => (
               <TarjetaServicio
                 key={s.id}
                 servicio={s}
-                preciosComunitarios={preciosComunitarios[s.id]}
-                metodoPagoFiltro={metodoPagoFiltro}
-                onActualizarPrecio={actualizarPrecio}
-                onAgregar={(servicio, precios) => setModalAgregar({ servicio, precios })}
+                preciosComunitarios={preciosComunitarios}
+                onAbrir={() => setServicioAbierto(s)}
               />
             ))}
           </div>
         )}
+
+        {/* Nota al pie */}
+        <p className="text-[10px] text-zinc-400 text-center mt-2">
+          Precios actualizados por la comunidad · Última actualización según datos locales.
+          <br />
+          Los precios son orientativos y pueden variar por región.
+        </p>
       </div>
 
-      {/* Modal elegir método al agregar */}
-      {modalAgregar && (
-        <ModalElegirMetodo
-          servicio={modalAgregar.servicio}
-          preciosComunitarios={preciosComunitarios[modalAgregar.servicio.id]}
-          onConfirmar={handleConfirmarAgregar}
-          onCerrar={() => setModalAgregar(null)}
+      {/* Toast de éxito */}
+      {toastMsg && (
+        <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-50
+          flex items-center gap-2 px-4 py-3 rounded-2xl shadow-xl
+          bg-zinc-900 dark:bg-white text-white dark:text-zinc-900
+          text-sm font-semibold animate-in slide-in-from-bottom-4 fade-in duration-300
+          whitespace-nowrap">
+          {toastMsg}
+        </div>
+      )}
+
+      {/* Modal de planes */}
+      {servicioAbierto && (
+        <ModalPlanes
+          servicio={servicioAbierto}
+          preciosComunitarios={preciosComunitarios}
+          onAgregar={handleAgregarDesdeModal}
+          onEditarPrecio={handleEditarPrecio}
+          onCerrar={() => setServicioAbierto(null)}
         />
       )}
     </>
