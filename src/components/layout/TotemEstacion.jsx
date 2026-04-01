@@ -1,9 +1,12 @@
 // src/components/layout/TotemEstacion.jsx
 // Tótem de precios estilo estación de servicio real
 
+import { useState } from 'react'
+
 const MARCA_CONFIG = {
   ypf: {
     nombre: 'YPF',
+    logoFile: 'Ypf.png',
     bg: 'linear-gradient(180deg, #0B1E3D 0%, #0D2B5A 40%, #0B1E3D 100%)',
     accent: '#3B8BEB',
     accentGlow: 'rgba(59,139,235,0.35)',
@@ -19,6 +22,7 @@ const MARCA_CONFIG = {
   },
   shell: {
     nombre: 'Shell',
+    logoFile: 'Shell.png',
     bg: 'linear-gradient(180deg, #1A0A0A 0%, #2D0F0F 40%, #1A0A0A 100%)',
     accent: '#DD1D21',
     accentGlow: 'rgba(221,29,33,0.30)',
@@ -34,6 +38,7 @@ const MARCA_CONFIG = {
   },
   axion: {
     nombre: 'Axion',
+    logoFile: 'Axion.png',
     bg: 'linear-gradient(180deg, #1A1205 0%, #2B1E08 40%, #1A1205 100%)',
     accent: '#F5A623',
     accentGlow: 'rgba(245,166,35,0.30)',
@@ -49,6 +54,7 @@ const MARCA_CONFIG = {
   },
   puma: {
     nombre: 'Puma',
+    logoFile: 'puma.png',
     bg: 'linear-gradient(180deg, #1A1A05 0%, #2B2B08 40%, #1A1A05 100%)',
     accent: '#C8B400',
     accentGlow: 'rgba(200,180,0,0.30)',
@@ -74,6 +80,7 @@ function fmtPrecioTotem(n) {
 
 export function TotemEstacion({ marca, precios = {}, onActualizar }) {
   const config = MARCA_CONFIG[marca]
+  const [logoOk, setLogoOk] = useState(true)
   if (!config) return null
 
   return (
@@ -90,15 +97,17 @@ export function TotemEstacion({ marca, precios = {}, onActualizar }) {
         className="flex items-center justify-center py-4 px-5"
         style={{ borderBottom: `1px solid ${config.divider}` }}
       >
-        {/* Placeholder para logo — reemplazar src con el logo oficial */}
-        <div className="flex items-center gap-3">
-          <img
-            src={`/logos/${marca}.png`}
-            alt={`Logo ${config.nombre}`}
-            className="h-9 w-auto object-contain"
-            onError={(e) => { e.currentTarget.style.display = 'none' }}
-          />
-          {/* Fallback: nombre estilizado si no carga la imagen */}
+        {logoOk ? (
+          <div className="bg-white rounded-xl px-4 py-2 flex items-center justify-center"
+            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+            <img
+              src={`/logos/${config.logoFile}`}
+              alt={`Logo ${config.nombre}`}
+              className="h-8 max-w-[140px] w-auto object-contain"
+              onError={() => setLogoOk(false)}
+            />
+          </div>
+        ) : (
           <span
             className="font-black text-2xl tracking-tight"
             style={{
@@ -109,7 +118,7 @@ export function TotemEstacion({ marca, precios = {}, onActualizar }) {
           >
             {config.nombre}
           </span>
-        </div>
+        )}
       </div>
 
       {/* ── Filas de combustible ── */}
