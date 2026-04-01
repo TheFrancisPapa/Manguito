@@ -1,5 +1,4 @@
-// src/pages/Dashboard/index.jsx — Rediseño App-Like
-// Reemplazá el contenido de src/pages/Dashboard/index.jsx con este archivo.
+// src/pages/Dashboard/index.jsx — Vista simplificada con expansión progresiva
 
 import { useState, useMemo, useCallback } from 'react'
 import { Link }                           from 'react-router-dom'
@@ -70,25 +69,17 @@ function ChartEvolucion({ datos = [], cargando }) {
           <stop offset="100%" stopColor="rgba(255,255,255,0.01)" />
         </linearGradient>
       </defs>
-
-      {/* Área */}
       <path d={areaD} fill="url(#g1)" />
-
-      {/* Línea gastos — punteada roja */}
       <polyline
         points={datos.map((d, i) => `${px(i)},${py(d.gastos)}`).join(' ')}
         fill="none" stroke="rgba(252,165,165,0.55)"
         strokeWidth="1.5" strokeDasharray="4 3" strokeLinecap="round"
       />
-
-      {/* Línea ingresos */}
       <polyline
         points={datos.map((d, i) => `${px(i)},${py(d.ingresos)}`).join(' ')}
         fill="none" stroke="rgba(255,255,255,0.85)"
         strokeWidth="2" strokeLinecap="round"
       />
-
-      {/* Puntos y etiquetas */}
       {datos.map((d, i) => (
         <g key={i}>
           <circle cx={px(i)} cy={py(d.ingresos)} r="2.5" fill="white" opacity="0.65" />
@@ -142,8 +133,7 @@ function FAB({ onClick }) {
         active:scale-90 transition-transform duration-150"
       style={{
         background: 'linear-gradient(145deg, #F8B133 0%, #D4730A 100%)',
-        boxShadow:
-          '0 6px 24px rgba(245,166,35,0.65), 0 2px 8px rgba(0,0,0,0.2)',
+        boxShadow: '0 6px 24px rgba(245,166,35,0.65), 0 2px 8px rgba(0,0,0,0.2)',
       }}
     >
       <svg width="26" height="26" viewBox="0 0 24 24"
@@ -162,12 +152,26 @@ const PERIODOS = [
   { label: 'Hace 2',   offset: -2 },
 ]
 
+// ─── Ícono chevron animado ────────────────────────────────────
+function ChevronIcon({ abierto }) {
+  return (
+    <svg
+      width="16" height="16" viewBox="0 0 16 16" fill="none"
+      stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"
+      className={`transition-transform duration-500 ${abierto ? 'rotate-180' : 'rotate-0'}`}
+    >
+      <path d="M3 6l5 5 5-5" />
+    </svg>
+  )
+}
+
 // ─── PÁGINA ──────────────────────────────────────────────────
 export function DashboardPage() {
   const { usuario }                         = useAuthContext()
   const [periodoIdx, setPeriodoIdx]         = useState(0)
   const [modalAbierto, setModalAbierto]     = useState(false)
   const [tipoDefault, setTipoDefault]       = useState('gasto')
+  const [expandido, setExpandido]           = useState(false)
 
   const offset           = PERIODOS[periodoIdx].offset
   const { desde, hasta } = useRangoMes(offset)
@@ -177,7 +181,7 @@ export function DashboardPage() {
   const { presupuestos }                     = usePresupuestos()
   const { movimientos, cargando: cMovs, agregar } = useMovimientos({ desde, hasta })
 
-  const saldo   = (balance?.total_ingresos ?? 0) - (balance?.total_gastos ?? 0)
+  const saldo    = (balance?.total_ingresos ?? 0) - (balance?.total_gastos ?? 0)
   const positivo = saldo >= 0
 
   const mesLabel = useMemo(() => {
@@ -198,9 +202,8 @@ export function DashboardPage() {
 
   return (
     <>
-
       {/* ════════════════════════════════════════
-          HERO — balance + gráfico
+          HERO — balance + gráfico (siempre visible)
       ════════════════════════════════════════ */}
       <div
         className="relative overflow-hidden rounded-[28px] mb-4 p-5"
@@ -306,131 +309,159 @@ export function DashboardPage() {
       </div>
 
       {/* ════════════════════════════════════════
-          BOTONES RÁPIDOS ingreso / gasto
+          BOTÓN "VER MÁS DETALLES"
       ════════════════════════════════════════ */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        {[
-          {
-            tipo: 'ingreso',
-            emoji: '💰',
-            label: 'Ingreso',
-            sub: 'Sueldo, cobro…',
-            hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700/50',
-            hoverBg: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-900/10',
-            iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
-          },
-          {
-            tipo: 'gasto',
-            emoji: '💸',
-            label: 'Gasto',
-            sub: 'Compra, servicio…',
-            hoverBorder: 'hover:border-red-300 dark:hover:border-red-700/50',
-            hoverBg: 'hover:bg-red-50/60 dark:hover:bg-red-900/10',
-            iconBg: 'bg-red-100 dark:bg-red-900/40',
-          },
-        ].map(({ tipo, emoji, label, sub, hoverBorder, hoverBg, iconBg }) => (
-          <button
-            key={tipo}
-            onClick={() => abrirModal(tipo)}
-            className={`group flex items-center gap-3 p-4 rounded-2xl text-left
-              bg-white dark:bg-zinc-900
-              border border-zinc-100 dark:border-zinc-800
-              ${hoverBorder} ${hoverBg}
-              active:scale-[0.97] transition-all shadow-sm`}
-          >
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0
-              ${iconBg} group-hover:scale-110 transition-transform`}>
-              {emoji}
-            </div>
-            <div>
-              <p className="text-sm font-bold text-zinc-900 dark:text-white leading-tight">{label}</p>
-              <p className="text-[10px] text-zinc-400 font-medium mt-0.5">{sub}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* ── Alerta presupuesto ── */}
-      {presupuestos.length > 0 && <AlertaPresupuesto presupuestos={presupuestos} />}
+      <button
+        onClick={() => setExpandido(e => !e)}
+        className={`
+          w-full flex items-center justify-center gap-2.5 py-3.5 mb-4
+          rounded-2xl border-2 font-bold text-sm
+          transition-all duration-300 active:scale-[0.98]
+          ${expandido
+            ? 'bg-white dark:bg-zinc-900 border-[var(--mango)]/30 text-[var(--mango-dark)] dark:text-[var(--mango)]'
+            : 'bg-gradient-to-r from-[var(--mango)]/10 to-[var(--mango-dark)]/5 border-[var(--mango)]/20 text-[var(--mango-dark)] dark:text-[var(--mango)] hover:border-[var(--mango)]/40 hover:from-[var(--mango)]/15'
+          }
+        `}
+      >
+        <span>{expandido ? 'Ocultar detalles' : 'Ver más detalles'}</span>
+        <ChevronIcon abierto={expandido} />
+      </button>
 
       {/* ════════════════════════════════════════
-          ACCESOS RÁPIDOS
+          CONTENIDO EXPANDIBLE (con animación suave)
       ════════════════════════════════════════ */}
-      <div className="mb-5">
-        <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-2.5">
-          Acceso rápido
-        </p>
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { to: '/movimientos',  emoji: '📋', label: 'Historial', bg: 'bg-zinc-100 dark:bg-zinc-800/70' },
-            { to: '/presupuestos', emoji: '📊', label: 'Límites',   bg: 'bg-amber-50 dark:bg-amber-900/20' },
-            { to: '/inversiones',  emoji: '📈', label: 'Inversiones',bg:'bg-emerald-50 dark:bg-emerald-900/20'},
-            { to: '/cotizaciones', emoji: '💱', label: 'Dólar',     bg: 'bg-violet-50 dark:bg-violet-900/20' },
-          ].map(({ to, emoji, label, bg }) => (
-            <Link key={to} to={to}
-              className={`${bg} rounded-2xl p-3 flex flex-col items-center gap-1.5
-                border border-zinc-100/50 dark:border-zinc-800/30
-                hover:scale-105 active:scale-95 transition-all`}
-            >
-              <span className="text-[22px]">{emoji}</span>
-              <span className="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 text-center leading-tight">
-                {label}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </div>
+      <div
+        className="overflow-hidden transition-all duration-500 ease-in-out"
+        style={{
+          maxHeight: expandido ? '9999px' : '0px',
+          opacity:   expandido ? 1 : 0,
+        }}
+      >
+        <div className="flex flex-col gap-4">
 
-      {/* ════════════════════════════════════════
-          MOVIMIENTOS RECIENTES
-      ════════════════════════════════════════ */}
-      <div>
-        <div className="flex items-center justify-between mb-2.5">
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400">
-            Movimientos recientes
-          </p>
-          <Link to="/movimientos"
-            className="text-[11px] font-bold text-[var(--mango-dark)] dark:text-[var(--mango)] hover:underline">
-            Ver todos →
-          </Link>
-        </div>
-
-        {cMovs ? (
-          <div className="flex flex-col gap-2">
-            {[0,1,2].map(i => (
-              <div key={i} className="h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+          {/* Botones rápidos ingreso / gasto */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {
+                tipo: 'ingreso',
+                emoji: '💰',
+                label: 'Ingreso',
+                sub: 'Sueldo, cobro…',
+                hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700/50',
+                hoverBg: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-900/10',
+                iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+              },
+              {
+                tipo: 'gasto',
+                emoji: '💸',
+                label: 'Gasto',
+                sub: 'Compra, servicio…',
+                hoverBorder: 'hover:border-red-300 dark:hover:border-red-700/50',
+                hoverBg: 'hover:bg-red-50/60 dark:hover:bg-red-900/10',
+                iconBg: 'bg-red-100 dark:bg-red-900/40',
+              },
+            ].map(({ tipo, emoji, label, sub, hoverBorder, hoverBg, iconBg }) => (
+              <button
+                key={tipo}
+                onClick={() => abrirModal(tipo)}
+                className={`group flex items-center gap-3 p-4 rounded-2xl text-left
+                  bg-white dark:bg-zinc-900
+                  border border-zinc-100 dark:border-zinc-800
+                  ${hoverBorder} ${hoverBg}
+                  active:scale-[0.97] transition-all shadow-sm`}
+              >
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0
+                  ${iconBg} group-hover:scale-110 transition-transform`}>
+                  {emoji}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-zinc-900 dark:text-white leading-tight">{label}</p>
+                  <p className="text-[10px] text-zinc-400 font-medium mt-0.5">{sub}</p>
+                </div>
+              </button>
             ))}
           </div>
-        ) : movimientos.length === 0 ? (
-          <button
-            onClick={() => abrirModal('gasto')}
-            className="w-full flex flex-col items-center py-10 rounded-2xl
-              border-2 border-dashed border-zinc-200 dark:border-zinc-800
-              hover:border-[var(--mango)]/40 hover:bg-[var(--mango)]/3
-              active:scale-[0.98] transition-all"
-          >
-            <span className="text-3xl mb-2">💸</span>
-            <p className="text-sm font-semibold text-zinc-500">Sin movimientos este período</p>
-            <p className="text-[11px] text-zinc-400 mt-0.5">Tocá para registrar el primero →</p>
-          </button>
-        ) : (
-          <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
-            {movimientos.slice(0, 7).map((m, i) => (
-              <div key={m.id}
-                className={i > 0 ? 'border-t border-zinc-50 dark:border-zinc-800/50' : ''}>
-                <MovCard movimiento={m} compact />
-              </div>
-            ))}
-            {movimientos.length > 7 && (
+
+          {/* Alerta presupuesto */}
+          {presupuestos.length > 0 && <AlertaPresupuesto presupuestos={presupuestos} />}
+
+          {/* Accesos rápidos */}
+          <div>
+            <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400 mb-2.5">
+              Acceso rápido
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { to: '/movimientos',  emoji: '📋', label: 'Historial', bg: 'bg-zinc-100 dark:bg-zinc-800/70' },
+                { to: '/presupuestos', emoji: '📊', label: 'Límites',   bg: 'bg-amber-50 dark:bg-amber-900/20' },
+                { to: '/inversiones',  emoji: '📈', label: 'Inversiones', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                { to: '/cotizaciones', emoji: '💱', label: 'Dólar',     bg: 'bg-violet-50 dark:bg-violet-900/20' },
+              ].map(({ to, emoji, label, bg }) => (
+                <Link key={to} to={to}
+                  className={`${bg} rounded-2xl p-3 flex flex-col items-center gap-1.5
+                    border border-zinc-100/50 dark:border-zinc-800/30
+                    hover:scale-105 active:scale-95 transition-all`}
+                >
+                  <span className="text-[22px]">{emoji}</span>
+                  <span className="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 text-center leading-tight">
+                    {label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Movimientos recientes */}
+          <div>
+            <div className="flex items-center justify-between mb-2.5">
+              <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-zinc-400">
+                Movimientos recientes
+              </p>
               <Link to="/movimientos"
-                className="block text-center py-3 text-[11px] font-bold text-zinc-400
-                  hover:text-[var(--mango-dark)] dark:hover:text-[var(--mango)]
-                  border-t border-zinc-50 dark:border-zinc-800/50 transition-colors">
-                Ver {movimientos.length - 7} movimientos más →
+                className="text-[11px] font-bold text-[var(--mango-dark)] dark:text-[var(--mango)] hover:underline">
+                Ver todos →
               </Link>
+            </div>
+
+            {cMovs ? (
+              <div className="flex flex-col gap-2">
+                {[0,1,2].map(i => (
+                  <div key={i} className="h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+                ))}
+              </div>
+            ) : movimientos.length === 0 ? (
+              <button
+                onClick={() => abrirModal('gasto')}
+                className="w-full flex flex-col items-center py-10 rounded-2xl
+                  border-2 border-dashed border-zinc-200 dark:border-zinc-800
+                  hover:border-[var(--mango)]/40 hover:bg-[var(--mango)]/3
+                  active:scale-[0.98] transition-all"
+              >
+                <span className="text-3xl mb-2">💸</span>
+                <p className="text-sm font-semibold text-zinc-500">Sin movimientos este período</p>
+                <p className="text-[11px] text-zinc-400 mt-0.5">Tocá para registrar el primero →</p>
+              </button>
+            ) : (
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+                {movimientos.slice(0, 7).map((m, i) => (
+                  <div key={m.id}
+                    className={i > 0 ? 'border-t border-zinc-50 dark:border-zinc-800/50' : ''}>
+                    <MovCard movimiento={m} compact />
+                  </div>
+                ))}
+                {movimientos.length > 7 && (
+                  <Link to="/movimientos"
+                    className="block text-center py-3 text-[11px] font-bold text-zinc-400
+                      hover:text-[var(--mango-dark)] dark:hover:text-[var(--mango)]
+                      border-t border-zinc-50 dark:border-zinc-800/50 transition-colors">
+                    Ver {movimientos.length - 7} movimientos más →
+                  </Link>
+                )}
+              </div>
             )}
           </div>
-        )}
+
+        </div>
       </div>
 
       {/* ─── FAB ─── */}
@@ -453,7 +484,7 @@ export function DashboardPage() {
   )
 }
 
-// ─── Wrapper con PageWrapper (mantiene compatibilidad con router) ─
+// ─── Wrapper con PageWrapper ───────────────────────────────────
 export default function DashboardPageWrapped() {
   return (
     <div className="animate-in fade-in duration-500">
