@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, CardHeader, Button } from '../../components/ui'
+import { TotemEstacion } from '../../components/layout/TotemEstacion'
 import { supabase } from '../../lib/supabase'
 
 // ── Provincias argentinas ────────────────────────────────────
@@ -288,68 +289,63 @@ function ModalActualizar({ tipo, compania, precioActual, onGuardar, onCerrar }) 
   )
 }
 
-// ── Tabla de precios ─────────────────────────────────────────
-function TablaPreciosCombustible({ tipo, precios, onActualizar }) {
-  const tipInfo = TIPOS_COMBUSTIBLE.find(t => t.id === tipo)
-  const preciosTipo = precios[tipo] || {}
-
-  if (tipo === 'gnc') {
-    return (
-      <div className="flex items-center justify-between py-3 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
-        <div className="flex items-center gap-3">
-          <span className="text-xl">{tipInfo.emoji}</span>
-          <div>
-            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">{tipInfo.nombre}</p>
-            <p className="text-xs text-zinc-400">Varía según estación GNC</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold" style={{ color: tipInfo.color }}>
-            {fmtPrecio(preciosTipo.estaciones_gnc)}/m³
-          </span>
-          <button
-            onClick={() => onActualizar(tipo, 'estaciones_gnc', preciosTipo.estaciones_gnc)}
-            className="text-[10px] text-zinc-400 hover:text-zinc-600 border border-zinc-200 dark:border-zinc-700
-              px-1.5 py-0.5 rounded-md transition-colors"
-            title="Actualizar precio"
-          >
-            ✏️
-          </button>
-        </div>
-      </div>
-    )
-  }
-
+// ── Card de GNC (queda separado porque no es por marca) ─────
+function CardGNC({ precios, onActualizar }) {
+  const precioGNC = precios.gnc?.estaciones_gnc
   return (
-    <div className="border-b border-zinc-100 dark:border-zinc-800 last:border-0 py-3">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-base">{tipInfo.emoji}</span>
-        <p className="text-sm font-bold text-zinc-800 dark:text-zinc-100">{tipInfo.nombre}</p>
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{
+        background: 'linear-gradient(180deg, #0A1A0A 0%, #142814 40%, #0A1A0A 100%)',
+        border: '1.5px solid rgba(16,185,129,0.25)',
+        boxShadow: '0 4px 24px rgba(0,0,0,0.5), 0 0 40px rgba(16,185,129,0.15)',
+      }}
+    >
+      <div className="flex items-center justify-center py-4 px-5"
+        style={{ borderBottom: '1px solid rgba(16,185,129,0.15)' }}>
+        <span className="font-black text-2xl tracking-tight"
+          style={{
+            color: '#10B981',
+            textShadow: '0 0 20px rgba(16,185,129,0.35), 0 0 6px rgba(16,185,129,0.35)',
+            fontFamily: 'var(--font-display)',
+          }}>
+          🟢 GNC
+        </span>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {COMPANIAS.map(c => {
-          const precio = preciosTipo[c.id]
-          return (
-            <div key={c.id}
-              className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-2.5 text-center group relative">
-              <p className="text-[10px] font-medium text-zinc-400 mb-1">{c.emoji} {c.nombre}</p>
-              <p className="text-base font-bold text-zinc-800 dark:text-zinc-100">
-                {fmtPrecio(precio)}
-              </p>
-              <p className="text-[9px] text-zinc-400">por litro</p>
-              <button
-                onClick={() => onActualizar(tipo, c.id, precio)}
-                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100
-                  text-[10px] w-5 h-5 rounded-md text-zinc-400 hover:text-zinc-700
-                  bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600
-                  flex items-center justify-center transition-all"
-                title="Actualizar precio"
-              >
-                ✏️
-              </button>
-            </div>
-          )
-        })}
+      <div className="flex items-center justify-between px-5 py-4">
+        <span className="text-sm font-bold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.65)' }}>
+          Gas Natural
+        </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.3)' }}>$</span>
+            <span className="text-2xl font-black tabular-nums tracking-tight"
+              style={{
+                color: '#6EE7B7',
+                textShadow: '0 0 12px rgba(16,185,129,0.35), 0 0 4px rgba(16,185,129,0.35)',
+                fontFamily: 'var(--font-display)',
+              }}>
+              {precioGNC ? Number(precioGNC).toLocaleString('es-AR') : '— —'}
+            </span>
+            <span className="text-xs font-bold ml-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>/m³</span>
+          </div>
+          {onActualizar && (
+            <button
+              onClick={() => onActualizar('gnc', 'estaciones_gnc', precioGNC)}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] transition-all active:scale-90"
+              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10B981' }}
+              title="Actualizar precio"
+            >
+              ✏️
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="px-5 py-2.5 text-center"
+        style={{ borderTop: '1px solid rgba(16,185,129,0.15)', background: 'rgba(0,0,0,0.2)' }}>
+        <span className="text-[10px] uppercase tracking-widest font-bold" style={{ color: 'rgba(255,255,255,0.2)' }}>
+          Precio por metro cúbico · ARS
+        </span>
       </div>
     </div>
   )
@@ -423,28 +419,29 @@ export function NaftaPage() {
           <p>Tocá el ✏️ en cualquier precio para actualizarlo. Tu corrección se guarda para vos y ayuda a la comunidad.</p>
         </div>
 
-        {/* Tabla de precios */}
-        <Card className="mb-5">
-          <CardHeader titulo={`Precios en ${provincia}`} />
-          {cargando ? (
-            <div className="space-y-4 mt-3">
-              {[0,1,2,3].map(i => (
-                <div key={i} className="h-20 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
-              ))}
+        {/* Tótems de precios por marca */}
+        {cargando ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+            {[0,1,2,3].map(i => (
+              <div key={i} className="h-64 rounded-2xl bg-zinc-800/40 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+            {COMPANIAS.map(c => (
+              <TotemEstacion
+                key={c.id}
+                marca={c.id}
+                precios={precios}
+                onActualizar={handleActualizar}
+              />
+            ))}
+            {/* GNC separado — abarca todo el ancho */}
+            <div className="sm:col-span-2">
+              <CardGNC precios={precios} onActualizar={handleActualizar} />
             </div>
-          ) : (
-            <div className="mt-2">
-              {TIPOS_COMBUSTIBLE.map(t => (
-                <TablaPreciosCombustible
-                  key={t.id}
-                  tipo={t.id}
-                  precios={precios}
-                  onActualizar={handleActualizar}
-                />
-              ))}
-            </div>
-          )}
-        </Card>
+          </div>
+        )}
 
         {/* Calculadora de tanque */}
         <CalculadoraTanque precios={precios} />
