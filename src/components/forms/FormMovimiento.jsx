@@ -3,6 +3,7 @@
 //   1. Detección automática de categoría por palabras clave en Descripción
 //   2. Formateo visual del importe con separador de miles (10.000)
 //      — el valor interno siempre es un número limpio
+//   3. Selector de moneda (ARS, USD, EUR, BRL, CLP, UYU) junto al importe
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button, Select, Spinner } from '../ui/index.js'
@@ -11,11 +12,8 @@ import { EscanerTicket } from './EscanerTicket.jsx'
 
 // ─────────────────────────────────────────────────────────────
 // 1. MAPA DE PALABRAS CLAVE → CATEGORÍA
-//    Todos los términos en minúsculas, sin tildes.
-//    El primer match que se encuentre gana.
 // ─────────────────────────────────────────────────────────────
 const KEYWORD_MAP = [
-  // ── Alimentación ──────────────────────────────────────────
   {
     categoria: 'Alimentación',
     keywords: [
@@ -25,16 +23,15 @@ const KEYWORD_MAP = [
       'carnicería', 'pescaderia', 'almacen', 'almacén', 'kiosco', 'quiosco',
       'chino', 'minimercado', 'despensa', 'fiambreria', 'lacteos',
       'delivery food', 'comida', 'mercado', 'minimarket', 'la anonima',
-      'cooperativa', 'cooperativaobrera', 'walmart', 'hipermercado',
+      'cooperativa', 'cooperativaobrera', 'hipermercado',
     ],
   },
-  // ── Restaurantes / Salidas ────────────────────────────────
   {
     categoria: 'Entretenimiento',
     keywords: [
-      'restaurant', 'restaurante', 'delivery', 'pedidosya', 'rappi', 'rappi',
+      'restaurant', 'restaurante', 'delivery', 'pedidosya', 'rappi',
       'ifood', 'pizza', 'pizzeria', 'hamburguesa', 'burger', 'mcdonalds',
-      'burgerkingue', 'subway', 'sushi', 'café', 'cafe', 'cafeteria',
+      'subway', 'sushi', 'café', 'cafe', 'cafeteria',
       'bar', 'bodegon', 'parrilla', 'tenedor libre', 'buffet', 'comedor',
       'cine', 'cinema', 'teatro', 'show', 'evento', 'boliche', 'discoteca',
       'netflix', 'spotify', 'disney', 'hbo', 'prime', 'apple tv', 'star',
@@ -42,7 +39,6 @@ const KEYWORD_MAP = [
       'salida', 'cena', 'almuerzo', 'desayuno', 'merienda', 'brunch',
     ],
   },
-  // ── Transporte ────────────────────────────────────────────
   {
     categoria: 'Transporte',
     keywords: [
@@ -56,7 +52,6 @@ const KEYWORD_MAP = [
       'seguro auto', 'vtv', 'patente',
     ],
   },
-  // ── Vivienda / Alquiler ────────────────────────────────────
   {
     categoria: 'Vivienda',
     keywords: [
@@ -67,7 +62,6 @@ const KEYWORD_MAP = [
       'mueble', 'heladera', 'lavarropas', 'cocina', 'electrodomestico',
     ],
   },
-  // ── Salud ─────────────────────────────────────────────────
   {
     categoria: 'Salud',
     keywords: [
@@ -80,7 +74,6 @@ const KEYWORD_MAP = [
       'medicamento', 'remedio', 'pastilla', 'vitamina', 'suplemento',
     ],
   },
-  // ── Educación ─────────────────────────────────────────────
   {
     categoria: 'Educación',
     keywords: [
@@ -92,7 +85,6 @@ const KEYWORD_MAP = [
       'udemy', 'coursera', 'platzi', 'coder',
     ],
   },
-  // ── Ropa / Indumentaria ────────────────────────────────────
   {
     categoria: 'Ropa',
     keywords: [
@@ -103,7 +95,6 @@ const KEYWORD_MAP = [
       'puma shoes', 'reebok', 'tienda', 'boutique', 'liquidacion',
     ],
   },
-  // ── Servicios (luz, gas, internet…) ───────────────────────
   {
     categoria: 'Servicios',
     keywords: [
@@ -116,7 +107,6 @@ const KEYWORD_MAP = [
       'seguro hogar', 'seguro vida', 'seguro', 'poliza',
     ],
   },
-  // ── Ingresos ──────────────────────────────────────────────
   {
     categoria: 'Sueldo',
     keywords: ['sueldo', 'salario', 'haberes', 'aguinaldo', 'sac', 'cobro sueldo'],
@@ -131,52 +121,35 @@ const KEYWORD_MAP = [
   },
 ]
 
-// ─────────────────────────────────────────────────────────────
-// 2. FUNCIÓN DE DETECCIÓN
-//    Recibe el texto de descripción, devuelve el nombre de la
-//    categoría detectada o null si no hay match.
-// ─────────────────────────────────────────────────────────────
 function detectarCategoria(texto) {
   if (!texto || texto.trim().length < 3) return null
-
-  // Normalizar: minúsculas, sin tildes, sin caracteres especiales
   const normalizado = texto
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')  // quitar tildes
-    .replace(/[^a-z0-9\s]/g, ' ')    // mantener solo letras y números
-
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
   for (const { categoria, keywords } of KEYWORD_MAP) {
     for (const kw of keywords) {
-      // El keyword también normalizado
       const kwNorm = kw.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      if (normalizado.includes(kwNorm)) {
-        return categoria
-      }
+      if (normalizado.includes(kwNorm)) return categoria
     }
   }
   return null
 }
 
 // ─────────────────────────────────────────────────────────────
-// 3. FORMATEO DE IMPORTE
-//    10000 → "10.000"  |  1500.50 → "1.500,50"
-//    Solo se formatean los miles; el valor numérico interno
-//    es siempre el número limpio.
+// 2. FORMATEO DE IMPORTE
 // ─────────────────────────────────────────────────────────────
 function formatearImporte(valor) {
   if (!valor) return ''
-  // Eliminar todo excepto dígitos y coma (para decimales)
   const limpio = String(valor).replace(/[^\d,]/g, '')
   if (!limpio) return ''
-
   const partes = limpio.split(',')
   const entero = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.')
   return partes.length > 1 ? `${entero},${partes[1]}` : entero
 }
 
 function limpiarImporte(valorFormateado) {
-  // "10.000,50" → 10000.50
   const sinPuntos = String(valorFormateado).replace(/\./g, '')
   const conPunto  = sinPuntos.replace(',', '.')
   const num = parseFloat(conPunto)
@@ -184,7 +157,7 @@ function limpiarImporte(valorFormateado) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 4. SUB-COMPONENTE: Badge de categoría detectada
+// 3. BADGE DE CATEGORÍA SUGERIDA
 // ─────────────────────────────────────────────────────────────
 function BadgeDeteccion({ nombreCat, onAceptar, onRechazar }) {
   return (
@@ -218,6 +191,18 @@ function BadgeDeteccion({ nombreCat, onAceptar, onRechazar }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// 4. OPCIONES DE MONEDA
+// ─────────────────────────────────────────────────────────────
+const MONEDAS = [
+  { value: 'ARS', label: '$ ARS'   },
+  { value: 'USD', label: 'U$D'     },
+  { value: 'EUR', label: '€ EUR'   },
+  { value: 'BRL', label: 'R$ BRL'  },
+  { value: 'CLP', label: 'CL$ CLP' },
+  { value: 'UYU', label: '$U UYU'  },
+]
+
+// ─────────────────────────────────────────────────────────────
 // 5. FORMULARIO PRINCIPAL
 // ─────────────────────────────────────────────────────────────
 export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) {
@@ -226,6 +211,7 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
     valoresIniciales?.monto ? formatearImporte(String(valoresIniciales.monto).replace('.', ',')) : ''
   )
   const [importeNum, setImporteNum]   = useState(valoresIniciales?.monto ?? '')
+  const [moneda, setMoneda]           = useState(valoresIniciales?.moneda ?? 'ARS')
   const [descripcion, setDescripcion] = useState(valoresIniciales?.descripcion ?? '')
   const hoyLocal = new Date().toLocaleDateString('sv-SE')
   const [fecha, setFecha]             = useState(valoresIniciales?.fecha ?? hoyLocal)
@@ -234,29 +220,25 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
   const [error, setError]             = useState(null)
   const [mostrarEscaner, setMostrarEscaner] = useState(false)
 
-  // Estado de la sugerencia de categoría
-  const [sugerencia, setSugerencia]         = useState(null)  // nombre de la categoría sugerida
+  const [sugerencia, setSugerencia]                 = useState(null)
   const [sugerenciaRechazada, setSugerenciaRechazada] = useState(false)
 
-  const importeRef   = useRef(null)
+  const importeRef     = useRef(null)
   const descripcionRef = useRef(null)
 
   const { gastos, ingresos, cargando: cargandoCat } = useCategorias()
   const categoriasOptions = tipo === 'gasto' ? gastos : ingresos
 
-  // Setear la categoría por defecto la primera vez que cargan
   useEffect(() => {
     if (!valoresIniciales && categoriasOptions.length > 0 && !categoriaId) {
       setCategoriaId(categoriasOptions[0].id)
     }
   }, [categoriasOptions, categoriaId, valoresIniciales])
 
-  // ── Detectar categoría mientras el usuario escribe ──────────
   const handleDescripcionChange = useCallback((e) => {
     const valor = e.target.value
     setDescripcion(valor)
     setSugerenciaRechazada(false)
-
     const catDetectada = detectarCategoria(valor)
     if (catDetectada && !sugerenciaRechazada) {
       setSugerencia(catDetectada)
@@ -265,7 +247,6 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
     }
   }, [sugerenciaRechazada])
 
-  // Aplicar sugerencia al hacer clic en "Sí"
   const aplicarSugerencia = useCallback(() => {
     const cat = categoriasOptions.find(
       c => c.nombre.toLowerCase() === sugerencia?.toLowerCase()
@@ -279,35 +260,20 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
     setSugerenciaRechazada(true)
   }, [])
 
-  // ── Formateo del importe en tiempo real ─────────────────────
   const handleImporteChange = useCallback((e) => {
     const raw = e.target.value
-
-    // Permitir solo dígitos, puntos (separador miles) y una coma (decimal)
-    // El usuario puede tipear sin pensar — limpiamos y reformateamos
-    const sinFormato = raw.replace(/\./g, '').replace(',', '.')   // "10.000,5" → "100005"
-    const soloDigitos = raw.replace(/[^\d,]/g, '')                 // quitar todo excepto dígitos y coma
-
-    // Guardar el valor display formateado
-    const displayNuevo = formatearImporte(soloDigitos)
-    setImporteDisplay(displayNuevo)
-
-    // Guardar el valor numérico limpio
-    const numLimpio = limpiarImporte(soloDigitos)
-    setImporteNum(numLimpio)
+    const soloDigitos = raw.replace(/[^\d,]/g, '')
+    setImporteDisplay(formatearImporte(soloDigitos))
+    setImporteNum(limpiarImporte(soloDigitos))
   }, [])
 
-  // Manejar pegado (paste) correctamente
   const handleImportePaste = useCallback((e) => {
     e.preventDefault()
     const pegado = e.clipboardData.getData('text').replace(/[^\d,\.]/g, '')
-    // Normalizar separadores: "1.500,50" o "1500.50" → "1500.50"
     let limpio = pegado
     if (pegado.includes(',') && pegado.includes('.')) {
-      // Formato europeo: 1.500,50
       limpio = pegado.replace(/\./g, '').replace(',', '.')
     } else if (pegado.includes(',') && !pegado.includes('.')) {
-      // Puede ser separador decimal: 1500,50
       limpio = pegado.replace(',', '.')
     }
     const num = parseFloat(limpio)
@@ -317,7 +283,6 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
     }
   }, [])
 
-  // ── Cuando se detecta un ticket con el escáner ─────────────
   const handleTicketDetectado = useCallback(({ monto: m, descripcion: d, categoriaDetectada: cat }) => {
     if (m) {
       setImporteNum(m)
@@ -334,7 +299,6 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
     setMostrarEscaner(false)
   }, [gastos])
 
-  // ── Submit ──────────────────────────────────────────────────
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
@@ -351,8 +315,9 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
     try {
       await onSubmit({
         tipo,
-        monto:       Number(importeNum),
-        descripcion: descripcion.trim() || null,
+        monto:        Number(importeNum),
+        moneda,
+        descripcion:  descripcion.trim() || null,
         fecha,
         categoria_id: categoriaId,
         es_recurrente: false,
@@ -363,7 +328,6 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
     }
   }
 
-  // ── Cambio de tipo (ingreso / gasto) ────────────────────────
   const handleCambioTipo = (nuevoTipo) => {
     setTipo(nuevoTipo)
     setCategoriaId('')
@@ -432,7 +396,7 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
         </div>
       )}
 
-      {/* Descripción — con detección de categoría */}
+      {/* Descripción */}
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 tracking-wide">
           Descripción
@@ -449,8 +413,6 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
             focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/30 focus:border-[var(--mango)]/60
             transition-all text-zinc-900 dark:text-white placeholder:text-zinc-400"
         />
-
-        {/* Badge de sugerencia de categoría */}
         {sugerencia && !sugerenciaRechazada && (
           <BadgeDeteccion
             nombreCat={sugerencia}
@@ -460,18 +422,31 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
         )}
       </div>
 
-      {/* Importe + Fecha */}
+      {/* ── Importe + Moneda + Fecha ── */}
       <div className="grid grid-cols-2 gap-3">
 
-        {/* Importe con formateo en vivo */}
+        {/* Importe con selector de moneda */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 tracking-wide">
             Importe
           </label>
-          <div className="relative flex items-center">
-            <span className="absolute left-3.5 text-zinc-400 text-sm font-semibold pointer-events-none select-none">
-              $
-            </span>
+          <div className="flex gap-1.5">
+            {/* Selector de moneda */}
+            <select
+              value={moneda}
+              onChange={e => setMoneda(e.target.value)}
+              className="flex-shrink-0 w-[68px] bg-zinc-50/80 dark:bg-zinc-800/60
+                border border-zinc-200 dark:border-zinc-700/60 rounded-xl
+                px-1.5 py-2.5 text-[11px] font-bold text-zinc-600 dark:text-zinc-300
+                focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/30 focus:border-[var(--mango)]/60
+                transition-all cursor-pointer appearance-none text-center"
+            >
+              {MONEDAS.map(m => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+
+            {/* Input de importe */}
             <input
               ref={importeRef}
               type="text"
@@ -481,16 +456,18 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
               onPaste={handleImportePaste}
               placeholder="0"
               autoComplete="off"
-              className="w-full bg-zinc-50/80 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60
-                rounded-xl pl-8 pr-3.5 py-2.5 text-sm font-bold tabular-nums
+              className="flex-1 min-w-0 bg-zinc-50/80 dark:bg-zinc-800/60
+                border border-zinc-200 dark:border-zinc-700/60
+                rounded-xl px-3 py-2.5 text-sm font-bold tabular-nums
                 focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/30 focus:border-[var(--mango)]/60
                 transition-all text-zinc-900 dark:text-white placeholder:text-zinc-400 placeholder:font-normal"
             />
           </div>
-          {/* Hint del valor numérico para depurar (solo dev) */}
+
+          {/* Hint con moneda seleccionada */}
           {importeNum > 0 && (
             <p className="text-[10px] text-zinc-400 px-1">
-              = {Number(importeNum).toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 })}
+              = {Number(importeNum).toLocaleString('es-AR', { maximumFractionDigits: 2 })} {moneda}
             </p>
           )}
         </div>
@@ -528,7 +505,6 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
             value={categoriaId}
             onChange={(e) => {
               setCategoriaId(e.target.value)
-              // Si el usuario eligió manualmente, cancelamos la sugerencia
               setSugerencia(null)
               setSugerenciaRechazada(true)
             }}
