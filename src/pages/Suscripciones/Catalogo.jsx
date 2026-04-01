@@ -214,11 +214,14 @@ function TarjetaPlan({ plan, preciosComunitarios, onAgregar, onEditarPrecio }) {
       </div>
 
       {/* Precios por método */}
-      <div className="px-4 divide-y divide-zinc-100 dark:divide-zinc-800/60">
+      <div className={`px-4 divide-y divide-zinc-100 dark:divide-zinc-800/60 ${metodosConPrecio.length > 0 ? 'pb-1' : 'pb-4'}`}>
         {metodosConPrecio.map(m => {
           const pc = preciosComunitarios?.[m.id]
           const pb = plan.precios?.[m.id]
           const precio = pc ?? pb
+          // Prevent null/undefined from causing empty lines
+          if (precio == null) return null;
+          
           return (
             <FilaPrecio
               key={m.id}

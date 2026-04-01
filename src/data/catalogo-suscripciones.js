@@ -25,6 +25,7 @@ export const METODOS_PAGO = [
   { id: 'ars_credito',  label: 'Crédito (con impuestos)', emoji: '💳', moneda: 'ARS', tipo: 'banco' },
   { id: 'usd_astropay', label: 'AstroPay / Prepaga USD',  emoji: '🟣', moneda: 'USD', tipo: 'prepaga' },
   { id: 'usd_wise',     label: 'Wise / Tarjeta USD',      emoji: '🌐', moneda: 'USD', tipo: 'internacional' },
+  { id: 'usd_dolarapp', label: 'DolarApp',                emoji: '💲', moneda: 'USD', tipo: 'prepaga' },
   { id: 'usd_cripto',   label: 'Cripto (USDT/USDC)',      emoji: '₿',  moneda: 'USD', tipo: 'cripto' },
 ]
 
@@ -51,6 +52,7 @@ export const CATALOGO_SUSCRIPCIONES = [
           ars_credito:  5639,
           usd_astropay: null,
           usd_wise:     null,
+          usd_dolarapp: null,
           usd_cripto:   null,
         },
       },
@@ -64,6 +66,7 @@ export const CATALOGO_SUSCRIPCIONES = [
           ars_credito:  8639,
           usd_astropay: 15.49,
           usd_wise:     15.49,
+          usd_dolarapp: null,
           usd_cripto:   15.49,
         },
       },
@@ -77,6 +80,7 @@ export const CATALOGO_SUSCRIPCIONES = [
           ars_credito:  12599,
           usd_astropay: 22.99,
           usd_wise:     22.99,
+          usd_dolarapp: null,
           usd_cripto:   22.99,
         },
       },
