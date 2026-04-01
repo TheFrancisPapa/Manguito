@@ -5,6 +5,7 @@ import { PageWrapper, PageHeader, MovCard } from '../../components/layout'
 import { Card, Button, EmptyState, EMPTY_STATES, Modal } from '../../components/ui'
 import { FormMovimiento } from '../../components/forms/FormMovimiento'
 import { formatMoneda } from '../../lib/utils'
+import { descargarCSV } from '../../lib/exportUtils'
 
 export function MovimientosPage() {
   const { usuario } = useAuthContext()
@@ -64,7 +65,19 @@ export function MovimientosPage() {
         <PageHeader
           titulo="Movimientos"
           subtitulo="Historial completo"
-          accion={<Button icono="+" onClick={() => setModalNuevo(true)} className="shadow-sm shadow-amber-500/20">Nuevo</Button>}
+          accion={
+            <div className="flex items-center gap-2">
+              <Button 
+                variante="secondary" 
+                onClick={() => descargarCSV(movimientosFiltrados)}
+                className="!px-3 !py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                title="Descargar historial filtrado en Excel/CSV"
+              >
+                📥
+              </Button>
+              <Button icono="+" onClick={() => setModalNuevo(true)} className="shadow-sm shadow-amber-500/20">Nuevo</Button>
+            </div>
+          }
         />
 
         {/* Filtros */}
