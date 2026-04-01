@@ -1,5 +1,6 @@
 // src/components/layout/PageWrapper.jsx
 import { Header } from './Header'
+import { BottomNav } from './BottomNav'
 
 export function PageWrapper({ children, className = '' }) {
   return (
@@ -14,6 +15,7 @@ export function PageWrapper({ children, className = '' }) {
           {children}
         </div>
       </main>
+      <BottomNav />
     </>
   )
 }
