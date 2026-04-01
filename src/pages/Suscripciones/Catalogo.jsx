@@ -428,14 +428,30 @@ export function CatalogoSuscripciones({ onAgregarSuscripcion }) {
   const { precios: preciosComunitarios, actualizarPrecio } = usePreciosComunitarios()
 
   const serviciosFiltrados = useMemo(() => {
-    return CATALOGO_SUSCRIPCIONES.filter(s => {
+    const catalogoPlano = []
+    CATALOGO_SUSCRIPCIONES.forEach(srv => {
+      if (srv.planes) {
+        srv.planes.forEach(pl => {
+          catalogoPlano.push({
+            ...srv,
+            id: pl.id, 
+            servicio_id: srv.id,
+            plan: pl.nombre,
+            descripcion: pl.descripcion,
+            precios: pl.precios
+          })
+        })
+      }
+    })
+
+    return catalogoPlano.filter(s => {
       const matchCat = categoriaActiva === 'todos' || s.categoria === categoriaActiva
       const matchBusq = !busqueda ||
         s.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-        s.plan.toLowerCase().includes(busqueda.toLowerCase())
+        (s.plan && s.plan.toLowerCase().includes(busqueda.toLowerCase()))
       const matchMetodo = !metodoPagoFiltro || (() => {
         const pc = preciosComunitarios[s.id]?.[metodoPagoFiltro]
-        const pb = s.precios[metodoPagoFiltro]
+        const pb = s.precios?.[metodoPagoFiltro]
         return (pc ?? pb) != null
       })()
       return matchCat && matchBusq && matchMetodo
