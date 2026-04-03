@@ -265,24 +265,6 @@ function TarjetaPlan({ plan, preciosComunitarios, onAgregar, onEditarPrecio }) {
           onEditar={onEditarPrecio}
         />
       </div>
-
-      {/* Botón agregar */}
-      <div className="px-4 pb-4 pt-2 border-t border-zinc-100 dark:border-zinc-800/60">
-        <button
-          onClick={() => onAgregar(plan, precio)}
-          className="w-full py-2.5 rounded-xl text-sm font-bold
-            bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
-            text-[var(--charcoal)] hover:opacity-90 active:scale-[0.98] transition-all
-            flex items-center justify-center gap-2"
-        >
-          <span>+ Agregar a mis suscripciones</span>
-          {precio != null && (
-            <span className="text-[11px] font-bold text-zinc-800/70 opacity-90">
-              • {fmtPrecio(precio)}
-            </span>
-          )}
-        </button>
-      </div>
     </div>
   )
 }

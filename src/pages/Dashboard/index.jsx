@@ -1,4 +1,4 @@
-// src/pages/Dashboard/index.jsx — Vista simplificada con expansión progresiva
+// src/pages/Dashboard/index.jsx — Sin botón "Ver más detalles", contenido siempre visible
 
 import { useState, useMemo, useCallback } from 'react'
 import { Link }                           from 'react-router-dom'
@@ -39,15 +39,17 @@ function fmtFull(n) {
   return `$\u00A0${Number(n).toLocaleString('es-AR', { maximumFractionDigits: 0 })}`
 }
 
-// ─── Gráfico de evolución integrado ──────────────────────────
+// ─── Gráfico de evolución mejorado ───────────────────────────
 function ChartEvolucion({ datos = [], cargando }) {
+  const [hover, setHover] = useState(null)
+
   if (cargando) {
-    return <div className="w-full h-28 rounded-2xl bg-white/5 animate-pulse" />
+    return <div className="w-full h-32 rounded-2xl bg-white/5 animate-pulse" />
   }
   if (!datos.length) return null
 
-  const W = 400, H = 100
-  const PL = 12, PR = 12, PT = 8, PB = 24
+  const W = 400, H = 120
+  const PL = 12, PR = 12, PT = 10, PB = 26
   const iW = W - PL - PR
   const iH = H - PT - PB
   const maxV = Math.max(...datos.flatMap(d => [d.ingresos, d.gastos]), 1)
@@ -55,46 +57,130 @@ function ChartEvolucion({ datos = [], cargando }) {
   const px  = (i) => PL + i * xS
   const py  = (v) => PT + iH - (v / maxV) * iH
 
-  const areaD = [
+  // Área rellena bajo la línea de ingresos
+  const areaIngPath = [
     `M ${px(0)} ${PT + iH}`,
     ...datos.map((d, i) => `L ${px(i)} ${py(d.ingresos)}`),
     `L ${px(datos.length - 1)} ${PT + iH} Z`,
   ].join(' ')
 
+  // Área rellena bajo la línea de gastos
+  const areaGasPath = [
+    `M ${px(0)} ${PT + iH}`,
+    ...datos.map((d, i) => `L ${px(i)} ${py(d.gastos)}`),
+    `L ${px(datos.length - 1)} ${PT + iH} Z`,
+  ].join(' ')
+
   return (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} className="overflow-visible">
-      <defs>
-        <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"   stopColor="rgba(245,166,35,0.18)" />
-          <stop offset="100%" stopColor="rgba(245,166,35,0.01)" />
-        </linearGradient>
-        <linearGradient id="g2" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"   stopColor="rgba(255,255,255,0.5)" />
-          <stop offset="100%" stopColor="rgba(245,166,35,0.7)" />
-        </linearGradient>
-      </defs>
-      <path d={areaD} fill="url(#g1)" />
-      <polyline
-        points={datos.map((d, i) => `${px(i)},${py(d.gastos)}`).join(' ')}
-        fill="none" stroke="rgba(252,165,165,0.5)"
-        strokeWidth="1.5" strokeDasharray="5 4" strokeLinecap="round"
-      />
-      <polyline
-        points={datos.map((d, i) => `${px(i)},${py(d.ingresos)}`).join(' ')}
-        fill="none" stroke="url(#g2)"
-        strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-      />
-      {datos.map((d, i) => (
-        <g key={i}>
-          <circle cx={px(i)} cy={py(d.ingresos)} r="3" fill="white" opacity="0.75" />
-          <circle cx={px(i)} cy={py(d.ingresos)} r="5" fill="white" opacity="0.08" />
-          <text x={px(i)} y={H - 4} textAnchor="middle" fontSize="8.5"
-            fill="rgba(255,255,255,0.38)" fontWeight="500">
-            {d.label}
-          </text>
-        </g>
-      ))}
-    </svg>
+    <div className="w-full">
+      <svg
+        width="100%" viewBox={`0 0 ${W} ${H}`}
+        className="overflow-visible"
+        onMouseLeave={() => setHover(null)}
+      >
+        <defs>
+          <linearGradient id="gIng" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor="rgba(245,166,35,0.22)" />
+            <stop offset="100%" stopColor="rgba(245,166,35,0.01)" />
+          </linearGradient>
+          <linearGradient id="gGas" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor="rgba(252,165,165,0.15)" />
+            <stop offset="100%" stopColor="rgba(252,165,165,0.01)" />
+          </linearGradient>
+          <linearGradient id="gLineIng" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stopColor="rgba(255,255,255,0.45)" />
+            <stop offset="100%" stopColor="rgba(245,166,35,0.9)" />
+          </linearGradient>
+        </defs>
+
+        {/* Líneas de referencia */}
+        {[0.25, 0.5, 0.75, 1].map(f => (
+          <line key={f}
+            x1={PL} y1={PT + iH * (1 - f)}
+            x2={W - PR} y2={PT + iH * (1 - f)}
+            stroke="rgba(255,255,255,0.06)" strokeWidth="1"
+          />
+        ))}
+
+        {/* Áreas */}
+        <path d={areaGasPath} fill="url(#gGas)" />
+        <path d={areaIngPath} fill="url(#gIng)" />
+
+        {/* Línea de gastos (punteada) */}
+        <polyline
+          points={datos.map((d, i) => `${px(i)},${py(d.gastos)}`).join(' ')}
+          fill="none" stroke="rgba(252,165,165,0.55)"
+          strokeWidth="1.8" strokeDasharray="5 4" strokeLinecap="round"
+        />
+
+        {/* Línea de ingresos */}
+        <polyline
+          points={datos.map((d, i) => `${px(i)},${py(d.ingresos)}`).join(' ')}
+          fill="none" stroke="url(#gLineIng)"
+          strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        />
+
+        {/* Puntos y etiquetas */}
+        {datos.map((d, i) => {
+          const isHover = hover === i
+          return (
+            <g key={i}
+              onMouseEnter={() => setHover(i)}
+              onTouchStart={() => setHover(i)}
+            >
+              {/* Área interactiva */}
+              <rect
+                x={px(i) - Math.max(xS / 2, 16)} y={PT}
+                width={Math.max(xS, 32)} height={iH}
+                fill="transparent"
+              />
+              {/* Puntos gastos */}
+              <circle cx={px(i)} cy={py(d.gastos)} r={isHover ? 4 : 2.5}
+                fill="rgba(252,165,165,0.7)" stroke="rgba(0,0,0,0.3)" strokeWidth="0.5"
+                className="transition-all duration-150"
+              />
+              {/* Puntos ingresos */}
+              <circle cx={px(i)} cy={py(d.ingresos)} r={isHover ? 5 : 3.5}
+                fill="white" opacity={isHover ? 1 : 0.8}
+                stroke="rgba(245,166,35,0.6)" strokeWidth={isHover ? 1.5 : 1}
+                className="transition-all duration-150"
+              />
+              {/* Etiqueta mes */}
+              <text x={px(i)} y={H - 4}
+                textAnchor="middle" fontSize="9"
+                fill="rgba(255,255,255,0.32)" fontWeight="500"
+              >
+                {d.label}
+              </text>
+            </g>
+          )
+        })}
+
+        {/* Línea vertical hover */}
+        {hover !== null && (
+          <line
+            x1={px(hover)} y1={PT}
+            x2={px(hover)} y2={PT + iH}
+            stroke="rgba(255,255,255,0.12)" strokeWidth="1" strokeDasharray="4 3"
+          />
+        )}
+      </svg>
+
+      {/* Tooltip hover */}
+      {hover !== null && (
+        <div className="flex justify-between text-xs px-1 mt-1">
+          <span className="text-white/30">{datos[hover].label}</span>
+          <div className="flex gap-3">
+            <span className="text-amber-300/80 font-medium">
+              +{fmtFull(datos[hover].ingresos)}
+            </span>
+            <span className="text-red-300/70 font-medium">
+              -{fmtFull(datos[hover].gastos)}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -157,26 +243,12 @@ const PERIODOS = [
   { label: 'Hace 2',   offset: -2 },
 ]
 
-// ─── Ícono chevron animado ────────────────────────────────────
-function ChevronIcon({ abierto }) {
-  return (
-    <svg
-      width="16" height="16" viewBox="0 0 16 16" fill="none"
-      stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"
-      className={`transition-transform duration-500 ${abierto ? 'rotate-180' : 'rotate-0'}`}
-    >
-      <path d="M3 6l5 5 5-5" />
-    </svg>
-  )
-}
-
 // ─── PÁGINA ──────────────────────────────────────────────────
 export function DashboardPage() {
   const { usuario }                         = useAuthContext()
   const [periodoIdx, setPeriodoIdx]         = useState(0)
   const [modalAbierto, setModalAbierto]     = useState(false)
   const [tipoDefault, setTipoDefault]       = useState('gasto')
-  const [expandido, setExpandido]           = useState(false)
 
   const offset           = PERIODOS[periodoIdx].offset
   const { desde, hasta } = useRangoMes(offset)
@@ -208,7 +280,7 @@ export function DashboardPage() {
   return (
     <>
       {/* ════════════════════════════════════════
-          HERO — balance + gráfico (siempre visible)
+          HERO — balance + gráfico
       ════════════════════════════════════════ */}
       <div
         className="relative overflow-hidden rounded-2xl mb-5 p-6"
@@ -217,15 +289,13 @@ export function DashboardPage() {
           boxShadow: '0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.04)',
         }}
       >
-        {/* Halo ambiental mejorado */}
+        {/* Halos */}
         <div className="absolute inset-0 pointer-events-none" aria-hidden style={{
           background:
             'radial-gradient(ellipse at 15% 50%, rgba(245,166,35,0.18) 0%, transparent 55%), ' +
             'radial-gradient(ellipse at 85% 15%, rgba(245,166,35,0.09) 0%, transparent 50%), ' +
             'radial-gradient(ellipse at 50% 100%, rgba(245,166,35,0.05) 0%, transparent 40%)',
         }} />
-
-        {/* Borde interior sutil */}
         <div className="absolute inset-0 rounded-2xl pointer-events-none" aria-hidden
           style={{ border: '1px solid rgba(255,255,255,0.06)' }} />
 
@@ -299,7 +369,7 @@ export function DashboardPage() {
           ))}
         </div>
 
-        {/* Gráfico — contenedor con aire */}
+        {/* Gráfico evolutivo mejorado */}
         <div className="relative z-10 rounded-xl p-4 -mx-1"
           style={{
             background: 'rgba(255,255,255,0.03)',
@@ -311,12 +381,12 @@ export function DashboardPage() {
             </p>
             <div className="flex gap-3.5">
               {[
-                { c: 'bg-white/60', l: 'Ingresos' },
-                { c: 'bg-red-300/50', l: 'Gastos', dashed: true },
-              ].map(({ c, l, dashed }) => (
+                { dash: false, c: 'bg-white/60', l: 'Ingresos' },
+                { dash: true,  c: 'bg-red-300/50', l: 'Gastos' },
+              ].map(({ dash, c, l }) => (
                 <div key={l} className="flex items-center gap-1.5">
-                  {dashed
-                    ? <div style={{ width: 14, borderTop: '1.5px dashed rgba(252,165,165,0.5)', height: 0 }} />
+                  {dash
+                    ? <div style={{ width: 14, borderTop: '1.5px dashed rgba(252,165,165,0.55)', height: 0 }} />
                     : <div className={`w-3.5 h-0.5 ${c} rounded-full`} />
                   }
                   <span className="text-[8px] text-white/30 font-medium">{l}</span>
@@ -324,174 +394,138 @@ export function DashboardPage() {
               ))}
             </div>
           </div>
-          <div className="mt-1">
-            <ChartEvolucion datos={evolucion} cargando={cEvo} />
-          </div>
+          <ChartEvolucion datos={evolucion} cargando={cEvo} />
         </div>
       </div>
 
       {/* ════════════════════════════════════════
-          BOTÓN "VER MÁS DETALLES" — secondary modern
+          CONTENIDO SIEMPRE VISIBLE
       ════════════════════════════════════════ */}
-      <button
-        onClick={() => setExpandido(e => !e)}
-        className={`
-          group w-full flex items-center justify-center gap-2.5
-          py-3.5 mb-5 rounded-2xl font-bold text-sm
-          transition-all duration-300 active:scale-[0.97]
-          ${expandido
-            ? 'bg-white dark:bg-zinc-900 border border-[var(--mango)]/25 text-[var(--mango-dark)] dark:text-[var(--mango)] shadow-md shadow-amber-500/5'
-            : 'bg-white/80 dark:bg-zinc-900/70 border border-zinc-200/80 dark:border-zinc-700/50 text-zinc-600 dark:text-zinc-300 hover:border-[var(--mango)]/35 hover:text-[var(--mango-dark)] dark:hover:text-[var(--mango)] hover:shadow-md hover:shadow-amber-500/8'
-          }
-        `}
-        style={{
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-        }}
-      >
-        <span className="relative">
-          {expandido ? 'Ocultar detalles' : 'Ver más detalles'}
-          <span className={`absolute -bottom-0.5 left-0 h-[2px] rounded-full bg-[var(--mango)] transition-all duration-300 ${expandido ? 'w-full' : 'w-0 group-hover:w-full'}`} />
-        </span>
-        <ChevronIcon abierto={expandido} />
-      </button>
+      <div className="flex flex-col gap-5">
 
-      {/* ════════════════════════════════════════
-          CONTENIDO EXPANDIBLE (con animación suave)
-      ════════════════════════════════════════ */}
-      <div
-        className="overflow-hidden transition-all duration-500 ease-in-out"
-        style={{
-          maxHeight: expandido ? '9999px' : '0px',
-          opacity:   expandido ? 1 : 0,
-        }}
-      >
-        <div className="flex flex-col gap-5">
+        {/* Botones rápidos ingreso / gasto */}
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            {
+              tipo: 'ingreso',
+              emoji: '💰',
+              label: 'Ingreso',
+              sub: 'Sueldo, cobro…',
+              hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700/50',
+              hoverBg: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-900/10',
+              iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+            },
+            {
+              tipo: 'gasto',
+              emoji: '💸',
+              label: 'Gasto',
+              sub: 'Compra, servicio…',
+              hoverBorder: 'hover:border-red-300 dark:hover:border-red-700/50',
+              hoverBg: 'hover:bg-red-50/60 dark:hover:bg-red-900/10',
+              iconBg: 'bg-red-100 dark:bg-red-900/40',
+            },
+          ].map(({ tipo, emoji, label, sub, hoverBorder, hoverBg, iconBg }) => (
+            <button
+              key={tipo}
+              onClick={() => abrirModal(tipo)}
+              className={`group flex items-center gap-3 p-4 rounded-2xl text-left
+                bg-white dark:bg-zinc-900
+                border border-zinc-100 dark:border-zinc-800
+                ${hoverBorder} ${hoverBg}
+                active:scale-[0.97] transition-all shadow-sm`}
+            >
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0
+                ${iconBg} group-hover:scale-110 transition-transform`}>
+                {emoji}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-zinc-900 dark:text-white leading-tight">{label}</p>
+                <p className="text-[10px] text-zinc-400 font-medium mt-0.5">{sub}</p>
+              </div>
+            </button>
+          ))}
+        </div>
 
-          {/* Botones rápidos ingreso / gasto */}
-          <div className="grid grid-cols-2 gap-3">
+        {/* Alerta presupuesto */}
+        {presupuestos.length > 0 && <AlertaPresupuesto presupuestos={presupuestos} />}
+
+        {/* Accesos rápidos */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500 mb-3">
+            Acceso rápido
+          </p>
+          <div className="grid grid-cols-4 gap-2.5">
             {[
-              {
-                tipo: 'ingreso',
-                emoji: '💰',
-                label: 'Ingreso',
-                sub: 'Sueldo, cobro…',
-                hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-700/50',
-                hoverBg: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-900/10',
-                iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
-              },
-              {
-                tipo: 'gasto',
-                emoji: '💸',
-                label: 'Gasto',
-                sub: 'Compra, servicio…',
-                hoverBorder: 'hover:border-red-300 dark:hover:border-red-700/50',
-                hoverBg: 'hover:bg-red-50/60 dark:hover:bg-red-900/10',
-                iconBg: 'bg-red-100 dark:bg-red-900/40',
-              },
-            ].map(({ tipo, emoji, label, sub, hoverBorder, hoverBg, iconBg }) => (
-              <button
-                key={tipo}
-                onClick={() => abrirModal(tipo)}
-                className={`group flex items-center gap-3 p-4 rounded-2xl text-left
-                  bg-white dark:bg-zinc-900
-                  border border-zinc-100 dark:border-zinc-800
-                  ${hoverBorder} ${hoverBg}
-                  active:scale-[0.97] transition-all shadow-sm`}
+              { to: '/movimientos',  emoji: '📋', label: 'Historial', bg: 'bg-zinc-50 dark:bg-zinc-800/60' },
+              { to: '/presupuestos', emoji: '📊', label: 'Límites',   bg: 'bg-amber-50/70 dark:bg-amber-900/15' },
+              { to: '/inversiones',  emoji: '📈', label: 'Inversiones', bg: 'bg-emerald-50/70 dark:bg-emerald-900/15' },
+              { to: '/cotizaciones', emoji: '💱', label: 'Dólar',     bg: 'bg-violet-50/70 dark:bg-violet-900/15' },
+            ].map(({ to, emoji, label, bg }) => (
+              <Link key={to} to={to}
+                className={`${bg} rounded-2xl p-3.5 flex flex-col items-center gap-2
+                  border border-zinc-100/60 dark:border-zinc-700/30
+                  shadow-sm dark:shadow-none
+                  hover:scale-105 hover:shadow-md active:scale-95 transition-all duration-200`}
               >
-                <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0
-                  ${iconBg} group-hover:scale-110 transition-transform`}>
-                  {emoji}
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-zinc-900 dark:text-white leading-tight">{label}</p>
-                  <p className="text-[10px] text-zinc-400 font-medium mt-0.5">{sub}</p>
-                </div>
-              </button>
+                <span className="text-[22px]">{emoji}</span>
+                <span className="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 text-center leading-tight">
+                  {label}
+                </span>
+              </Link>
             ))}
           </div>
+        </div>
 
-          {/* Alerta presupuesto */}
-          {presupuestos.length > 0 && <AlertaPresupuesto presupuestos={presupuestos} />}
-
-          {/* Accesos rápidos */}
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500 mb-3">
-              Acceso rápido
+        {/* Movimientos recientes */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
+              Movimientos recientes
             </p>
-            <div className="grid grid-cols-4 gap-2.5">
-              {[
-                { to: '/movimientos',  emoji: '📋', label: 'Historial', bg: 'bg-zinc-50 dark:bg-zinc-800/60' },
-                { to: '/presupuestos', emoji: '📊', label: 'Límites',   bg: 'bg-amber-50/70 dark:bg-amber-900/15' },
-                { to: '/inversiones',  emoji: '📈', label: 'Inversiones', bg: 'bg-emerald-50/70 dark:bg-emerald-900/15' },
-                { to: '/cotizaciones', emoji: '💱', label: 'Dólar',     bg: 'bg-violet-50/70 dark:bg-violet-900/15' },
-              ].map(({ to, emoji, label, bg }) => (
-                <Link key={to} to={to}
-                  className={`${bg} rounded-2xl p-3.5 flex flex-col items-center gap-2
-                    border border-zinc-100/60 dark:border-zinc-700/30
-                    shadow-sm dark:shadow-none
-                    hover:scale-105 hover:shadow-md active:scale-95 transition-all duration-200`}
-                >
-                  <span className="text-[22px]">{emoji}</span>
-                  <span className="text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 text-center leading-tight">
-                    {label}
-                  </span>
-                </Link>
+            <Link to="/movimientos"
+              className="text-[11px] font-bold text-[var(--mango-dark)] dark:text-[var(--mango)] hover:underline underline-offset-2">
+              Ver todos →
+            </Link>
+          </div>
+
+          {cMovs ? (
+            <div className="flex flex-col gap-2.5">
+              {[0,1,2].map(i => (
+                <div key={i} className="h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800/60 animate-pulse" />
               ))}
             </div>
-          </div>
-
-          {/* Movimientos recientes */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400 dark:text-zinc-500">
-                Movimientos recientes
-              </p>
-              <Link to="/movimientos"
-                className="text-[11px] font-bold text-[var(--mango-dark)] dark:text-[var(--mango)] hover:underline underline-offset-2">
-                Ver todos →
-              </Link>
+          ) : movimientos.length === 0 ? (
+            <button
+              onClick={() => abrirModal('gasto')}
+              className="w-full flex flex-col items-center py-10 rounded-2xl
+                border-2 border-dashed border-zinc-200 dark:border-zinc-700
+                hover:border-[var(--mango)]/40 hover:bg-[var(--mango)]/3
+                active:scale-[0.97] transition-all duration-200"
+            >
+              <span className="text-3xl mb-2">💸</span>
+              <p className="text-sm font-semibold text-zinc-500">Sin movimientos este período</p>
+              <p className="text-[11px] text-zinc-400 mt-1">Tocá para registrar el primero →</p>
+            </button>
+          ) : (
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm dark:shadow-none">
+              {movimientos.slice(0, 7).map((m, i) => (
+                <div key={m.id}
+                  className={i > 0 ? 'border-t border-zinc-50 dark:border-zinc-800/50' : ''}>
+                  <MovCard movimiento={m} compact />
+                </div>
+              ))}
+              {movimientos.length > 7 && (
+                <Link to="/movimientos"
+                  className="block text-center py-3.5 text-[11px] font-bold text-zinc-400
+                    hover:text-[var(--mango-dark)] dark:hover:text-[var(--mango)]
+                    border-t border-zinc-50 dark:border-zinc-800/50 transition-colors">
+                  Ver {movimientos.length - 7} movimientos más →
+                </Link>
+              )}
             </div>
-
-            {cMovs ? (
-              <div className="flex flex-col gap-2.5">
-                {[0,1,2].map(i => (
-                  <div key={i} className="h-14 rounded-2xl bg-zinc-100 dark:bg-zinc-800/60 animate-pulse" />
-                ))}
-              </div>
-            ) : movimientos.length === 0 ? (
-              <button
-                onClick={() => abrirModal('gasto')}
-                className="w-full flex flex-col items-center py-10 rounded-2xl
-                  border-2 border-dashed border-zinc-200 dark:border-zinc-700
-                  hover:border-[var(--mango)]/40 hover:bg-[var(--mango)]/3
-                  active:scale-[0.97] transition-all duration-200"
-              >
-                <span className="text-3xl mb-2">💸</span>
-                <p className="text-sm font-semibold text-zinc-500">Sin movimientos este período</p>
-                <p className="text-[11px] text-zinc-400 mt-1">Tocá para registrar el primero →</p>
-              </button>
-            ) : (
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm dark:shadow-none">
-                {movimientos.slice(0, 7).map((m, i) => (
-                  <div key={m.id}
-                    className={i > 0 ? 'border-t border-zinc-50 dark:border-zinc-800/50' : ''}>
-                    <MovCard movimiento={m} compact />
-                  </div>
-                ))}
-                {movimientos.length > 7 && (
-                  <Link to="/movimientos"
-                    className="block text-center py-3.5 text-[11px] font-bold text-zinc-400
-                      hover:text-[var(--mango-dark)] dark:hover:text-[var(--mango)]
-                      border-t border-zinc-50 dark:border-zinc-800/50 transition-colors">
-                    Ver {movimientos.length - 7} movimientos más →
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
-
+          )}
         </div>
+
       </div>
 
       {/* ─── FAB ─── */}
