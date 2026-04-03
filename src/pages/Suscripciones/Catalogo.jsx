@@ -814,14 +814,34 @@ function TarjetaServicio({ servicio, preciosComunitarios, onAbrir }) {
         hover:shadow-md active:scale-[0.98]
         transition-all duration-200 group"
     >
-      {/* Ícono */}
-      <div
-        className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0
-          group-hover:scale-105 transition-transform"
-        style={{ background: servicio.color + '18' }}
-      >
-        {servicio.icono}
-      </div>
+      {/* Ícono / Logo */}
+      {servicio.imagen ? (
+        <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-zinc-100/80 dark:border-zinc-800
+          flex items-center justify-center overflow-hidden flex-shrink-0 p-2 relative
+          group-hover:scale-105 transition-transform">
+          <div className="absolute inset-0 bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-100 dark:to-zinc-200" />
+          <img
+            src={servicio.imagen}
+            alt={servicio.nombre}
+            className="w-full h-full object-contain relative z-10"
+            onError={e => {
+              e.currentTarget.style.display = 'none'
+              e.currentTarget.parentElement.querySelector('.emoji-fallback').style.display = 'flex'
+            }}
+          />
+          <span className="emoji-fallback hidden absolute inset-0 items-center justify-center text-2xl">
+            {servicio.icono}
+          </span>
+        </div>
+      ) : (
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0
+            group-hover:scale-105 transition-transform"
+          style={{ background: servicio.color + '18' }}
+        >
+          {servicio.icono}
+        </div>
+      )}
 
       {/* Info */}
       <div className="flex-1 min-w-0">

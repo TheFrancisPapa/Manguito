@@ -68,8 +68,39 @@ export const CATALOGO_SUSCRIPCIONES = [
       {
         id:          'disney-plus-estandar',
         nombre:      'Estándar',
-        descripcion: 'Disney, Marvel, Star Wars, Pixar, National Geographic, Star+ y ESPN. Todo en uno.',
-        precios: { ars_mp: null },
+        descripcion: 'Ofrece un catalogo completo de series y peliculas, ideal para ver en familia.',
+        precios: { ars_mp: 15999 },
+      },
+      {
+        id:          'disney-plus-premium',
+        nombre:      'Premium',
+        descripcion: 'Suscripción de máximo nivel, incluyendo la mayor calidad de video y audio disponible.',
+        precios: { ars_mp: 23999 },
+      },
+    ],
+  },
+
+{
+    id:        'disney-plus-anual',
+    nombre:    'Disney+ Anual',
+    icono:     '✨',
+    color:     '#113CCF',
+    categoria: 'streaming',
+    ciclo:     'anual',
+    url:       'https://disneyplus.com',
+    imagen:    '/logos/Disney+.png',
+    planes: [
+      {
+        id:          'disney-plus-estandar-anual',
+        nombre:      'Estándar',
+        descripcion: 'Ofrece un catalogo completo de series y peliculas, ideal para ver en familia.',
+        precios: { ars_mp: 129999 },
+      },
+      {
+        id:          'disney-plus-premium-anual',
+        nombre:      'Premium',
+        descripcion: 'Suscripción de máximo nivel, incluyendo la mayor calidad de video y audio disponible.',
+        precios: { ars_mp: 199999 },
       },
     ],
   },
