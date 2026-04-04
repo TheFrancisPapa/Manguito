@@ -1,3 +1,10 @@
+// src/pages/Movimientos/index.jsx
+// Rediseñado siguiendo el design system de Stitch
+// - Month selector pill
+// - Filter tabs pill-shaped
+// - Grupos por fecha
+// - Cards con íconos circulares de color
+
 import { useState, useMemo, useCallback } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { useMovimientos } from '../../hooks/useMovimientos'
@@ -7,33 +14,139 @@ import { FormMovimiento } from '../../components/forms/FormMovimiento'
 import { formatMoneda } from '../../lib/utils'
 import { descargarCSV } from '../../lib/exportUtils'
 
+// ─── Tokens de color Stitch ──────────────────────────────────
+const C = {
+  primary:          '#725800',
+  primaryContainer: '#f9c940',
+  onPrimaryContainer:'#584300',
+  tertiary:         '#436500',
+  error:            '#d32f2f',
+  background:       '#fdfaf2',
+  surfaceContainer: '#f4f1e8',
+  onSurface:        '#2f2f2f',
+  onSurfaceVariant: '#5b5b5b',
+  outline:          '#777777',
+  surfaceVariant:   '#f1eee4',
+}
+
+// ─── Colores por categoría ────────────────────────────────────
+function getCategoriaBg(icono) {
+  const map = {
+    '🍔': '#fff3e0', '🛒': '#fff8e1', '🚗': '#e3f2fd', '💊': '#fce4ec',
+    '📚': '#f3e5f5', '🎬': '#ede7f6', '🏠': '#e8f5e9', '💻': '#e0f2f1',
+    '💰': '#e8f5e9', '💸': '#ffebee', '🎵': '#f8bbd0', '✈️': '#e1f5fe',
+  }
+  return map[icono] ?? '#f5f5f5'
+}
+
+// ─── Helpers ──────────────────────────────────────────────────
+function getNombreMes(fecha) {
+  const [anio, mes] = fecha.split('-')
+  return new Date(anio, mes - 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+}
+
+function agruparPorFecha(movimientos) {
+  const hoy = new Date().toLocaleDateString('sv-SE')
+  const ayer = new Date(Date.now() - 86400000).toLocaleDateString('sv-SE')
+
+  return movimientos.reduce((grupos, mov) => {
+    let key
+    if (mov.fecha === hoy) key = 'Hoy'
+    else if (mov.fecha === ayer) key = 'Ayer'
+    else {
+      const d = new Date(mov.fecha + 'T00:00:00')
+      key = d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
+    }
+    if (!grupos[key]) grupos[key] = []
+    grupos[key].push(mov)
+    return grupos
+  }, {})
+}
+
+// ─── Item de movimiento estilo Stitch ─────────────────────────
+function MovimientoItem({ movimiento, onClick }) {
+  const { tipo, monto, descripcion, fecha, categorias: cat } = movimiento
+  const esIngreso = tipo === 'ingreso'
+  const icono = cat?.icono ?? '📦'
+  const bg = getCategoriaBg(icono)
+
+  return (
+    <div
+      onClick={onClick}
+      className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border cursor-pointer transition-all hover:shadow-md active:scale-[0.98]"
+      style={{ borderColor: C.surfaceVariant }}
+    >
+      <div className="flex items-center gap-4">
+        {/* Ícono circular */}
+        <div
+          className="w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0"
+          style={{ backgroundColor: bg }}
+        >
+          {icono}
+        </div>
+        <div>
+          <p className="font-bold text-sm leading-tight" style={{ color: C.onSurface }}>
+            {descripcion || cat?.nombre || 'Movimiento'}
+          </p>
+          <p className="text-[11px] font-medium mt-0.5" style={{ color: C.outline }}>
+            {cat?.nombre}
+          </p>
+        </div>
+      </div>
+      <p
+        className="font-bold text-sm"
+        style={{ color: esIngreso ? C.tertiary : C.error }}
+      >
+        {esIngreso ? '+' : '-'}{formatMoneda(monto, 'ARS', false)}
+      </p>
+    </div>
+  )
+}
+
+// ─── Página principal ─────────────────────────────────────────
 export function MovimientosPage() {
   const { usuario } = useAuthContext()
-  const [filtroActivo, setFiltroActivo] = useState('todos')
 
-  const [modalNuevo, setModalNuevo]         = useState(false)
-  const [modalEditar, setModalEditar]       = useState(false)
+  // Estado del mes actual (navegable)
+  const [mesOffset, setMesOffset] = useState(0)
+  const [filtroActivo, setFiltroActivo] = useState('todos')
+  const [modalNuevo, setModalNuevo] = useState(false)
+  const [modalEditar, setModalEditar] = useState(false)
   const [movSeleccionado, setMovSeleccionado] = useState(null)
 
-  // FIX: el hook exporta `borrar`, no `eliminar`
-  const { movimientos, cargando, agregar, editar, borrar } = useMovimientos()
+  // Rango del mes seleccionado
+  const { desde, hasta, nombreMes } = useMemo(() => {
+    const hoy = new Date()
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() + mesOffset, 1)
+    const desde = d.toLocaleDateString('sv-SE')
+    const hasta = mesOffset === 0
+      ? hoy.toLocaleDateString('sv-SE')
+      : new Date(d.getFullYear(), d.getMonth() + 1, 0).toLocaleDateString('sv-SE')
+    const nombreMes = d.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
+    return { desde, hasta, nombreMes }
+  }, [mesOffset])
 
+  const { movimientos, cargando, agregar, editar, borrar } = useMovimientos({ desde, hasta })
+
+  // Filtrar por tipo
   const movimientosFiltrados = movimientos.filter(m => {
     if (filtroActivo === 'todos') return true
     return m.tipo === filtroActivo
   })
 
-  const movimientosAgrupados = useMemo(() => {
-    return movimientosFiltrados.reduce((grupos, mov) => {
-      const [anio, mes] = mov.fecha.split('-')
-      const fechaObj    = new Date(anio, mes - 1)
-      const claveMes    = fechaObj.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
-      const claveMesCap = claveMes.charAt(0).toUpperCase() + claveMes.slice(1)
-      if (!grupos[claveMesCap]) grupos[claveMesCap] = []
-      grupos[claveMesCap].push(mov)
-      return grupos
-    }, {})
-  }, [movimientosFiltrados])
+  // Agrupar por fecha
+  const movimientosAgrupados = useMemo(
+    () => agruparPorFecha(movimientosFiltrados),
+    [movimientosFiltrados]
+  )
+
+  // Totales
+  const totalIngresos = movimientosFiltrados
+    .filter(m => m.tipo === 'ingreso')
+    .reduce((s, m) => s + Number(m.monto), 0)
+  const totalGastos = movimientosFiltrados
+    .filter(m => m.tipo === 'gasto')
+    .reduce((s, m) => s + Number(m.monto), 0)
 
   const resetModals = useCallback(() => {
     setModalNuevo(false)
@@ -43,7 +156,7 @@ export function MovimientosPage() {
 
   const handleEliminar = async () => {
     if (!movSeleccionado) return
-    if (window.confirm(`¿Eliminás "${movSeleccionado.descripcion || movSeleccionado.categorias?.nombre}"? Esta acción no se puede deshacer.`)) {
+    if (window.confirm(`¿Eliminás este movimiento?`)) {
       await borrar(movSeleccionado.id)
       resetModals()
     }
@@ -60,109 +173,245 @@ export function MovimientosPage() {
   }
 
   return (
-    <div className="animate-in fade-in duration-500">
-      <PageWrapper>
-        <PageHeader
-          titulo="Movimientos"
-          subtitulo="Historial completo"
-          accion={
-            <div className="flex items-center gap-2">
-              <Button 
-                variante="secondary" 
-                onClick={() => descargarCSV(movimientosFiltrados)}
-                className="!px-3 !py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                title="Descargar historial filtrado en Excel/CSV"
-              >
-                📥
-              </Button>
-              <Button icono="+" onClick={() => setModalNuevo(true)} className="shadow-sm shadow-amber-500/20">Nuevo</Button>
-            </div>
-          }
-        />
-
-        {/* Filtros */}
-        <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1 mt-4 mb-6">
-          {['todos', 'ingreso', 'gasto'].map(f => (
-            <button
-              key={f}
-              onClick={() => setFiltroActivo(f)}
-              className={`flex-1 py-1.5 px-4 rounded-lg text-xs font-medium transition-colors capitalize ${
-                filtroActivo === f
-                  ? 'bg-white dark:bg-zinc-900 shadow-sm text-zinc-900 dark:text-white'
-                  : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
+    <div
+      className="animate-in fade-in duration-500 min-h-screen"
+      style={{ backgroundColor: C.background }}
+    >
+      {/* ── Header fijo ── */}
+      <header
+        className="fixed top-0 w-full z-50 backdrop-blur-md border-b"
+        style={{
+          backgroundColor: `${C.background}cc`,
+          borderColor: C.surfaceVariant,
+        }}
+      >
+        <div className="flex items-center justify-between px-4 h-16 max-w-md mx-auto">
+          <div className="w-10" /> {/* Spacer */}
+          <h1
+            className="font-bold text-lg"
+            style={{ color: C.onSurface, fontFamily: 'Montserrat, sans-serif' }}
+          >
+            Movimientos
+          </h1>
+          <button
+            onClick={() => descargarCSV(movimientosFiltrados)}
+            className="w-10 h-10 flex items-center justify-center rounded-full transition-colors active:scale-90"
+            style={{ color: C.outline }}
+            title="Exportar CSV"
+          >
+            📥
+          </button>
         </div>
+      </header>
 
-        {/* Lista */}
-        {cargando ? (
-          <Card className="mt-4">
-            {[0,1,2,3,4].map(i => <div key={i} className="h-12 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse mb-2" />)}
-          </Card>
-        ) : movimientosFiltrados.length === 0 ? (
-          <Card className="mt-4 py-8">
-            <EmptyState
-              {...EMPTY_STATES.movimientos}
-              accion={filtroActivo === 'todos' ? <Button icono="+" onClick={() => setModalNuevo(true)}>Registrar movimiento</Button> : null}
-              titulo={filtroActivo !== 'todos' ? `No hay ${filtroActivo}s registrados` : EMPTY_STATES.movimientos.titulo}
-            />
-          </Card>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {Object.entries(movimientosAgrupados).map(([mes, movs]) => (
-              <Card key={mes}>
-                <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-3">
-                  {mes}
-                </h3>
-                {movs.map(m => (
-                  <MovCard key={m.id} movimiento={m} onClick={() => setMovSeleccionado(m)} />
-                ))}
-              </Card>
-            ))}
+      <main className="pt-20 pb-28 px-4 max-w-md mx-auto space-y-5">
+
+        {/* ── Selector de mes (pill) ── */}
+        <section>
+          <div
+            className="flex items-center justify-between p-2 rounded-full border"
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.5)',
+              borderColor: C.surfaceVariant,
+            }}
+          >
+            <button
+              onClick={() => setMesOffset(o => o - 1)}
+              className="p-2 rounded-full transition-colors active:scale-90"
+              style={{ color: C.onSurface }}
+            >
+              ‹
+            </button>
+            <span
+              className="font-bold text-sm capitalize"
+              style={{ color: C.onSurface, fontFamily: 'Montserrat, sans-serif' }}
+            >
+              {nombreMes}
+            </span>
+            <button
+              onClick={() => setMesOffset(o => Math.min(o + 1, 0))}
+              className="p-2 rounded-full transition-colors active:scale-90"
+              style={{ color: mesOffset >= 0 ? '#ccc' : C.onSurface }}
+              disabled={mesOffset >= 0}
+            >
+              ›
+            </button>
+          </div>
+        </section>
+
+        {/* ── Resumen del período ── */}
+        {!cargando && movimientos.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            <div
+              className="p-4 rounded-2xl"
+              style={{ backgroundColor: '#e8f5e9' }}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: C.tertiary }}>
+                Ingresos
+              </p>
+              <p className="text-lg font-black mt-1" style={{ color: C.tertiary, fontFamily: 'Montserrat, sans-serif' }}>
+                {formatMoneda(totalIngresos, 'ARS', false)}
+              </p>
+            </div>
+            <div
+              className="p-4 rounded-2xl"
+              style={{ backgroundColor: '#ffebee' }}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: C.error }}>
+                Gastos
+              </p>
+              <p className="text-lg font-black mt-1" style={{ color: C.error, fontFamily: 'Montserrat, sans-serif' }}>
+                {formatMoneda(totalGastos, 'ARS', false)}
+              </p>
+            </div>
           </div>
         )}
-      </PageWrapper>
 
-      {/* 
-          MODAL UNIFICADO (Portal Estable) 
-          Mantenemos un único nodo de Modal para evitar Error 310.
-      */}
-      <Modal 
-        abierto={modalNuevo || modalEditar || !!movSeleccionado} 
-        onCerrar={resetModals} 
-        titulo={modalNuevo ? "Nuevo movimiento" : modalEditar ? "Editar movimiento" : "Detalle del movimiento"}
+        {/* ── Tabs de filtro (pill) ── */}
+        <section>
+          <div
+            className="flex p-1 rounded-full gap-1"
+            style={{ backgroundColor: C.surfaceContainer }}
+          >
+            {[
+              { id: 'todos', label: 'Total' },
+              { id: 'ingreso', label: 'Ingresos' },
+              { id: 'gasto', label: 'Gastos' },
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFiltroActivo(f.id)}
+                className="flex-1 py-2.5 rounded-full font-semibold text-sm transition-all"
+                style={{
+                  backgroundColor: filtroActivo === f.id ? 'white' : 'transparent',
+                  color: filtroActivo === f.id ? C.onSurface : C.onSurfaceVariant,
+                  boxShadow: filtroActivo === f.id ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
+                  fontWeight: filtroActivo === f.id ? 700 : 500,
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Lista de movimientos agrupados ── */}
+        {cargando ? (
+          <div className="space-y-3">
+            {[0, 1, 2, 3].map(i => (
+              <div
+                key={i}
+                className="h-16 rounded-2xl animate-pulse"
+                style={{ backgroundColor: C.surfaceContainer }}
+              />
+            ))}
+          </div>
+        ) : movimientosFiltrados.length === 0 ? (
+          <div
+            className="flex flex-col items-center py-16 rounded-2xl border-2 border-dashed"
+            style={{ borderColor: '#e0d9c8' }}
+          >
+            <span className="text-4xl mb-3">💸</span>
+            <p className="font-bold text-sm" style={{ color: C.outline }}>
+              {filtroActivo === 'todos'
+                ? 'Sin movimientos este período'
+                : `Sin ${filtroActivo === 'ingreso' ? 'ingresos' : 'gastos'}`}
+            </p>
+            {filtroActivo === 'todos' && (
+              <button
+                onClick={() => setModalNuevo(true)}
+                className="mt-4 px-5 py-2 rounded-full text-sm font-bold transition-all active:scale-95"
+                style={{ backgroundColor: C.primaryContainer, color: C.onPrimaryContainer }}
+              >
+                + Registrar movimiento
+              </button>
+            )}
+          </div>
+        ) : (
+          <section className="space-y-8">
+            {Object.entries(movimientosAgrupados).map(([fecha, movs]) => (
+              <div key={fecha} className="space-y-3">
+                <h3
+                  className="text-[10px] font-black uppercase tracking-widest px-1"
+                  style={{ color: C.outline }}
+                >
+                  {fecha}
+                </h3>
+                <div className="space-y-2">
+                  {movs.map(m => (
+                    <MovimientoItem
+                      key={m.id}
+                      movimiento={m}
+                      onClick={() => setMovSeleccionado(m)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
+      </main>
+
+      {/* ── FAB ── */}
+      <button
+        onClick={() => setModalNuevo(true)}
+        className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform z-50"
+        style={{
+          backgroundColor: C.primaryContainer,
+          color: C.onPrimaryContainer,
+          boxShadow: `0 8px 24px ${C.primaryContainer}80`,
+        }}
+        aria-label="Agregar movimiento"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+          <line x1="12" y1="4" x2="12" y2="20" />
+          <line x1="4" y1="12" x2="20" y2="12" />
+        </svg>
+      </button>
+
+      {/* ── Modal unificado ── */}
+      <Modal
+        abierto={modalNuevo || modalEditar || !!movSeleccionado}
+        onCerrar={resetModals}
+        titulo={modalNuevo ? 'Nuevo movimiento' : modalEditar ? 'Editar movimiento' : 'Detalle'}
       >
         {modalNuevo && (
           <FormMovimiento onSubmit={handleGuardar} onCancel={() => setModalNuevo(false)} />
         )}
-        
         {modalEditar && movSeleccionado && (
-          <FormMovimiento 
-            valoresIniciales={movSeleccionado} 
-            onSubmit={handleEditarSubmit} 
-            onCancel={() => setModalEditar(false)} 
+          <FormMovimiento
+            valoresIniciales={movSeleccionado}
+            onSubmit={handleEditarSubmit}
+            onCancel={() => setModalEditar(false)}
           />
         )}
-        
         {(!modalNuevo && !modalEditar && movSeleccionado) && (
           <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4 fade-in duration-300">
-            <div className="text-center p-6 bg-zinc-50 dark:bg-zinc-800/30 rounded-3xl border border-zinc-100 dark:border-zinc-800/50">
-              <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-sm"
-                style={{ background: (movSeleccionado.categorias?.color ?? '#6B7280') + '22' }}>
-                <span className="text-3xl">{movSeleccionado.categorias?.icono ?? '📦'}</span>
+            <div
+              className="text-center p-6 rounded-2xl"
+              style={{ backgroundColor: C.surfaceContainer }}
+            >
+              <div
+                className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 text-3xl"
+                style={{ backgroundColor: getCategoriaBg(movSeleccionado.categorias?.icono) }}
+              >
+                {movSeleccionado.categorias?.icono ?? '📦'}
               </div>
-              <p className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+              <p className="text-sm font-bold" style={{ color: C.outline }}>
                 {movSeleccionado.categorias?.nombre}
               </p>
-              <h2 className={`text-3xl md:text-4xl font-black mt-2 tracking-tight break-all ${
-                movSeleccionado.tipo === 'ingreso' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'
-              }`}>
-                {movSeleccionado.tipo === 'ingreso' ? '+' : '-'}{formatMoneda(movSeleccionado.monto, usuario?.moneda, true)}
+              <h2
+                className="text-3xl font-black mt-2"
+                style={{
+                  fontFamily: 'Montserrat, sans-serif',
+                  color: movSeleccionado.tipo === 'ingreso' ? C.tertiary : C.error,
+                }}
+              >
+                {movSeleccionado.tipo === 'ingreso' ? '+' : '-'}
+                {formatMoneda(movSeleccionado.monto, usuario?.moneda, true)}
               </h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-3 font-medium">
+              <p className="text-sm mt-2" style={{ color: C.outline }}>
                 {new Date(movSeleccionado.fecha + 'T00:00:00').toLocaleDateString('es-AR', {
                   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
                 })}
@@ -170,29 +419,40 @@ export function MovimientosPage() {
             </div>
 
             {movSeleccionado.descripcion && (
-              <div className="px-2">
-                <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Nota</p>
-                <p className="text-sm text-zinc-800 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-800/30 p-4 rounded-2xl leading-relaxed">
-                  {movSeleccionado.descripcion}
-                </p>
-              </div>
+              <p
+                className="text-sm px-4 py-3 rounded-2xl"
+                style={{ backgroundColor: C.surfaceContainer, color: C.onSurface }}
+              >
+                {movSeleccionado.descripcion}
+              </p>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3 mt-6">
-              <Button variante="secondary" className="flex-1 py-3 text-sm md:text-base font-medium order-3 sm:order-1" onClick={() => setMovSeleccionado(null)}>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setMovSeleccionado(null)}
+                className="flex-1 py-3 rounded-full font-bold text-sm border transition-all active:scale-95"
+                style={{ borderColor: C.surfaceVariant, color: C.outline }}
+              >
                 Cerrar
-              </Button>
-              <Button variante="primary" className="flex-1 py-3 text-sm md:text-base font-semibold order-1 sm:order-2" onClick={() => setModalEditar(true)}>
+              </button>
+              <button
+                onClick={() => setModalEditar(true)}
+                className="flex-1 py-3 rounded-full font-bold text-sm transition-all active:scale-95"
+                style={{ backgroundColor: C.primaryContainer, color: C.onPrimaryContainer }}
+              >
                 Editar
-              </Button>
-              <Button variante="danger" className="flex-1 py-3 text-sm md:text-base font-semibold order-2 sm:order-3" onClick={handleEliminar}>
+              </button>
+              <button
+                onClick={handleEliminar}
+                className="flex-1 py-3 rounded-full font-bold text-sm transition-all active:scale-95"
+                style={{ backgroundColor: '#ffebee', color: C.error }}
+              >
                 Eliminar
-              </Button>
+              </button>
             </div>
           </div>
         )}
       </Modal>
-
     </div>
   )
 }
