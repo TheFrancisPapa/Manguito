@@ -1,33 +1,14 @@
 // src/pages/Movimientos/index.jsx
-// Rediseñado siguiendo el design system de Stitch
-// - Month selector pill
-// - Filter tabs pill-shaped
-// - Grupos por fecha
-// - Cards con íconos circulares de color
+// Redesign v3 — Uses PageWrapper, full dark mode, iOS aesthetics
 
 import { useState, useMemo, useCallback } from 'react'
 import { useAuthContext } from '../../context/AuthContext'
 import { useMovimientos } from '../../hooks/useMovimientos'
-import { PageWrapper, PageHeader, MovCard } from '../../components/layout'
-import { Card, Button, EmptyState, EMPTY_STATES, Modal } from '../../components/ui'
+import { PageWrapper, PageHeader } from '../../components/layout'
+import { Button, Modal } from '../../components/ui'
 import { FormMovimiento } from '../../components/forms/FormMovimiento'
 import { formatMoneda } from '../../lib/utils'
 import { descargarCSV } from '../../lib/exportUtils'
-
-// ─── Tokens de color Stitch ──────────────────────────────────
-const C = {
-  primary:          '#725800',
-  primaryContainer: '#f9c940',
-  onPrimaryContainer:'#584300',
-  tertiary:         '#436500',
-  error:            '#d32f2f',
-  background:       '#fdfaf2',
-  surfaceContainer: '#f4f1e8',
-  onSurface:        '#2f2f2f',
-  onSurfaceVariant: '#5b5b5b',
-  outline:          '#777777',
-  surfaceVariant:   '#f1eee4',
-}
 
 // ─── Colores por categoría ────────────────────────────────────
 function getCategoriaBg(icono) {
@@ -36,15 +17,20 @@ function getCategoriaBg(icono) {
     '📚': '#f3e5f5', '🎬': '#ede7f6', '🏠': '#e8f5e9', '💻': '#e0f2f1',
     '💰': '#e8f5e9', '💸': '#ffebee', '🎵': '#f8bbd0', '✈️': '#e1f5fe',
   }
-  return map[icono] ?? '#f5f5f5'
+  return map[icono] ?? 'rgba(245,166,35,0.1)'
+}
+
+function getCategoriaBgDark(icono) {
+  const map = {
+    '🍔': 'rgba(255,152,0,0.12)', '🛒': 'rgba(255,193,7,0.12)', '🚗': 'rgba(33,150,243,0.12)',
+    '💊': 'rgba(233,30,99,0.12)', '📚': 'rgba(156,39,176,0.12)', '🎬': 'rgba(103,58,183,0.12)',
+    '🏠': 'rgba(76,175,80,0.12)', '💻': 'rgba(0,150,136,0.12)', '💰': 'rgba(76,175,80,0.12)',
+    '💸': 'rgba(244,67,54,0.12)', '🎵': 'rgba(233,30,99,0.12)', '✈️': 'rgba(3,169,244,0.12)',
+  }
+  return map[icono] ?? 'rgba(245,166,35,0.08)'
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
-function getNombreMes(fecha) {
-  const [anio, mes] = fecha.split('-')
-  return new Date(anio, mes - 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })
-}
-
 function agruparPorFecha(movimientos) {
   const hoy = new Date().toLocaleDateString('sv-SE')
   const ayer = new Date(Date.now() - 86400000).toLocaleDateString('sv-SE')
@@ -63,40 +49,48 @@ function agruparPorFecha(movimientos) {
   }, {})
 }
 
-// ─── Item de movimiento estilo Stitch ─────────────────────────
-function MovimientoItem({ movimiento, onClick }) {
-  const { tipo, monto, descripcion, fecha, categorias: cat } = movimiento
+// ─── Item de movimiento ───────────────────────────────────────
+function MovimientoItem({ movimiento, onClick, delay = 0 }) {
+  const { tipo, monto, descripcion, categorias: cat } = movimiento
   const esIngreso = tipo === 'ingreso'
   const icono = cat?.icono ?? '📦'
-  const bg = getCategoriaBg(icono)
 
   return (
     <div
       onClick={onClick}
-      className="flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border cursor-pointer transition-all hover:shadow-md active:scale-[0.98]"
-      style={{ borderColor: C.surfaceVariant }}
+      className="flex items-center justify-between
+        bg-white dark:bg-[var(--dark-card)]
+        p-4 rounded-[18px]
+        shadow-[var(--shadow-xs)]
+        border border-zinc-100/60 dark:border-[var(--dark-border)]
+        cursor-pointer transition-all
+        hover:shadow-[var(--shadow-sm)] hover:border-[var(--mango)]/15
+        active:scale-[0.98] press-scale
+        animate-stagger opacity-0"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: 'forwards' }}
     >
-      <div className="flex items-center gap-4">
-        {/* Ícono circular */}
+      <div className="flex items-center gap-3.5">
         <div
           className="w-11 h-11 rounded-full flex items-center justify-center text-xl flex-shrink-0"
-          style={{ backgroundColor: bg }}
+          style={{ backgroundColor: `var(--cat-bg, ${getCategoriaBg(icono)})` }}
         >
-          {icono}
+          <span className="[.dark_&]:hidden">{icono}</span>
+          <span className="hidden [.dark_&]:inline">{icono}</span>
         </div>
         <div>
-          <p className="font-bold text-sm leading-tight" style={{ color: C.onSurface }}>
+          <p className="font-bold text-sm leading-tight text-zinc-800 dark:text-white">
             {descripcion || cat?.nombre || 'Movimiento'}
           </p>
-          <p className="text-[11px] font-medium mt-0.5" style={{ color: C.outline }}>
+          <p className="text-[11px] font-medium mt-0.5 text-zinc-400 dark:text-zinc-500">
             {cat?.nombre}
           </p>
         </div>
       </div>
-      <p
-        className="font-bold text-sm"
-        style={{ color: esIngreso ? C.tertiary : C.error }}
-      >
+      <p className={`font-black text-sm font-mono-num ${
+        esIngreso
+          ? 'text-emerald-600 dark:text-emerald-400'
+          : 'text-red-500 dark:text-red-400'
+      }`}>
         {esIngreso ? '+' : '-'}{formatMoneda(monto, 'ARS', false)}
       </p>
     </div>
@@ -107,14 +101,12 @@ function MovimientoItem({ movimiento, onClick }) {
 export function MovimientosPage() {
   const { usuario } = useAuthContext()
 
-  // Estado del mes actual (navegable)
   const [mesOffset, setMesOffset] = useState(0)
   const [filtroActivo, setFiltroActivo] = useState('todos')
   const [modalNuevo, setModalNuevo] = useState(false)
   const [modalEditar, setModalEditar] = useState(false)
   const [movSeleccionado, setMovSeleccionado] = useState(null)
 
-  // Rango del mes seleccionado
   const { desde, hasta, nombreMes } = useMemo(() => {
     const hoy = new Date()
     const d = new Date(hoy.getFullYear(), hoy.getMonth() + mesOffset, 1)
@@ -128,19 +120,16 @@ export function MovimientosPage() {
 
   const { movimientos, cargando, agregar, editar, borrar } = useMovimientos({ desde, hasta })
 
-  // Filtrar por tipo
   const movimientosFiltrados = movimientos.filter(m => {
     if (filtroActivo === 'todos') return true
     return m.tipo === filtroActivo
   })
 
-  // Agrupar por fecha
   const movimientosAgrupados = useMemo(
     () => agruparPorFecha(movimientosFiltrados),
     [movimientosFiltrados]
   )
 
-  // Totales
   const totalIngresos = movimientosFiltrados
     .filter(m => m.tipo === 'ingreso')
     .reduce((s, m) => s + Number(m.monto), 0)
@@ -173,176 +162,155 @@ export function MovimientosPage() {
   }
 
   return (
-    <div
-      className="animate-in fade-in duration-500 min-h-screen"
-      style={{ backgroundColor: C.background }}
-    >
-      {/* ── Header fijo ── */}
-      <header
-        className="fixed top-0 w-full z-50 backdrop-blur-md border-b"
-        style={{
-          backgroundColor: `${C.background}cc`,
-          borderColor: C.surfaceVariant,
-        }}
-      >
-        <div className="flex items-center justify-between px-4 h-16 max-w-md mx-auto">
-          <div className="w-10" /> {/* Spacer */}
-          <h1
-            className="font-bold text-lg"
-            style={{ color: C.onSurface, fontFamily: 'Montserrat, sans-serif' }}
-          >
-            Movimientos
-          </h1>
+    <div className="animate-in fade-in duration-500">
+      <PageWrapper>
+        <PageHeader
+          titulo="Movimientos"
+          subtitulo={`${nombreMes} · ${movimientosFiltrados.length} registros`}
+          accion={
+            <div className="flex gap-2">
+              <Button
+                variante="ghost"
+                tamaño="sm"
+                onClick={() => descargarCSV(movimientosFiltrados)}
+                icono="📥"
+              />
+              <Button
+                icono="+"
+                onClick={() => setModalNuevo(true)}
+                className="shadow-sm shadow-amber-500/20"
+              >
+                Nuevo
+              </Button>
+            </div>
+          }
+        />
+
+        {/* ── Month selector ── */}
+        <div className="flex items-center justify-between p-2 rounded-full
+          bg-white/60 dark:bg-zinc-800/40
+          border border-zinc-100/60 dark:border-zinc-800
+          mb-5">
           <button
-            onClick={() => descargarCSV(movimientosFiltrados)}
-            className="w-10 h-10 flex items-center justify-center rounded-full transition-colors active:scale-90"
-            style={{ color: C.outline }}
-            title="Exportar CSV"
+            onClick={() => setMesOffset(o => o - 1)}
+            className="w-9 h-9 rounded-full flex items-center justify-center
+              text-zinc-600 dark:text-zinc-300
+              hover:bg-zinc-100 dark:hover:bg-zinc-700
+              active:scale-90 transition-all text-lg font-bold"
           >
-            📥
+            ‹
+          </button>
+          <span className="font-bold text-sm capitalize text-zinc-800 dark:text-white font-display">
+            {nombreMes}
+          </span>
+          <button
+            onClick={() => setMesOffset(o => Math.min(o + 1, 0))}
+            className={`w-9 h-9 rounded-full flex items-center justify-center
+              active:scale-90 transition-all text-lg font-bold ${
+              mesOffset >= 0
+                ? 'text-zinc-300 dark:text-zinc-600 cursor-not-allowed'
+                : 'text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+            }`}
+            disabled={mesOffset >= 0}
+          >
+            ›
           </button>
         </div>
-      </header>
 
-      <main className="pt-20 pb-28 px-4 max-w-md mx-auto space-y-5">
-
-        {/* ── Selector de mes (pill) ── */}
-        <section>
-          <div
-            className="flex items-center justify-between p-2 rounded-full border"
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.5)',
-              borderColor: C.surfaceVariant,
-            }}
-          >
-            <button
-              onClick={() => setMesOffset(o => o - 1)}
-              className="p-2 rounded-full transition-colors active:scale-90"
-              style={{ color: C.onSurface }}
-            >
-              ‹
-            </button>
-            <span
-              className="font-bold text-sm capitalize"
-              style={{ color: C.onSurface, fontFamily: 'Montserrat, sans-serif' }}
-            >
-              {nombreMes}
-            </span>
-            <button
-              onClick={() => setMesOffset(o => Math.min(o + 1, 0))}
-              className="p-2 rounded-full transition-colors active:scale-90"
-              style={{ color: mesOffset >= 0 ? '#ccc' : C.onSurface }}
-              disabled={mesOffset >= 0}
-            >
-              ›
-            </button>
-          </div>
-        </section>
-
-        {/* ── Resumen del período ── */}
+        {/* ── Period Summary ── */}
         {!cargando && movimientos.length > 0 && (
-          <div className="grid grid-cols-2 gap-3">
-            <div
-              className="p-4 rounded-2xl"
-              style={{ backgroundColor: '#e8f5e9' }}
-            >
-              <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: C.tertiary }}>
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            <div className="p-4 rounded-[18px]
+              bg-emerald-50/80 dark:bg-emerald-900/10
+              border border-emerald-100/60 dark:border-emerald-800/20">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.1em]
+                text-emerald-700 dark:text-emerald-400">
                 Ingresos
               </p>
-              <p className="text-lg font-black mt-1" style={{ color: C.tertiary, fontFamily: 'Montserrat, sans-serif' }}>
+              <p className="text-lg font-black mt-1 font-mono-num
+                text-emerald-700 dark:text-emerald-400">
                 {formatMoneda(totalIngresos, 'ARS', false)}
               </p>
             </div>
-            <div
-              className="p-4 rounded-2xl"
-              style={{ backgroundColor: '#ffebee' }}
-            >
-              <p className="text-[10px] font-black uppercase tracking-wider" style={{ color: C.error }}>
+            <div className="p-4 rounded-[18px]
+              bg-red-50/80 dark:bg-red-900/10
+              border border-red-100/60 dark:border-red-800/20">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.1em]
+                text-red-600 dark:text-red-400">
                 Gastos
               </p>
-              <p className="text-lg font-black mt-1" style={{ color: C.error, fontFamily: 'Montserrat, sans-serif' }}>
+              <p className="text-lg font-black mt-1 font-mono-num
+                text-red-600 dark:text-red-400">
                 {formatMoneda(totalGastos, 'ARS', false)}
               </p>
             </div>
           </div>
         )}
 
-        {/* ── Tabs de filtro (pill) ── */}
-        <section>
-          <div
-            className="flex p-1 rounded-full gap-1"
-            style={{ backgroundColor: C.surfaceContainer }}
-          >
-            {[
-              { id: 'todos', label: 'Total' },
-              { id: 'ingreso', label: 'Ingresos' },
-              { id: 'gasto', label: 'Gastos' },
-            ].map(f => (
-              <button
-                key={f.id}
-                onClick={() => setFiltroActivo(f.id)}
-                className="flex-1 py-2.5 rounded-full font-semibold text-sm transition-all"
-                style={{
-                  backgroundColor: filtroActivo === f.id ? 'white' : 'transparent',
-                  color: filtroActivo === f.id ? C.onSurface : C.onSurfaceVariant,
-                  boxShadow: filtroActivo === f.id ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
-                  fontWeight: filtroActivo === f.id ? 700 : 500,
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </section>
+        {/* ── Filter Tabs ── */}
+        <div className="flex p-1 rounded-full gap-1 mb-5
+          bg-zinc-100/80 dark:bg-zinc-800/50">
+          {[
+            { id: 'todos', label: 'Total' },
+            { id: 'ingreso', label: 'Ingresos' },
+            { id: 'gasto', label: 'Gastos' },
+          ].map(f => (
+            <button
+              key={f.id}
+              onClick={() => setFiltroActivo(f.id)}
+              className={`flex-1 py-2.5 rounded-full text-sm transition-all font-display press-scale ${
+                filtroActivo === f.id
+                  ? 'bg-white dark:bg-zinc-700 text-zinc-800 dark:text-white font-bold shadow-[var(--shadow-xs)]'
+                  : 'text-zinc-400 dark:text-zinc-500 font-medium'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
 
-        {/* ── Lista de movimientos agrupados ── */}
+        {/* ── Movement List ── */}
         {cargando ? (
           <div className="space-y-3">
             {[0, 1, 2, 3].map(i => (
-              <div
-                key={i}
-                className="h-16 rounded-2xl animate-pulse"
-                style={{ backgroundColor: C.surfaceContainer }}
-              />
+              <div key={i} className="h-16 rounded-[18px] animate-pulse
+                bg-zinc-100 dark:bg-zinc-800" />
             ))}
           </div>
         ) : movimientosFiltrados.length === 0 ? (
-          <div
-            className="flex flex-col items-center py-16 rounded-2xl border-2 border-dashed"
-            style={{ borderColor: '#e0d9c8' }}
-          >
+          <div className="flex flex-col items-center py-16 rounded-[20px]
+            border-2 border-dashed border-zinc-200 dark:border-zinc-700">
             <span className="text-4xl mb-3">💸</span>
-            <p className="font-bold text-sm" style={{ color: C.outline }}>
+            <p className="font-bold text-sm text-zinc-500 dark:text-zinc-400">
               {filtroActivo === 'todos'
                 ? 'Sin movimientos este período'
                 : `Sin ${filtroActivo === 'ingreso' ? 'ingresos' : 'gastos'}`}
             </p>
             {filtroActivo === 'todos' && (
-              <button
+              <Button
+                icono="+"
                 onClick={() => setModalNuevo(true)}
-                className="mt-4 px-5 py-2 rounded-full text-sm font-bold transition-all active:scale-95"
-                style={{ backgroundColor: C.primaryContainer, color: C.onPrimaryContainer }}
+                className="mt-4"
               >
-                + Registrar movimiento
-              </button>
+                Registrar movimiento
+              </Button>
             )}
           </div>
         ) : (
-          <section className="space-y-8">
+          <section className="space-y-6">
             {Object.entries(movimientosAgrupados).map(([fecha, movs]) => (
-              <div key={fecha} className="space-y-3">
-                <h3
-                  className="text-[10px] font-black uppercase tracking-widest px-1"
-                  style={{ color: C.outline }}
-                >
+              <div key={fecha} className="space-y-2.5">
+                <h3 className="text-[10px] font-extrabold uppercase tracking-[0.12em]
+                  text-zinc-400 dark:text-zinc-500 px-1">
                   {fecha}
                 </h3>
                 <div className="space-y-2">
-                  {movs.map(m => (
+                  {movs.map((m, i) => (
                     <MovimientoItem
                       key={m.id}
                       movimiento={m}
                       onClick={() => setMovSeleccionado(m)}
+                      delay={i * 40}
                     />
                   ))}
                 </div>
@@ -350,27 +318,31 @@ export function MovimientosPage() {
             ))}
           </section>
         )}
-      </main>
+
+        {/* Extra bottom padding for bottom nav */}
+        <div className="h-4" />
+      </PageWrapper>
 
       {/* ── FAB ── */}
       <button
         onClick={() => setModalNuevo(true)}
-        className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center active:scale-90 transition-transform z-50"
+        className="fixed bottom-24 right-6 w-14 h-14 rounded-full
+          flex items-center justify-center
+          active:scale-90 transition-transform z-30 press-scale md:hidden"
         style={{
-          backgroundColor: C.primaryContainer,
-          color: C.onPrimaryContainer,
-          boxShadow: `0 8px 24px ${C.primaryContainer}80`,
+          background: 'var(--gradient-mango)',
+          boxShadow: '0 8px 24px rgba(245,166,35,0.45)',
         }}
         aria-label="Agregar movimiento"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+          stroke="white" strokeWidth="2.8" strokeLinecap="round">
           <line x1="12" y1="4" x2="12" y2="20" />
           <line x1="4" y1="12" x2="20" y2="12" />
         </svg>
       </button>
 
-      {/* ── Modal unificado ── */}
+      {/* ── Modal ── */}
       <Modal
         abierto={modalNuevo || modalEditar || !!movSeleccionado}
         onCerrar={resetModals}
@@ -387,31 +359,27 @@ export function MovimientosPage() {
           />
         )}
         {(!modalNuevo && !modalEditar && movSeleccionado) && (
-          <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-4 fade-in duration-300">
-            <div
-              className="text-center p-6 rounded-2xl"
-              style={{ backgroundColor: C.surfaceContainer }}
-            >
+          <div className="flex flex-col gap-5">
+            <div className="text-center p-6 rounded-[18px]
+              bg-zinc-50 dark:bg-zinc-800/50">
               <div
                 className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 text-3xl"
                 style={{ backgroundColor: getCategoriaBg(movSeleccionado.categorias?.icono) }}
               >
                 {movSeleccionado.categorias?.icono ?? '📦'}
               </div>
-              <p className="text-sm font-bold" style={{ color: C.outline }}>
+              <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400">
                 {movSeleccionado.categorias?.nombre}
               </p>
-              <h2
-                className="text-3xl font-black mt-2"
-                style={{
-                  fontFamily: 'Montserrat, sans-serif',
-                  color: movSeleccionado.tipo === 'ingreso' ? C.tertiary : C.error,
-                }}
-              >
+              <h2 className={`text-3xl font-black mt-2 font-mono-num ${
+                movSeleccionado.tipo === 'ingreso'
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-red-500 dark:text-red-400'
+              }`}>
                 {movSeleccionado.tipo === 'ingreso' ? '+' : '-'}
                 {formatMoneda(movSeleccionado.monto, usuario?.moneda, true)}
               </h2>
-              <p className="text-sm mt-2" style={{ color: C.outline }}>
+              <p className="text-sm mt-2 text-zinc-400 dark:text-zinc-500">
                 {new Date(movSeleccionado.fecha + 'T00:00:00').toLocaleDateString('es-AR', {
                   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
                 })}
@@ -419,36 +387,34 @@ export function MovimientosPage() {
             </div>
 
             {movSeleccionado.descripcion && (
-              <p
-                className="text-sm px-4 py-3 rounded-2xl"
-                style={{ backgroundColor: C.surfaceContainer, color: C.onSurface }}
-              >
+              <p className="text-sm px-4 py-3 rounded-[14px]
+                bg-zinc-50 dark:bg-zinc-800/50
+                text-zinc-700 dark:text-zinc-300">
                 {movSeleccionado.descripcion}
               </p>
             )}
 
             <div className="flex gap-3">
-              <button
+              <Button
+                variante="secondary"
+                className="flex-1"
                 onClick={() => setMovSeleccionado(null)}
-                className="flex-1 py-3 rounded-full font-bold text-sm border transition-all active:scale-95"
-                style={{ borderColor: C.surfaceVariant, color: C.outline }}
               >
                 Cerrar
-              </button>
-              <button
+              </Button>
+              <Button
+                className="flex-1"
                 onClick={() => setModalEditar(true)}
-                className="flex-1 py-3 rounded-full font-bold text-sm transition-all active:scale-95"
-                style={{ backgroundColor: C.primaryContainer, color: C.onPrimaryContainer }}
               >
                 Editar
-              </button>
-              <button
+              </Button>
+              <Button
+                variante="danger"
+                className="flex-1"
                 onClick={handleEliminar}
-                className="flex-1 py-3 rounded-full font-bold text-sm transition-all active:scale-95"
-                style={{ backgroundColor: '#ffebee', color: C.error }}
               >
                 Eliminar
-              </button>
+              </Button>
             </div>
           </div>
         )}

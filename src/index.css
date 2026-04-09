@@ -2,8 +2,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ═══════════════════════════════════════════════════
-   🥭  MANGUITO — Design System v2
-   Premium Warm Fintech Aesthetic
+   🥭  MANGUITO — Design System v3
+   Premium Warm Fintech · iOS-Inspired
    Fonts: Outfit (display) + DM Sans (body)
    ═══════════════════════════════════════════════════ */
 
@@ -25,24 +25,41 @@
   --leaf-dark:    #047857;
 
   /* ── Dark Mode Surfaces ── */
-  --dark-bg:      #0D0C0B;
-  --dark-surface: #161412;
-  --dark-card:    #1E1B18;
-  --dark-border:  rgba(255,255,255,0.07);
+  --dark-bg:      #0A0A0A;
+  --dark-surface: #111111;
+  --dark-card:    #1A1A1A;
+  --dark-card-hover: #222222;
+  --dark-border:  rgba(255,255,255,0.08);
 
   /* ── Typography ── */
-  --font-display: 'Outfit', sans-serif;
-  --font-body:    'DM Sans', sans-serif;
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'Montserrat', 'Outfit', system-ui, sans-serif;
 
   /* ── Shadows ── */
   --shadow-mango:   0 8px 32px rgba(245, 166, 35, 0.30);
-  --shadow-sm:      0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:      0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
-  --shadow-lg:      0 12px 40px rgba(0,0,0,0.12), 0 4px 14px rgba(0,0,0,0.08);
+  --shadow-xs:      0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:      0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md:      0 4px 16px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg:      0 12px 40px rgba(0,0,0,0.10), 0 4px 14px rgba(0,0,0,0.06);
+  --shadow-xl:      0 20px 60px rgba(0,0,0,0.14), 0 8px 20px rgba(0,0,0,0.08);
 
   /* ── Gradients ── */
   --gradient-mango:   linear-gradient(135deg, #F5A623 0%, #E8850F 100%);
   --gradient-surface: linear-gradient(135deg, #FEFAF4 0%, #FDF3E3 100%);
+
+  /* ── Radii ── */
+  --radius-sm:  12px;
+  --radius-md:  16px;
+  --radius-lg:  20px;
+  --radius-xl:  24px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* ── Glass ── */
+  --glass-bg:       rgba(255,255,255,0.72);
+  --glass-border:   rgba(255,255,255,0.45);
+  --glass-blur:     20px;
 
   /* ── Legacy compat ── */
   --charcoal:     #1C1917;
@@ -56,16 +73,22 @@
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] text-zinc-800 dark:text-zinc-100;
     font-family: var(--font-body);
+    overscroll-behavior-y: none;
   }
 
   h1, h2, h3, h4, h5, h6,
   .font-display {
     font-family: var(--font-display);
+  }
+
+  .font-mono-num {
+    font-family: var(--font-mono);
   }
 
   ::selection {
@@ -74,45 +97,46 @@
   }
 
   /* Custom scrollbar */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar { width: 3px; height: 3px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.3); border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(245,166,35,0.6); }
+  ::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.25); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(245,166,35,0.5); }
 }
 
-/* ── Grain texture overlay ─────────────────────────── */
+/* ── Grain texture overlay (ultra subtle) ──────────── */
 .grain::before {
   content: '';
   position: fixed;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  opacity: 0.025;
+  opacity: 0.018;
   pointer-events: none;
   z-index: 9999;
 }
 
 /* ── Glassmorphism ─────────────────────────────────── */
 .glass {
-  background: rgba(255,255,255,0.72);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.5);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--glass-border);
 }
 
+.dark .glass,
 .glass-dark {
-  background: rgba(22,20,18,0.80);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(15,15,15,0.82);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--dark-border);
 }
 
 /* ── Premium Card ──────────────────────────────────── */
 .card-premium {
   background: #FFFFFF;
-  border: 1px solid rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.05);
   box-shadow: var(--shadow-sm);
-  border-radius: 20px;
-  transition: box-shadow 0.2s ease, transform 0.15s ease;
+  border-radius: var(--radius-lg);
+  transition: box-shadow 0.25s ease, transform 0.2s ease;
 }
 
 .dark .card-premium {
@@ -136,7 +160,7 @@
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: -0.01em;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .btn-primary:hover {
@@ -145,7 +169,7 @@
 }
 
 .btn-primary:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
   box-shadow: 0 2px 8px var(--mango-glow);
 }
 
@@ -169,12 +193,12 @@
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.95); }
+  from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1); }
 }
 
@@ -183,9 +207,36 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes pulse-ring {
   0%   { transform: scale(0.9); opacity: 1; }
   100% { transform: scale(1.4); opacity: 0; }
+}
+
+@keyframes spring-up {
+  0%   { transform: translateY(100%) scale(0.95); opacity: 0; }
+  60%  { transform: translateY(-2%) scale(1.01); opacity: 1; }
+  80%  { transform: translateY(0.5%) scale(0.998); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes counter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes live-dot {
+  0%, 100% { opacity: 1; }
+  50%  { opacity: 0.4; }
 }
 
 .animate-blob   { animation: blob 8s infinite; }
@@ -195,16 +246,23 @@
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
-.animate-fade-up    { animation: fadeInUp 0.6s ease forwards; }
-.animate-scale-in   { animation: scaleIn 0.4s ease forwards; }
-.animate-slide-right { animation: slideInRight 0.5s ease forwards; }
-.animate-pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
+.animate-fade-up     { animation: fadeInUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-scale-in    { animation: scaleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-slide-right { animation: slideInRight 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-slide-up    { animation: slideInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-spring-up   { animation: spring-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-pulse-ring  { animation: pulse-ring 1.5s ease-out infinite; }
+.animate-counter     { animation: counter 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-stagger     { animation: stagger-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.animate-live-dot    { animation: live-dot 2s ease-in-out infinite; }
 
 .animation-delay-100  { animation-delay: 100ms; }
 .animation-delay-200  { animation-delay: 200ms; }
 .animation-delay-300  { animation-delay: 300ms; }
 .animation-delay-400  { animation-delay: 400ms; }
 .animation-delay-500  { animation-delay: 500ms; }
+.animation-delay-600  { animation-delay: 600ms; }
+.animation-delay-700  { animation-delay: 700ms; }
 .animation-delay-2000 { animation-delay: 2s; }
 .animation-delay-4000 { animation-delay: 4s; }
 
@@ -236,15 +294,15 @@
 /* ── Mesh gradient backgrounds ─────────────────────── */
 .mesh-bg {
   background: 
-    radial-gradient(ellipse at 20% 20%, rgba(245,166,35,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 80%, rgba(16,185,129,0.06) 0%, transparent 60%),
-    radial-gradient(ellipse at 60% 10%, rgba(245,166,35,0.06) 0%, transparent 50%);
+    radial-gradient(ellipse at 20% 20%, rgba(245,166,35,0.10) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(16,185,129,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse at 60% 10%, rgba(245,166,35,0.05) 0%, transparent 50%);
 }
 
 .dark .mesh-bg {
   background: 
-    radial-gradient(ellipse at 20% 20%, rgba(245,166,35,0.08) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 80%, rgba(16,185,129,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 20% 20%, rgba(245,166,35,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(16,185,129,0.03) 0%, transparent 60%),
     var(--dark-bg);
 }
 
@@ -254,6 +312,14 @@
   scrollbar-width: none;
 }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ── iOS-like pressed state ────────────────────────── */
+.press-scale {
+  transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.press-scale:active {
+  transform: scale(0.97);
+}
 
 /* ═══════════════════════════════════════════════════
    🥭  FORM FIELDS — Native App Feel
@@ -438,4 +504,17 @@ input[type="radio"]:focus {
     /* Evita el zoom automático en iOS cuando el font-size < 16px */
     font-size: 16px;
   }
+}
+
+/* ── iOS Bottom Sheet Handle ──────────────────────── */
+.sheet-handle {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(128, 128, 128, 0.35);
+  margin: 0 auto;
+}
+
+.dark .sheet-handle {
+  background: rgba(255, 255, 255, 0.15);
 }

@@ -12,7 +12,7 @@
  */
 
 import { FUENTE, TIPO_MOV } from '../types'
-import { v4 as uuidv4 } from 'crypto' // Node crypto, no necesita librería
+// IDs se generan determinísticamente via generarIdEstable(), no necesitamos uuid.
 
 // ── Helpers internos ──────────────────────────────────────────
 

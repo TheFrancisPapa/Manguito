@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAuthContext } from '../../context/AuthContext'
 import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, CardHeader, Button } from '../../components/ui'
 
@@ -85,8 +84,10 @@ function TarjetaDolar({ dolar }) {
     : null
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-[var(--mango)]/8 dark:border-zinc-800 
-      p-4 hover:border-[var(--mango)]/25 hover:shadow-md transition-all">
+    <div className="bg-white dark:bg-[var(--dark-card)] rounded-[20px]
+      border border-zinc-100/60 dark:border-[var(--dark-border)]
+      p-4 hover:border-[var(--mango)]/20 hover:shadow-[var(--shadow-md)] transition-all
+      shadow-[var(--shadow-xs)]">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
@@ -94,21 +95,25 @@ function TarjetaDolar({ dolar }) {
             {meta.icono}
           </div>
           <div>
-            <p className="font-bold text-sm text-zinc-900 dark:text-white">{meta.label}</p>
-            <p className="text-[10px] text-zinc-400">{tiempoRelativo(dolar.fechaActualizacion)}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-bold text-sm text-zinc-900 dark:text-white font-display">{meta.label}</p>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-live-dot" title="En vivo" />
+            </div>
+            <p className="text-[10px] text-zinc-400 dark:text-zinc-500">{tiempoRelativo(dolar.fechaActualizacion)}</p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
           {dolar.variacion != null && (
-            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold
               ${dolar.variacion >= 0 
-                ? 'bg-green-50 dark:bg-green-900/20 text-green-600' 
-                : 'bg-red-50 dark:bg-red-900/20 text-red-500'}`}>
+                ? 'bg-emerald-50 dark:bg-emerald-900/15 text-emerald-600 dark:text-emerald-400' 
+                : 'bg-red-50 dark:bg-red-900/15 text-red-500 dark:text-red-400'}`}>
               {dolar.variacion >= 0 ? '▲' : '▼'} {Math.abs(dolar.variacion)}%
             </span>
           )}
           {spread && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+            <span className="text-[10px] px-2 py-0.5 rounded-full
+              bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
               title="Diferencia entre precio de compra y venta">
               brecha {spread}%
             </span>
@@ -116,15 +121,15 @@ function TarjetaDolar({ dolar }) {
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-2.5 text-center">
-          <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mb-0.5">Compra</p>
-          <p className="text-base font-bold tabular-nums" style={{ color: meta.color }}>
+        <div className="bg-zinc-50 dark:bg-zinc-800/40 rounded-[14px] p-2.5 text-center">
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-semibold mb-0.5">Compra</p>
+          <p className="text-base font-bold tabular-nums font-mono-num" style={{ color: meta.color }}>
             ${fmtPrecio(dolar.compra)}
           </p>
         </div>
-        <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-2.5 text-center">
-          <p className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium mb-0.5">Venta</p>
-          <p className="text-base font-bold tabular-nums" style={{ color: meta.color }}>
+        <div className="bg-zinc-50 dark:bg-zinc-800/40 rounded-[14px] p-2.5 text-center">
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-semibold mb-0.5">Venta</p>
+          <p className="text-base font-bold tabular-nums font-mono-num" style={{ color: meta.color }}>
             ${fmtPrecio(dolar.venta)}
           </p>
         </div>
@@ -138,24 +143,32 @@ function TarjetaMoneda({ cotiz }) {
   const bandera = MONEDA_BANDERA[cotiz.moneda] || '🌐'
   
   return (
-    <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 
-      rounded-2xl border border-[var(--mango)]/8 dark:border-zinc-800 
-      hover:border-[var(--mango)]/25 hover:shadow-md transition-all">
+    <div className="flex items-center justify-between p-4
+      bg-white dark:bg-[var(--dark-card)]
+      rounded-[18px] border border-zinc-100/60 dark:border-[var(--dark-border)]
+      hover:border-[var(--mango)]/20 hover:shadow-[var(--shadow-sm)] transition-all
+      shadow-[var(--shadow-xs)]">
       <div className="flex items-center gap-3">
         <span className="text-2xl">{bandera}</span>
         <div>
-          <p className="font-bold text-sm text-zinc-900 dark:text-white">{cotiz.nombre}</p>
-          <p className="text-xs text-zinc-400">{cotiz.moneda}/ARS · {tiempoRelativo(cotiz.fechaActualizacion)}</p>
+          <p className="font-bold text-sm text-zinc-900 dark:text-white font-display">{cotiz.nombre}</p>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500">
+            {cotiz.moneda}/ARS · {tiempoRelativo(cotiz.fechaActualizacion)}
+          </p>
         </div>
       </div>
       <div className="text-right flex gap-4">
         <div>
-          <p className="text-[10px] text-zinc-400">Compra</p>
-          <p className="text-sm font-bold text-[var(--leaf)] tabular-nums">${fmtPrecio(cotiz.compra)}</p>
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500">Compra</p>
+          <p className="text-sm font-bold text-[var(--leaf)] tabular-nums font-mono-num">
+            ${fmtPrecio(cotiz.compra)}
+          </p>
         </div>
         <div>
-          <p className="text-[10px] text-zinc-400">Venta</p>
-          <p className="text-sm font-bold text-[var(--charcoal)] dark:text-white tabular-nums">${fmtPrecio(cotiz.venta)}</p>
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500">Venta</p>
+          <p className="text-sm font-bold text-zinc-800 dark:text-white tabular-nums font-mono-num">
+            ${fmtPrecio(cotiz.venta)}
+          </p>
         </div>
       </div>
     </div>
@@ -368,7 +381,6 @@ function SkeletonDolares() {
 
 // ─── Página principal ───────────────────────────────────────
 export function CotizacionesPage() {
-  const { usuario } = useAuthContext()
   const { dolares, cotizaciones, cargando, error, recargar } = useDolarAPI()
 
   return (
