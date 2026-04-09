@@ -281,6 +281,7 @@ export function DashboardPage() {
   const [periodoIdx, setPeriodoIdx] = useState(0)
   const [modalAbierto, setModalAbierto] = useState(false)
   const [tipoDefault, setTipoDefault] = useState('gasto')
+  const [saldoVisible, setSaldoVisible] = useState(true)
 
   const offset = PERIODOS[periodoIdx].offset
   const { desde, hasta } = useRangoMes(offset)
@@ -351,10 +352,33 @@ export function DashboardPage() {
               ))}
             </div>
 
-            <p className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500
-              uppercase tracking-[0.1em]">
-              Balance General
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500
+                uppercase tracking-[0.1em]">
+                Balance General
+              </p>
+              {/* 👁 Toggle visibility — like mockup */}
+              <button
+                onClick={() => setSaldoVisible(v => !v)}
+                className="w-8 h-8 flex items-center justify-center rounded-full
+                  text-zinc-300 dark:text-zinc-600
+                  hover:bg-zinc-100 dark:hover:bg-zinc-800
+                  active:scale-90 transition-all"
+                aria-label={saldoVisible ? 'Ocultar saldo' : 'Mostrar saldo'}
+              >
+                {saldoVisible ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                )}
+              </button>
+            </div>
 
             {cBal ? (
               <div className="h-10 w-48 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse mt-2" />
@@ -366,7 +390,7 @@ export function DashboardPage() {
                 }}
               >
                 <span className="text-zinc-900 dark:text-white">
-                  {fmtBalance(Math.abs(saldo))}
+                  {saldoVisible ? fmtBalance(Math.abs(saldo)) : '$ ●●●●●●'}
                 </span>
               </h2>
             )}

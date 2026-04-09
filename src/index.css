@@ -256,6 +256,34 @@
 .animate-stagger     { animation: stagger-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 .animate-live-dot    { animation: live-dot 2s ease-in-out infinite; }
 
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50%  { opacity: 0.7; }
+}
+.animate-pulse-subtle { animation: pulse-subtle 2.5s ease-in-out infinite; }
+
+/* Haptic-like press feedback */
+.press-scale {
+  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.press-scale:active {
+  transform: scale(0.97);
+}
+
+/* Mesh background for dashboard */
+.mesh-bg {
+  background: 
+    radial-gradient(ellipse at 30% 20%, rgba(245,166,35,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(5,150,105,0.04) 0%, transparent 50%),
+    var(--cream-soft);
+}
+.dark .mesh-bg {
+  background: 
+    radial-gradient(ellipse at 30% 20%, rgba(245,166,35,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(5,150,105,0.02) 0%, transparent 50%),
+    var(--dark-bg);
+}
+
 .animation-delay-100  { animation-delay: 100ms; }
 .animation-delay-200  { animation-delay: 200ms; }
 .animation-delay-300  { animation-delay: 300ms; }
