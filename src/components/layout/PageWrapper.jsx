@@ -1,6 +1,5 @@
 // src/components/layout/PageWrapper.jsx
 import { Header } from './Header'
-import { BottomNav } from './BottomNav'
 
 export function PageWrapper({ children, className = '' }) {
   return (
@@ -8,13 +7,12 @@ export function PageWrapper({ children, className = '' }) {
       <Header />
       <main
         className={`min-h-screen px-4 pt-5 ${className.includes('!bg-transparent') ? '' : 'bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] mesh-bg'} ${className}`}
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 88px)' }}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 32px)' }}
       >
         <div className="max-w-xl mx-auto md:max-w-4xl">
           {children}
         </div>
       </main>
-      <BottomNav />
     </>
   )
 }
