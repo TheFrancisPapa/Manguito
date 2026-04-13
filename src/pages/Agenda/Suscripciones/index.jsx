@@ -1,17 +1,17 @@
 // src/pages/Suscripciones/index.jsx
 // Con búsqueda inteligente en catálogo al tipear el nombre del servicio
 import { useState, useEffect, useCallback } from 'react'
-import { useAuthContext } from '../../context/AuthContext'
-import { useSuscripciones } from '../../hooks/useSuscripciones'
-import { SUSCRIPCIONES_POPULARES } from '../../api/suscripciones'
+import { useAuthContext } from '../../../context/AuthContext'
+import { useSuscripciones } from '../../../hooks/useSuscripciones'
+import { SUSCRIPCIONES_POPULARES } from '../../../api/suscripciones'
 import {
   CATALOGO_SUSCRIPCIONES,
-} from '../../data/catalogo-suscripciones'
-import { PageWrapper, PageHeader } from '../../components/layout'
-import { Card, CardHeader, Button, EmptyState, Modal, Input, Select } from '../../components/ui'
-import { exportarSuscripcionesCSV } from '../../lib/exportar'
+} from '../../../data/catalogo-suscripciones'
+import { PageWrapper, PageHeader } from '../../../components/layout'
+import { Card, CardHeader, Button, EmptyState, Modal, Input, Select } from '../../../components/ui'
+import { exportarSuscripcionesCSV } from '../../../lib/exportar'
 import { CatalogoSuscripciones } from './Catalogo'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../../lib/supabase'
 
 const CATEGORIAS = [
   { id: 'streaming', label: 'Streaming',  icono: '🎬' },
@@ -76,7 +76,7 @@ async function guardarCorreccionPrecio(planId, nuevoPrecio) {
 }
 
 // ── Formulario de suscripción con catálogo inteligente ────────
-function FormSuscripcion({ onSubmit, onCancel, inicial = null }) {
+export function FormSuscripcion({ onSubmit, onCancel, inicial = null }) {
   const [form, setForm] = useState(inicial ? {
     nombre: inicial.nombre, monto: inicial.monto, moneda: inicial.moneda ?? 'ARS',
     icono: inicial.icono, color: inicial.color, ciclo: inicial.ciclo,

@@ -5,27 +5,24 @@ import { useAuthContext } from '../../context/AuthContext'
 import { logout } from '../../api/auth'
 
 const MENU_ITEMS = [
-  { path: '/dashboard',     label: 'Panel Principal',     icono: '🏠', grupo: 'principal' },
-  { path: '/movimientos',   label: 'Movimientos',         icono: '💸', grupo: 'principal' },
-  { path: '/presupuestos',  label: 'Presupuestos',        icono: '📊', grupo: 'principal' },
-  { path: '/metas',         label: 'Metas de Ahorro',     icono: '🎯', grupo: 'principal' },
-  { path: '/inversiones',   label: 'Inversiones',         icono: '📈', grupo: 'principal' },
-  { path: '/vencimientos',  label: 'Agenda de Pagos',     icono: '📅', grupo: 'finanzas'  },
-  { path: '/suscripciones', label: 'Suscripciones',       icono: '📱', grupo: 'finanzas'  },
+  { path: '/dashboard',     label: 'Panel Principal',     icono: '🏠', grupo: 'dinero' },
+  { path: '/movimientos',   label: 'Movimientos',         icono: '💸', grupo: 'dinero' },
+  { path: '/inversiones',   label: 'Inversiones',         icono: '📈', grupo: 'dinero' },
+  { path: '/planificacion', label: 'Planificación',       icono: '📊', grupo: 'organizacion' },
+  { path: '/agenda',        label: 'Agenda de Pagos',     icono: '📅', grupo: 'organizacion'  },
+  { path: '/chat',          label: 'ManguitoAI',          icono: '🤖', grupo: 'herramientas', badge: 'Pronto' },
   { path: '/cotizaciones',  label: 'Cotizaciones',        icono: '💱', grupo: 'herramientas' },
   { path: '/nafta',         label: 'Precios de Nafta',    icono: '⛽', grupo: 'herramientas' },
   { path: '/calculadora',   label: 'Calculadoras',        icono: '🧮', grupo: 'herramientas' },
-  { path: '/chat',          label: 'ManguitoAI',          icono: '🤖', grupo: 'herramientas', badge: 'Pronto' },
-  { path: '/recursos',      label: 'Recursos',            icono: '📚', grupo: 'aprender'  },
-  { path: '/configuracion', label: 'Mi Perfil',           icono: '⚙️', grupo: 'cuenta'    },
+  { path: '/recursos',      label: 'Recursos',            icono: '📚', grupo: 'mas'  },
+  { path: '/configuracion', label: 'Mi Cuenta',           icono: '⚙️', grupo: 'mas'    },
 ]
 
 const GRUPOS = {
-  principal: 'Principal',
-  finanzas: 'Finanzas',
+  dinero: 'Mi Dinero',
+  organizacion: 'Organización',
   herramientas: 'Herramientas',
-  aprender: 'Aprender',
-  cuenta: 'Cuenta',
+  mas: 'Más',
 }
 
 export function MobileDrawer({ abierto, onCerrar }) {

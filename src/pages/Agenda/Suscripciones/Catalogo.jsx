@@ -4,13 +4,13 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../../lib/supabase'
 import {
   CATALOGO_SUSCRIPCIONES,
   CATEGORIAS_CATALOGO,
   METODOS_PAGO,
   CICLOS_DISPONIBLES,
-} from '../../data/catalogo-suscripciones'
+} from '../../../data/catalogo-suscripciones'
 
 // ── Helpers ──────────────────────────────────────────────────
 const fmtPrecio = (n) => {

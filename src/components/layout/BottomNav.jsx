@@ -43,11 +43,9 @@ const IconBot = ({ active }) => (
   </svg>
 )
 
-const IconDivisas = ({ active }) => (
+const IconPlan = ({ active }) => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.6} strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="9" fill={active ? 'currentColor' : 'none'} fillOpacity={active ? 0.15 : 0} />
-    <path d="M12 3v18M3 12h18" opacity={0.3} />
-    <path d="M8.5 8.5C8.5 7 10 6 12 6s3.5 1 3.5 2.5C15.5 11 8.5 11 8.5 13.5 8.5 15 10 16.5 12 16.5s3.5-1.5 3.5-3" />
+    <path d="M12 20V10M18 20V4M6 20v-4" />
   </svg>
 )
 
@@ -71,7 +69,7 @@ const LINKS = [
   { a: '/dashboard',     label: 'Inicio',  Icon: IconHome    },
   { a: '/movimientos',   label: 'Movs',    Icon: IconMovs    },
   { a: '/chat',          label: 'IA',      Icon: IconBot,    central: true },
-  { a: '/cotizaciones',  label: 'Divisas', Icon: IconDivisas },
+  { a: '/planificacion', label: 'Plan',    Icon: IconPlan    },
   { a: '/configuracion', label: 'Perfil',  Icon: IconPerfil  },
 ]
 

@@ -1,10 +1,10 @@
 // src/pages/Vencimientos/index.jsx
 import { useState, useMemo } from 'react'
-import { useAuthContext } from '../../context/AuthContext'
-import { useVencimientos } from '../../hooks/useVencimientos'
-import { getVencimientosProximos } from '../../api/vencimientos'
-import { PageWrapper, PageHeader } from '../../components/layout'
-import { Card, Button, EmptyState, Modal, Input, Select } from '../../components/ui'
+import { useAuthContext } from '../../../context/AuthContext'
+import { useVencimientos } from '../../../hooks/useVencimientos'
+import { getVencimientosProximos } from '../../../api/vencimientos'
+import { PageWrapper, PageHeader } from '../../../components/layout'
+import { Card, Button, EmptyState, Modal, Input, Select } from '../../../components/ui'
 
 const CATEGORIAS = [
   { id: 'servicios',  label: 'Servicios',    icono: '💡' },
@@ -28,7 +28,7 @@ const FORM_INIT = {
   dia_vencimiento: '', categoria: 'servicios', alertar_dias: 3, notas: '',
 }
 
-function FormVencimiento({ onSubmit, onCancel, inicial = null }) {
+export function FormVencimiento({ onSubmit, onCancel, inicial = null }) {
   const [form, setForm]     = useState(inicial ? {
     nombre: inicial.nombre, monto: inicial.monto ?? '', icono: inicial.icono,
     color: inicial.color, dia_vencimiento: inicial.dia_vencimiento,

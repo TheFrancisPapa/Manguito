@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import { useAuthContext } from '../../context/AuthContext'
-import { useMetas } from '../../hooks/useMetas'
-import { PageWrapper, PageHeader } from '../../components/layout'
-import { Card, Button, EmptyState, Modal, Input, ModalUpgrade, EmojiSuggester } from '../../components/ui'
-import { BarraMeta } from '../../components/charts'
+import { useAuthContext } from '../../../context/AuthContext'
+import { useMetas } from '../../../hooks/useMetas'
+import { Card, Button, EmptyState, Modal, Input, ModalUpgrade, EmojiSuggester } from '../../../components/ui'
+import { BarraMeta } from '../../../components/charts'
 
 // ─── Página principal ────────────────────────────────────────
-export function MetasPage() {
+export function MetasView() {
   const { usuario } = useAuthContext()
   const { metas, cargando, agregar, aportar, borrar: eliminar } = useMetas()
   const [modalAbierto, setModalAbierto] = useState(false)
@@ -63,18 +62,11 @@ export function MetasPage() {
   const cercanas = activas.filter(m => (m.monto_actual / m.monto_objetivo) >= 0.8)
 
   return (
-    <div className="animate-in fade-in duration-500">
-      <PageWrapper>
-        <PageHeader
-          titulo="Mis Metas"
-          subtitulo={
-            cargando ? 'Cargando...'
-              : cercanas.length > 0
-                ? `${cercanas.length} meta${cercanas.length > 1 ? 's' : ''} casi completada${cercanas.length > 1 ? 's' : ''} 🔥`
-                : 'Ahorrar con propósito'
-          }
-          accion={<Button icono="+" onClick={handleAbrirModalNuevo} className="shadow-sm shadow-amber-500/20">Nueva Meta</Button>}
-        />
+    <>
+      <div className="animate-in fade-in duration-500 w-full">
+        <div className="flex justify-end mb-4">
+          <Button icono="+" onClick={handleAbrirModalNuevo} className="shadow-sm shadow-amber-500/20">Nueva Meta</Button>
+        </div>
 
         {/* Summary pills */}
         {!cargando && metas.length > 0 && (
@@ -144,7 +136,7 @@ export function MetasPage() {
             ))}
           </div>
         )}
-      </PageWrapper>
+      </div>
 
       {/* Modal Nueva Meta — Simplified */}
       <Modal abierto={modalAbierto} onCerrar={() => setModalAbierto(false)} titulo="Crear nueva meta">
@@ -239,6 +231,6 @@ export function MetasPage() {
         onCerrar={() => setModalUpgrade(false)}
         feature="Tener múltiples metas activas al mismo tiempo"
       />
-    </div>
+    </>
   )
 }

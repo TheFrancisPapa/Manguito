@@ -15,8 +15,8 @@ const LandingPage       = lazy(() => import('../pages/Landing').then(m => ({ def
 // ── Rutas privadas ───────────────────────────────────────────
 const DashboardPage     = lazy(() => import('../pages/Dashboard').then(m => ({ default: m.DashboardPage })))
 const MovimientosPage   = lazy(() => import('../pages/Movimientos').then(m => ({ default: m.MovimientosPage })))
-const PresupuestosPage  = lazy(() => import('../pages/Presupuestos').then(m => ({ default: m.PresupuestosPage })))
-const MetasPage         = lazy(() => import('../pages/Metas').then(m => ({ default: m.MetasPage })))
+const PlanificacionPage = lazy(() => import('../pages/Planificacion').then(m => ({ default: m.PlanificacionPage })))
+const AgendaPage        = lazy(() => import('../pages/Agenda').then(m => ({ default: m.AgendaPage })))
 const ConfiguracionPage = lazy(() => import('../pages/Configuracion').then(m => ({ default: m.ConfiguracionPage })))
 const ChatPage          = lazy(() => import('../pages/Chat').then(m => ({ default: m.ChatPage })))
 const CotizacionesPage  = lazy(() => import('../pages/Cotizaciones').then(m => ({ default: m.CotizacionesPage })))
@@ -26,9 +26,7 @@ const RecursosPage      = lazy(() => import('../pages/Recursos').then(m => ({ de
 const NaftaPage         = lazy(() => import('../pages/Nafta').then(m => ({ default: m.NaftaPage })))
 const CalculadoraPage   = lazy(() => import('../pages/Calculadora').then(m => ({ default: m.CalculadoraPage })))
 
-// ── NUEVAS PÁGINAS ───────────────────────────────────────────
-const VencimientosPage  = lazy(() => import('../pages/Vencimientos').then(m => ({ default: m.VencimientosPage })))
-const SuscripcionesPage = lazy(() => import('../pages/Suscripciones').then(m => ({ default: m.SuscripcionesPage })))
+// ── NUEVAS PÁGINAS (Ya unificadas) ─────────────────────────
 
 function Root() {
   return (
@@ -55,8 +53,8 @@ export const router = createBrowserRouter([
       // ── Privadas ────────────────────────────────────────────
       { path: '/dashboard',            element: <PrivateRoute><DashboardPage /></PrivateRoute> },
       { path: '/movimientos',          element: <PrivateRoute><MovimientosPage /></PrivateRoute> },
-      { path: '/presupuestos',         element: <PrivateRoute><PresupuestosPage /></PrivateRoute> },
-      { path: '/metas',                element: <PrivateRoute><MetasPage /></PrivateRoute> },
+      { path: '/planificacion',        element: <PrivateRoute><PlanificacionPage /></PrivateRoute> },
+      { path: '/agenda',               element: <PrivateRoute><AgendaPage /></PrivateRoute> },
       { path: '/chat',                 element: <PrivateRoute><ChatPage /></PrivateRoute> },
       { path: '/cotizaciones',         element: <PrivateRoute><CotizacionesPage /></PrivateRoute> },
       { path: '/inversiones',          element: <PrivateRoute><InversionesPage /></PrivateRoute> },
@@ -66,9 +64,7 @@ export const router = createBrowserRouter([
       { path: '/nafta',                element: <PrivateRoute><NaftaPage /></PrivateRoute> },
       { path: '/calculadora',          element: <PrivateRoute><CalculadoraPage /></PrivateRoute> },
 
-      // ── NUEVAS ──────────────────────────────────────────────
-      { path: '/vencimientos',         element: <PrivateRoute><VencimientosPage /></PrivateRoute> },
-      { path: '/suscripciones',        element: <PrivateRoute><SuscripcionesPage /></PrivateRoute> },
+      // ── NUEVAS (Ya unificadas) ──────────────────────────────
 
       { path: '*',                     element: <Navigate to="/dashboard" replace /> },
     ]

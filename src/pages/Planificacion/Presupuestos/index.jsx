@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useAuthContext } from '../../context/AuthContext'
-import { usePresupuestos } from '../../hooks/usePresupuestos'
-import { useCategorias } from '../../hooks/useCategorias'
-import { PageWrapper, PageHeader, PresupCard } from '../../components/layout'
-import { Card, Button, EmptyState, Modal, Input, ModalUpgrade, EmojiSuggester, sugerirCategorias } from '../../components/ui'
+import { useAuthContext } from '../../../context/AuthContext'
+import { usePresupuestos } from '../../../hooks/usePresupuestos'
+import { useCategorias } from '../../../hooks/useCategorias'
+import { PresupCard } from '../../../components/layout'
+import { Card, Button, EmptyState, Modal, Input, ModalUpgrade, EmojiSuggester, sugerirCategorias } from '../../../components/ui'
 
 // ─── Form simplificado: Nombre + Monto → Sugerencia de emoji y categoría ────
 function FormPresupuesto({ categorias, onSubmit, onCancel, inicial = null }) {
@@ -240,7 +240,7 @@ function FormPresupuesto({ categorias, onSubmit, onCancel, inicial = null }) {
 }
 
 // ─── Página principal ────────────────────────────────────────
-export function PresupuestosPage() {
+export function PresupuestosView() {
   const { usuario } = useAuthContext()
   const {
     presupuestos,
@@ -317,13 +317,11 @@ export function PresupuestosPage() {
         : 'Todo bajo control este mes 😎'
 
   return (
-    <div className="animate-in fade-in duration-500">
-      <PageWrapper>
-        <PageHeader
-          titulo="Mis Presupuestos"
-          subtitulo={subtitulo}
-          accion={<Button icono="+" onClick={handleAbrirModalNuevo} className="shadow-sm shadow-amber-500/20">Nuevo Límite</Button>}
-        />
+    <>
+      <div className="animate-in fade-in duration-500 w-full">
+        <div className="flex justify-end mb-4">
+          <Button icono="+" onClick={handleAbrirModalNuevo} className="shadow-sm shadow-amber-500/20">Nuevo Límite</Button>
+        </div>
 
         {/* Summary pills */}
         {!cargando && presupuestos.length > 0 && (
@@ -396,7 +394,7 @@ export function PresupuestosPage() {
             </div>
           </Card>
         )}
-      </PageWrapper>
+      </div>
 
       <Modal abierto={modalNuevo} onCerrar={() => {setModalNuevo(false); setErrorLocal('');}} titulo="Definir nuevo límite" ancho="max-w-md">
         {errorLocal && (
@@ -415,6 +413,6 @@ export function PresupuestosPage() {
         onCerrar={() => setModalUpgrade(false)}
         feature="Crear presupuestos ilimitados"
       />
-    </div>
+    </>
   )
 }

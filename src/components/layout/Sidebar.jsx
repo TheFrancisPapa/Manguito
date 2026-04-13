@@ -3,24 +3,23 @@ import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 
 const MENU = [
-  { path: '/dashboard',    icono: '🏠', label: 'Panel',        grupo: 'Principal' },
-  { path: '/movimientos',  icono: '💸', label: 'Movimientos',  grupo: 'Principal' },
-  { path: '/presupuestos', icono: '📊', label: 'Límites',      grupo: 'Principal' },
-  { path: '/metas',        icono: '🎯', label: 'Metas',        grupo: 'Principal' },
-  { path: '/inversiones',  icono: '📈', label: 'Inversiones',  grupo: 'Principal' },
-  // Finanzas
-  { path: '/vencimientos', icono: '📅', label: 'Pagos',        grupo: 'Finanzas' },
-  { path: '/suscripciones',icono: '📱', label: 'Suscripciones',grupo: 'Finanzas' },
+  { path: '/dashboard',    icono: '🏠', label: 'Panel',        grupo: 'Mi Dinero' },
+  { path: '/movimientos',  icono: '💸', label: 'Movimientos',  grupo: 'Mi Dinero' },
+  { path: '/inversiones',  icono: '📈', label: 'Inversiones',  grupo: 'Mi Dinero' },
+  // Organización
+  { path: '/planificacion',icono: '📊', label: 'Planificación',grupo: 'Organización' },
+  { path: '/agenda',       icono: '📅', label: 'Agenda Pagos', grupo: 'Organización' },
   // Herramientas
+  { path: '/chat',         icono: '🤖', label: 'ManguitoAI',   grupo: 'Herramientas', badge: '🛠️' },
   { path: '/cotizaciones', icono: '💱', label: 'Cotizaciones', grupo: 'Herramientas' },
-  { path: '/nafta',        icono: '⛽', label: 'Nafta',        grupo: 'Herramientas' },
+  { path: '/nafta',        icono: '⛽', label: 'Nafta (arg)',  grupo: 'Herramientas' },
   { path: '/calculadora',  icono: '🧮', label: 'Calculadora',  grupo: 'Herramientas' },
-  { path: '/chat',         icono: '🤖', label: 'Asesor IA',    grupo: 'Herramientas', badge: '🛠️' },
-  { path: '/recursos',     icono: '📚', label: 'Recursos',     grupo: 'Aprender' },
-  { path: '/configuracion',icono: '⚙️', label: 'Perfil',       grupo: 'Cuenta' },
+  // Más
+  { path: '/recursos',     icono: '📚', label: 'Recursos',     grupo: 'Más' },
+  { path: '/configuracion',icono: '⚙️', label: 'Mi Cuenta',    grupo: 'Más' },
 ]
 
-const GRUPOS_ORDEN = ['Principal', 'Finanzas', 'Herramientas', 'Aprender', 'Cuenta']
+const GRUPOS_ORDEN = ['Mi Dinero', 'Organización', 'Herramientas', 'Más']
 
 export function Sidebar({ usuario }) {
   const location = useLocation()
