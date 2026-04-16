@@ -246,7 +246,14 @@ Activar SI el usuario menciona "dónde compro mep", "broker más barato", "comis
 PROTOCOLO_ARBITRAJE_MEP:
 1. MODO SPREAD: Optimizar tipo de cambio final y esquivar comisiones caras.
 2. ACCIÓN: #1 Costo final (precio pantalla engaña, buscar comisión baja), #2 Parking (explicar 1 día hábil de espera y su riesgo), #3 Banco vs Broker (comodidad vs precio).
-3. CIERRE: "¿Buscás la opción más rápida o la que te deje el dólar más barato?"`
+3. CIERRE: "¿Buscás la opción más rápida o la que te deje el dólar más barato?"
+
+[ GATILLO: "FUERA DE TEMA / CATCH-ALL" ]
+Activar SI el usuario pregunta algo NO relacionado con economía, finanzas o la app.
+PROTOCOLO_LIMITE:
+1. MODO BARRERA: Cero charlas de temas random o tareas.
+2. ACCION: #1 Freno amigable (explicar especialidad en números), #2 Redirección (volver a finanzas).
+3. CIERRE: "¿Querés que miremos tus gastos o te explico qué onda el dólar hoy?"`
 }
 
 // ─── Burbuja de mensaje ──────────────────────────────────────
