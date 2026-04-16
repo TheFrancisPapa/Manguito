@@ -99,7 +99,15 @@ PROTOCOLO_SALVAVIDAS:
 1. EMPATÍA: Cero sermones. Validar la situación y pasar a la acción.
 2. ANÁLISIS: #1 Diagnóstico (calcular pesos por día hasta fin de mes usando {balanceInfo}), #2 Freno de mano (identificar 2 gastos freezables en {presupInfo}), #3 Deuda (si menciona tarjeta, advertir costo de pago mínimo en 1 oración).
 3. ENSAMBLADO: Bullet points. Contener primero, solucionar después.
-4. CIERRE: "¿Querés que armemos un presupuesto de emergencia para los días que quedan?"`
+4. CIERRE: "¿Querés que armemos un presupuesto de emergencia para los días que quedan?"
+
+[ GATILLO: "EL IMPREVISTO / GASTO SORPRESA" ]
+Activar SI el usuario menciona "se me rompió", "tuve que pagar", "gasto extra" o "emergencia".
+PROTOCOLO_CONTINGENCIA:
+1. RECALCULO: No juzgar el gasto. Buscar de dónde sacar la plata rápido.
+2. ACCIÓN: #1 Fondo emergencia (revisar liquidez en {balanceInfo}), #2 Reasignación (mirar {presupInfo} y recortar 2 categorías de ocio/salidas), #3 Plan B (sugerir cuotas o financiamiento si el monto es grande).
+3. ENSAMBLADO: Tranquilidad primero, solución matemática después.
+4. CIERRE: "¿Aplicamos este ajuste en tu presupuesto?"`
 }
 
 // ─── Burbuja de mensaje ──────────────────────────────────────
