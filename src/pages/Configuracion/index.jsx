@@ -50,6 +50,7 @@ export function ConfiguracionPage() {
   const [guardando,    setGuardando]    = useState(false)
   const [subiendoFoto, setSubiendoFoto] = useState(false)
   const [feedback,     setFeedback]     = useState(null)
+  const [fechaNac,     setFechaNac]     = useState(usuario?.fecha_nacimiento ?? '')
 
   // ── selección de foto ────────────────────────────────────────
   async function handleFotoChange(e) {
@@ -202,11 +203,13 @@ export function ConfiguracionPage() {
                 <label className="text-sm font-medium text-zinc-600 dark:text-zinc-300">Fecha de nacimiento</label>
                 <input
                   type="date"
-                  value={usuario?.fecha_nacimiento ?? ''}
-                  onChange={async (e) => {
+                  value={fechaNac}
+                  onChange={(e) => setFechaNac(e.target.value)}
+                  onBlur={async () => {
+                    if (fechaNac === (usuario?.fecha_nacimiento ?? '')) return
                     try {
                       setFeedback(null)
-                      await actualizarPerfil({ fecha_nacimiento: e.target.value })
+                      await actualizarPerfil({ fecha_nacimiento: fechaNac })
                       if (recargarPerfil) await recargarPerfil()
                       setFeedback({ tipo: 'ok', msg: 'Fecha actualizada ✓' })
                     } catch (err) {
