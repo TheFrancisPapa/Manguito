@@ -43,50 +43,50 @@ export default async function handler(req, res) {
   // Limitamos max_tokens server-side sin importar lo que mande el cliente
   const tokensLimitados = Math.min(Number(max_tokens) || 1000, 1500)
 
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
-    console.error('[chat] Falta GEMINI_API_KEY')
+    console.error('[chat] Falta GROQ_API_KEY')
     return res.status(500).json({ error: 'El servidor no está configurado correctamente' })
   }
 
   try {
-    const contents = messages.map(m => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }))
-
+    const url = 'https://api.groq.com/openai/v1/chat/completions'
+    
+    // Simplificamos el formato a estándar OpenAI (usado por Groq)
     const body = {
-      system_instruction: system ? { parts: [{ text: system }] } : undefined,
-      contents,
-      generationConfig: {
-        maxOutputTokens: tokensLimitados,
-        temperature: 0.7,
-      },
+      model: 'llama3-70b-8192', // El modelo más potente disponible en Groq
+      messages: [
+        ...(system ? [{ role: 'system', content: system }] : []),
+        ...messages
+      ],
+      max_tokens: tokensLimitados,
+      temperature: 0.7,
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${apiKey}`
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
       body: JSON.stringify(body),
     })
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      console.error('[chat] Error de Gemini:', response.status, errorData)
+      console.error('[chat] Error de Groq:', response.status, errorData)
       return res.status(response.status).json({
         error: `Error al contactar la IA: ${errorData.error?.message || response.statusText}`,
       })
     }
 
     const data = await response.json()
-    const text = data.candidates?.[0]?.content?.parts?.map(p => p.text).join('\n') || ''
+    const text = data.choices?.[0]?.message?.content || ''
 
     if (!text) {
-      const blockReason = data.candidates?.[0]?.finishReason
-      console.warn('[chat] Respuesta vacía de Gemini, motivo:', blockReason)
+      console.warn('[chat] Respuesta vacía de Groq')
       return res.status(200).json({
-        text: 'No pude generar una respuesta para eso. Probá reformulando la pregunta.',
+        text: 'No pude generar una respuesta. Por favor, intentá de nuevo.',
       })
     }
 
