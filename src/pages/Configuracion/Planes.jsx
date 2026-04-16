@@ -65,10 +65,14 @@ export function PlanesPage() {
 
             <div className="flex-1 space-y-4 mb-10">
               {[
-                'Registro de movimientos ilimitados',
-                'Hasta 3 presupuestos activos',
-                '1 meta de ahorro activa',
+                'Movimientos ilimitados',
+                'Hasta 3 presupuestos',
+                '1 meta de ahorro',
                 'Balance mensual visual',
+                'Cotizaciones y Nafta',
+                'Calculadoras financieras',
+                'Comunidad Manguito',
+                'ManguitoAI (5 msgs/día)',
               ].map((item) => (
                 <div key={item} className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400 font-medium">
                   <div className="flex-shrink-0 w-5 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-[10px]">✓</div>
@@ -101,18 +105,20 @@ export function PlanesPage() {
               <h3 className="text-2xl font-black text-[var(--charcoal)] dark:text-white">Plan Pro</h3>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 italic font-medium">Poder ilimitado e IA</p>
               <div className="flex items-baseline gap-1 mt-6">
-                <span className="text-4xl font-black text-[var(--charcoal)] dark:text-white">$100</span>
+                <span className="text-4xl font-black text-[var(--charcoal)] dark:text-white">$1.999</span>
                 <span className="text-zinc-400 font-bold">/mes</span>
               </div>
             </div>
 
             <div className="flex-1 space-y-4 mb-10">
               {[
-                { text: 'Chat Financiero con IA', destacada: true },
-                { text: 'Presupuestos y metas ilimitadas' },
-                { text: 'Cotizaciones en tiempo real' },
-                { text: 'Exportá tus datos a PDF/Excel' },
-                { text: 'Reportes avanzados semanales' },
+                { text: 'ManguitoAI (15 msgs/día)', destacada: true },
+                { text: 'Presupuestos ilimitados' },
+                { text: 'Metas de ahorro ilimitadas' },
+                { text: 'Agenda de pagos ilimitada' },
+                { text: 'Portfolio de inversiones' },
+                { text: 'Exportar datos a Excel/CSV' },
+                { text: 'Todo lo del plan Básico' },
               ].map((item) => (
                 <div key={item.text} className={`flex items-center gap-3 text-sm font-semibold ${
                   item.destacada ? 'text-[var(--leaf)] dark:text-[var(--primary-vibrant)]' : 'text-zinc-600 dark:text-zinc-400'

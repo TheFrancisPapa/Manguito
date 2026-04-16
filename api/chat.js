@@ -2,7 +2,10 @@
 import { createClient } from '@supabase/supabase-js'
 
 // ── Configuración ────────────────────────────────────────────────
-const DAILY_MESSAGE_LIMIT = 20 // Máximo de mensajes por usuario por día
+const LIMITS = {
+  basico: 5,   // Plan gratuito: 5 mensajes/día
+  pro:    15,  // Plan Pro: 15 mensajes/día
+}
 
 // Crea un cliente Supabase con service-role (nunca expuesto al front).
 function getSupabaseAdmin() {
@@ -26,9 +29,24 @@ async function getAuthUser(req, supabase) {
   return user
 }
 
-// Cuenta cuántos mensajes envió el usuario hoy y valida el límite.
-// Devuelve { allowed: boolean, used: number, limit: number }
+// Obtiene el plan del usuario desde la tabla usuarios.
+async function getUserPlan(userId, supabase) {
+  const { data, error } = await supabase
+    .from('usuarios')
+    .select('plan')
+    .eq('id', userId)
+    .single()
+
+  if (error || !data) return 'basico'
+  return data.plan || 'basico'
+}
+
+// Cuenta cuántos mensajes envió el usuario hoy y valida el límite según su plan.
+// Devuelve { allowed: boolean, used: number, limit: number, plan: string }
 async function checkRateLimit(userId, supabase) {
+  const plan = await getUserPlan(userId, supabase)
+  const limit = LIMITS[plan] || LIMITS.basico
+
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
 
@@ -40,14 +58,14 @@ async function checkRateLimit(userId, supabase) {
 
   if (error) {
     console.error('[chat] Error al verificar uso:', error.message)
-    // En caso de error de BD, dejamos pasar para no bloquear al usuario
-    return { allowed: true, used: 0, limit: DAILY_MESSAGE_LIMIT }
+    return { allowed: true, used: 0, limit, plan }
   }
 
   return {
-    allowed: (count || 0) < DAILY_MESSAGE_LIMIT,
+    allowed: (count || 0) < limit,
     used: count || 0,
-    limit: DAILY_MESSAGE_LIMIT,
+    limit,
+    plan,
   }
 }
 

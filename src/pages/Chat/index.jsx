@@ -490,6 +490,7 @@ export function ChatPage() {
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState(null)
   const [tokenCount, setTokenCount] = useState(0)
+  const [aiUsage, setAiUsage] = useState({ used: 0, limit: 5 })
 
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
@@ -559,6 +560,11 @@ export function ChatPage() {
 
       // Contar tokens aproximados
       setTokenCount(prev => prev + textoFinal.length + respuesta.length)
+
+      // Actualizar uso de mensajes
+      if (data.usage) {
+        setAiUsage({ used: data.usage.used, limit: data.usage.limit })
+      }
     } catch (err) {
       console.error('[ManguitoAI]', err)
       setError(err.message || 'Hubo un error al consultar la IA. Revisá tu conexión.')
@@ -612,12 +618,21 @@ export function ChatPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Token counter (sutil) */}
-            {tokenCount > 0 && (
-              <span className="text-[9px] text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full font-mono hidden sm:block">
-                ~{Math.round(tokenCount / 4)} tokens
-              </span>
-            )}
+            {/* Mensajes restantes */}
+            {(() => {
+              const restantes = Math.max(0, aiUsage.limit - aiUsage.used)
+              const plan = usuario?.plan || 'basico'
+              return (
+                <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full border
+                  ${restantes <= 2
+                    ? 'bg-red-50 dark:bg-red-900/20 text-red-500 border-red-200/50 dark:border-red-800/30'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200/50 dark:border-zinc-700/30'
+                  }`}>
+                  💬 {restantes}/{aiUsage.limit}
+                  {plan === 'pro' && <span className="ml-1 text-[var(--mango)]">PRO</span>}
+                </span>
+              )
+            })()}
 
             {hayMensajes && (
               <button
