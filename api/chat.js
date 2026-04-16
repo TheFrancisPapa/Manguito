@@ -92,7 +92,7 @@ export default async function handler(req, res) {
   }
 
   // Limitamos max_tokens server-side sin importar lo que mande el cliente
-  const tokensLimitados = Math.min(Number(max_tokens) || 1000, 1500)
+  const tokensLimitados = Math.min(Number(max_tokens) || 600, 800)
 
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
