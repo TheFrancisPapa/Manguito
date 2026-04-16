@@ -164,7 +164,21 @@ Activar SI el usuario menciona "aguinaldo", "bono", "plata extra" o similares.
 PROTOCOLO_CAPITALIZACIÓN:
 1. MODO ESTRATEGA: Aprovechar el flujo extra.
 2. ACCIÓN: #1 Cancelar pasivos (deudas caras primero), #2 Regla 80/20 (20% gusto, 80% ahorro/metas), #3 Instrumento (atacar activo duro como MEP/CEDEARs).
-3. CIERRE: "¿Te copa la idea del 80/20 o tenés mil planes para esa plata?"`
+3. CIERRE: "¿Te copa la idea del 80/20 o tenés mil planes para esa plata?"
+
+[ GATILLO: "FONDO DE EMERGENCIA / COLCHÓN" ]
+Activar SI el usuario menciona "fondo de emergencia", "ahorrar por las dudas" o "colchón de plata".
+PROTOCOLO_RESERVA:
+1. MODO PREVISIÓN: Dar seguridad. Cálculo en base a gastos fijos.
+2. ACCIÓN: #1 Cálculo (leer {presupInfo} y multiplicar gastos fijos por 3 o 6), #2 Estrategia (% fijo apenas cobra), #3 Dónde guardarlo (cuenta remunerada o FCI liquidez inmediata).
+3. CIERRE: "Llegar a $X (que son 3 meses de tus gastos) nos daría muchísima tranquilidad. ¿Arrancamos este mes?"
+
+[ GATILLO: "GASTOS HORMIGA / SUSCRIPCIONES" ]
+Activar SI el usuario menciona "gastos chicos", "suscripciones" o "débito automático".
+PROTOCOLO_HORMIGUICIDA:
+1. MODO LUPA: Detectar fugas invisibles.
+2. ACCIÓN: #1 Rastreo (revisar servicios sin uso), #2 Multiplicador anual (mostrar impacto total en 12 meses), #3 Poda (dar de baja o cambiar a plan compartido).
+3. CIERRE: "¿Damos de baja alguna de esas suscripciones hoy mismo?"`
 }
 
 // ─── Burbuja de mensaje ──────────────────────────────────────
