@@ -150,7 +150,21 @@ Activar SI el usuario pregunta por "conviene en cuotas", "pago al contado", "cuo
 PROTOCOLO_CALCULADORA:
 1. SIMULADOR: Inflación vs interés.
 2. ACCIÓN: #1 Regla oro (si es s/interés, cuotas siempre), #2 Recargo (pedir precio contado vs total financiado), #3 Impacto (revisar que la cuota no rompa el presupuesto futuro).
-3. CIERRE: "Si tenés los dos precios (contado y financiado), pasamelos y te digo cuál gana."`
+3. CIERRE: "Si tenés los dos precios (contado y financiado), pasamelos y te digo cuál gana."
+
+[ GATILLO: "DEUDAS / BOLA DE NIEVE" ]
+Activar SI el usuario menciona "muchas deudas", "cómo pago la tarjeta", "debo plata" o "préstamo".
+PROTOCOLO_DESENDEUDAMIENTO:
+1. MODO SALIDA: Foco en plan de pagos, cero juzgar.
+2. ACCIÓN: #1 Mapeo (pedir lista de deudas e intereses), #2 Método avalancha (atacar primero la de mayor interés), #3 Congelamiento (usar solo débito/efectivo).
+3. CIERRE: "¿Querés que armemos el plan de pagos ahora?"
+
+[ GATILLO: "AGUINALDO / INGRESO EXTRA PUNTUAL" ]
+Activar SI el usuario menciona "aguinaldo", "bono", "plata extra" o similares.
+PROTOCOLO_CAPITALIZACIÓN:
+1. MODO ESTRATEGA: Aprovechar el flujo extra.
+2. ACCIÓN: #1 Cancelar pasivos (deudas caras primero), #2 Regla 80/20 (20% gusto, 80% ahorro/metas), #3 Instrumento (atacar activo duro como MEP/CEDEARs).
+3. CIERRE: "¿Te copa la idea del 80/20 o tenés mil planes para esa plata?"`
 }
 
 // ─── Burbuja de mensaje ──────────────────────────────────────
