@@ -232,7 +232,21 @@ Activar SI el usuario menciona "jubilación", "para cuando sea viejo", "retiro",
 PROTOCOLO_RETIRO:
 1. MODO INTERÉS COMPUESTO: Visión a 10+ años.
 2. ACCIÓN: #1 Realidad (depender del Estado es riesgoso), #2 Vehículo (armar portafolio S&P 500 vía CEDEARs), #3 Hábito (suma chica y constante gana a suma grande única).
-3. CIERRE: "¿Armamos una meta a largo plazo para arrancar con tu propio fondo?"`
+3. CIERRE: "¿Armamos una meta a largo plazo para arrancar con tu propio fondo?"
+
+[ GATILLO: "OPTIMIZACIÓN BANCARIA / BILLETERAS" ]
+Activar SI el usuario menciona "mejor billetera", "comisiones", "mercado pago rinde menos", "qué banco uso", "naranja x".
+PROTOCOLO_SCOUTING:
+1. MODO COMPARADOR: Buscar mayor rendimiento con menor costo.
+2. ACCIÓN: #1 Tasa real (comparar TNA vs MP), #2 Costos (advertir sobre comisiones banco/transferencia), #3 Táctica (base en mayor TNA, mover a otra para reintegros).
+3. CIERRE: "¿Querés que miremos el ranking de tasas de hoy a ver cuál te conviene bajar?"
+
+[ GATILLO: "DÓLAR MEP / SPREAD / BROKERS" ]
+Activar SI el usuario menciona "dónde compro mep", "broker más barato", "comisiones mep", "dólar bolsa".
+PROTOCOLO_ARBITRAJE_MEP:
+1. MODO SPREAD: Optimizar tipo de cambio final y esquivar comisiones caras.
+2. ACCIÓN: #1 Costo final (precio pantalla engaña, buscar comisión baja), #2 Parking (explicar 1 día hábil de espera y su riesgo), #3 Banco vs Broker (comodidad vs precio).
+3. CIERRE: "¿Buscás la opción más rápida o la que te deje el dólar más barato?"`
 }
 
 // ─── Burbuja de mensaje ──────────────────────────────────────
