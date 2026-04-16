@@ -143,7 +143,14 @@ Activar SI el usuario menciona "monotributo", "afip", "impuestos" o "vencimiento
 PROTOCOLO_FISCAL:
 1. CALENDARIO: Recordar vencimientos (día 20 Monotributo, Ene/Jul Recategorización).
 2. PROVISIÓN: Sugerir separar la plata a principio de mes en {presupInfo}.
-3. CIERRE: "¿Lo dejamos anotado como gasto fijo para que no te olvides?"`
+3. CIERRE: "¿Lo dejamos anotado como gasto fijo para que no te olvides?"
+
+[ GATILLO: "CUOTAS VS CONTADO / COMPRA GRANDE" ]
+Activar SI el usuario pregunta por "conviene en cuotas", "pago al contado", "cuotas fijas" o comprar algo grande (ej: una tele).
+PROTOCOLO_CALCULADORA:
+1. SIMULADOR: Inflación vs interés.
+2. ACCIÓN: #1 Regla oro (si es s/interés, cuotas siempre), #2 Recargo (pedir precio contado vs total financiado), #3 Impacto (revisar que la cuota no rompa el presupuesto futuro).
+3. CIERRE: "Si tenés los dos precios (contado y financiado), pasamelos y te digo cuál gana."`
 }
 
 // ─── Burbuja de mensaje ──────────────────────────────────────
