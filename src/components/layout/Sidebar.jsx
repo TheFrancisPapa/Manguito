@@ -15,6 +15,7 @@ const MENU = [
   { path: '/nafta',        icono: '⛽', label: 'Nafta (arg)',  grupo: 'Herramientas' },
   { path: '/calculadora',  icono: '🧮', label: 'Calculadora',  grupo: 'Herramientas' },
   // Más
+  { path: '/comunidad',  icono: '🌐', label: 'Comunidad',    grupo: 'Más' },
   { path: '/recursos',     icono: '📚', label: 'Recursos',     grupo: 'Más' },
   { path: '/configuracion',icono: '⚙️', label: 'Mi Cuenta',    grupo: 'Más' },
 ]

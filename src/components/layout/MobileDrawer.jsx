@@ -14,7 +14,8 @@ const MENU_ITEMS = [
   { path: '/cotizaciones',  label: 'Cotizaciones',        icono: '💱', grupo: 'herramientas' },
   { path: '/nafta',         label: 'Precios de Nafta',    icono: '⛽', grupo: 'herramientas' },
   { path: '/calculadora',   label: 'Calculadoras',        icono: '🧮', grupo: 'herramientas' },
-  { path: '/recursos',      label: 'Recursos',            icono: '📚', grupo: 'mas'  },
+  { path: '/comunidad',    label: 'Comunidad',           icono: '🌐', grupo: 'mas'  },
+  { path: '/recursos',     label: 'Recursos',            icono: '📚', grupo: 'mas'  },
   { path: '/configuracion', label: 'Mi Cuenta',           icono: '⚙️', grupo: 'mas'    },
 ]
 

@@ -25,6 +25,7 @@ const PlanesPage        = lazy(() => import('../pages/Configuracion/Planes').the
 const RecursosPage      = lazy(() => import('../pages/Recursos').then(m => ({ default: m.RecursosPage })))
 const NaftaPage         = lazy(() => import('../pages/Nafta').then(m => ({ default: m.NaftaPage })))
 const CalculadoraPage   = lazy(() => import('../pages/Calculadora').then(m => ({ default: m.CalculadoraPage })))
+const ComunidadPage     = lazy(() => import('../pages/Comunidad').then(m => ({ default: m.ComunidadPage })))
 
 // ── NUEVAS PÁGINAS (Ya unificadas) ─────────────────────────
 
@@ -63,6 +64,7 @@ export const router = createBrowserRouter([
       { path: '/recursos',             element: <PrivateRoute><RecursosPage /></PrivateRoute> },
       { path: '/nafta',                element: <PrivateRoute><NaftaPage /></PrivateRoute> },
       { path: '/calculadora',          element: <PrivateRoute><CalculadoraPage /></PrivateRoute> },
+      { path: '/comunidad',            element: <PrivateRoute><ComunidadPage /></PrivateRoute> },
 
       // ── NUEVAS (Ya unificadas) ──────────────────────────────
 
