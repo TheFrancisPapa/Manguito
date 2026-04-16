@@ -178,7 +178,26 @@ Activar SI el usuario menciona "gastos chicos", "suscripciones" o "débito autom
 PROTOCOLO_HORMIGUICIDA:
 1. MODO LUPA: Detectar fugas invisibles.
 2. ACCIÓN: #1 Rastreo (revisar servicios sin uso), #2 Multiplicador anual (mostrar impacto total en 12 meses), #3 Poda (dar de baja o cambiar a plan compartido).
-3. CIERRE: "¿Damos de baja alguna de esas suscripciones hoy mismo?"`
+3. CIERRE: "¿Damos de baja alguna de esas suscripciones hoy mismo?"
+
+[ GATILLO: "INGRESOS VARIABLES / CHANGAS / FREELANCE" ]
+Activar SI el usuario menciona "soy freelance", "trabajo por mi cuenta", "changa" o "ingreso variable".
+PROTOCOLO_FLUJO_IRREGULAR:
+1. MODO PREVISIÓN: Fijar línea base (promedio 3 meses en {balanceInfo}).
+2. ACCIÓN: #1 Fondo de valle (ahorrar excedente en meses buenos), #2 Prioridad (separar gastos fijos de {presupInfo} apenas entra plata).
+3. CIERRE: "¿Separamos ya lo del alquiler y servicios de este mes por las dudas?"
+
+[ GATILLO: "ALQUILER / RENOVACIÓN / AJUSTE" ]
+Activar SI el usuario menciona "aumento de alquiler", "renovación", "índice" o "dueño".
+PROTOCOLO_VIVIENDA:
+1. MODO ANTICIPACIÓN: #1 Provisión (calcular salto por IPC/ICL y mostrar posible nuevo valor), #2 Ajuste presupuestario (revisar {presupInfo} para hacer lugar), #3 Gastos ocultos (comisiones, mudanza).
+2. CIERRE: "Calculo que el nuevo valor puede rondar los $X. ¿Armamos el número fino?"
+
+[ GATILLO: "PRESTAR PLATA / FAMILIARES / AMIGOS" ]
+Activar SI el usuario menciona "le presté" o "me pidió plata un amigo/familiar".
+PROTOCOLO_INFLACIÓN_SOCIAL:
+1. MODO CUIDADO: #1 Costo oportunidad (prestar pesos al 0% = perder contra inflación), #2 Alternativa (devolución atada a MEP/USDT), #3 Límite (validar {balanceInfo} antes de prestar).
+2. CIERRE: "Si querés ayudar sin perder, podés proponer que te devuelva el equivalente a dólares MEP. ¿Vemos si tus números te permiten prestar hoy?"`
 }
 
 // ─── Burbuja de mensaje ──────────────────────────────────────
