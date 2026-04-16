@@ -12,6 +12,7 @@ import { PageWrapper } from '../../components/layout'
 import { MobileDrawer } from '../../components/layout/MobileDrawer'
 import { Modal } from '../../components/ui/Modal'
 import { FormMovimiento } from '../../components/forms/FormMovimiento'
+import { useGamificacion } from '../../hooks/useGamificacion'
 
 // ─── Helpers ──────────────────────────────────────────────────
 function useRangoMes(offsetMeses = 0) {
@@ -168,6 +169,7 @@ export function DashboardPage() {
   const { datos: evolucion, cargando: cEvo }  = useEvolucionMensual(6)
   const { movimientos: ultimos, cargando: cUlt } = useUltimosMovimientos(5)
   const { agregar }                            = useMovimientos({ desde, hasta })
+  const { datos: gam } = useGamificacion()
 
   const saldo    = (balance?.total_ingresos ?? 0) - (balance?.total_gastos ?? 0)
   const positivo = saldo >= 0
@@ -290,6 +292,39 @@ export function DashboardPage() {
             <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Nuevo ingreso</span>
           </button>
         </div>
+
+        {gam && (
+          <div className="flex items-center gap-4 px-4 py-3 rounded-[18px]
+            bg-white/85 dark:bg-[var(--dark-card)]/95
+            border border-white/60 dark:border-[var(--dark-border)]">
+            
+            {/* Racha */}
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🔥</span>
+              <div>
+                <p className="text-lg font-black text-[var(--mango-dark)]">{gam.racha}</p>
+                <p className="text-[10px] text-zinc-400">días seguidos</p>
+              </div>
+            </div>
+
+            <div className="w-px h-8 bg-zinc-100 dark:bg-zinc-800" />
+
+            {/* XP y barra */}
+            <div className="flex-1">
+              <div className="flex justify-between text-[10px] text-zinc-400 mb-1">
+                <span>{gam.rango.icono} {gam.rango.nombre}</span>
+                <span>Nv. {gam.nivel}</span>
+              </div>
+              <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div className="h-full bg-[var(--mango)] rounded-full transition-all duration-700"
+                  style={{ width: `${Math.round((gam.xpEnNivelActual / gam.xpParaSiguiente) * 100)}%` }} />
+              </div>
+              <p className="text-[10px] text-zinc-400 mt-1 text-right">
+                {gam.xpEnNivelActual} / {gam.xpParaSiguiente} XP
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ── Accesos rápidos grid ── */}
         <section className="p-4 rounded-[22px]

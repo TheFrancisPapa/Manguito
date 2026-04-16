@@ -21,6 +21,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { movimientosRouter }   from '../services/movimientosRouter'
 import { useAuthContext }      from '../context/AuthContext'
+import { otorgarXP, XP_POR_ACCION } from '../lib/gamificacion'
 
 // ── getBalance y getEvolucionMensual siguen usando Supabase directamente
 // porque son RPCs que no tienen equivalente en los bancos aún.
@@ -73,6 +74,12 @@ export function useMovimientos(filtros = FILTRO_VACIO) {
   async function agregar(datos) {
     const nuevo = await movimientosRouter.crearMovimiento(datos)
     setMovimientos(prev => [nuevo, ...prev])
+
+    // ← agregar esto
+    const resultado = await otorgarXP('Registraste un movimiento', XP_POR_ACCION.movimiento)
+    if (resultado?.logrosNuevos?.length > 0) {
+      // mostrar notificación de logro (ver abajo)
+    }
     return nuevo
   }
 

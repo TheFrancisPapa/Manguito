@@ -8,6 +8,7 @@ import {
   fetchPrecios, fetchDolarRate, calcularPortfolio,
 } from '../api/inversiones'
 import { getVentas, crearVenta, borrarVenta } from '../api/ventas'
+import { otorgarXP, XP_POR_ACCION } from '../lib/gamificacion'
 
 export function useInversiones() {
   const [inversiones,      setInversiones]      = useState([])
@@ -98,6 +99,7 @@ export function useInversiones() {
     const nuevaLista = [nueva, ...inversiones]
     setInversiones(nuevaLista)
     actualizarPrecios(nuevaLista)
+    await otorgarXP('Registraste una inversión', XP_POR_ACCION.inversion)
     return nueva
   }
 
