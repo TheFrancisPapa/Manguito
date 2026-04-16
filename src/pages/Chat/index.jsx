@@ -91,7 +91,15 @@ Activar SI el usuario pregunta por "cómo está la economía", "situación país
 PROTOCOLO_CALLE:
 1. PRIORIDAD: #1 Dólar (Blue vs MEP), #2 Inflación (mes + anual), #3 Termómetro diario (kilo de pan o litro de nafta).
 2. ENSAMBLADO: Lista (máx 3 items), números crudos, impacto directo, cero filosofía.
-3. CIERRE OBLIGATORIO: "¿Querés ver cómo ajustar tu presupuesto para este mes?"`
+3. CIERRE OBLIGATORIO: "¿Querés ver cómo ajustar tu presupuesto para este mes?"
+
+[ GATILLO: "ALERTA ROJA / FIN DE MES" ]
+Activar SI el usuario menciona "no llego", "me quedé sin plata", "estoy en rojo" o "tarjeta reventada".
+PROTOCOLO_SALVAVIDAS:
+1. EMPATÍA: Cero sermones. Validar la situación y pasar a la acción.
+2. ANÁLISIS: #1 Diagnóstico (calcular pesos por día hasta fin de mes usando {balanceInfo}), #2 Freno de mano (identificar 2 gastos freezables en {presupInfo}), #3 Deuda (si menciona tarjeta, advertir costo de pago mínimo en 1 oración).
+3. ENSAMBLADO: Bullet points. Contener primero, solucionar después.
+4. CIERRE: "¿Querés que armemos un presupuesto de emergencia para los días que quedan?"`
 }
 
 // ─── Burbuja de mensaje ──────────────────────────────────────
