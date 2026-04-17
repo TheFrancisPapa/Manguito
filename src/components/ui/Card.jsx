@@ -1,19 +1,20 @@
-// src/components/ui/Card.jsx — Premium card design
+// src/components/ui/Card.jsx — Premium Depth Edition
 export function Card({ children, className = '', onClick }) {
-  const clickable = onClick
-    ? 'cursor-pointer hover:shadow-[var(--shadow-md)] hover:border-[var(--mango)]/20 active:scale-[0.99] transition-all duration-200'
-    : ''
+  const isClickable = !!onClick
 
   return (
     <div
-      className={`bg-white dark:bg-[var(--dark-card)]
-        shadow-[var(--shadow-sm)] 
-        border border-zinc-100/60 dark:border-[var(--dark-border)]
+      className={`
+        card-premium
+        bg-white dark:bg-[var(--dark-card)]
+        border border-zinc-100/70 dark:border-[var(--dark-border)]
         rounded-[20px] p-5 w-full
-        transition-all duration-200
-        ${clickable} ${className}`}
+        ${isClickable ? 'card-interactive cursor-pointer' : ''}
+        ${className}
+      `}
       onClick={onClick}
     >
+      {/* Inner highlight line at top — rendered via CSS ::before */}
       {children}
     </div>
   )
@@ -23,7 +24,7 @@ export function CardHeader({ titulo, subtitulo = null, accion = null }) {
   return (
     <div className="flex items-start justify-between gap-2 mb-3">
       <div className="flex-1 min-w-0">
-        <h2 className="text-[10px] uppercase font-extrabold tracking-[0.1em] text-zinc-400 dark:text-zinc-500 mb-1 leading-tight">
+        <h2 className="text-[10px] uppercase font-extrabold tracking-[0.12em] text-zinc-400 dark:text-zinc-500 mb-1 leading-tight">
           {titulo}
         </h2>
         {subtitulo && (
