@@ -1,4 +1,4 @@
-import { BentoCell, BentoHeader } from '../../../../components/bento/BentoCell'
+import { BentoCell, BentoHeader } from '../../../components/bento/BentoCell'
 
 export function BentoGastos() {
   return (

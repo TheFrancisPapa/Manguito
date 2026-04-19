@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useUltimosMovimientos } from '../../../hooks/useMovimientos'
 import { fmtCompleto } from '../helpers'
-import { BentoCell } from '../../../../components/bento/BentoCell'
+import { BentoCell } from '../../../components/bento/BentoCell'
 
 function MovReciente({ m }) {
   const esIngreso = m.tipo === 'ingreso'

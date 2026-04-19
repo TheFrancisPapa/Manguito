@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BentoCell, BentoAmount, BentoHeader } from '../../../../components/bento/BentoCell'
+import { BentoCell, BentoAmount, BentoHeader } from '../../../components/bento/BentoCell'
 
 export function BentoDolar() {
   const [dolar, setDolar] = useState(null)
