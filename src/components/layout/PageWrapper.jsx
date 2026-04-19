@@ -6,10 +6,9 @@ export function PageWrapper({ children, className = '' }) {
     <>
       <Header />
       <main
-        className={`min-h-screen px-4 pt-5 ${className.includes('!bg-transparent') ? '' : 'bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)] mesh-bg'} ${className}`}
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 32px)' }}
+        className={`min-h-screen px-4 pt-5 pb-24 md:pb-12 ${className.includes('!bg-transparent') ? '' : 'bg-transparent'} ${className}`}
       >
-        <div className="max-w-xl mx-auto md:max-w-4xl">
+        <div className="max-w-md mx-auto md:max-w-[600px]">
           {children}
         </div>
       </main>

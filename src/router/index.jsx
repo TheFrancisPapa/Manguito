@@ -29,6 +29,16 @@ const ComunidadPage     = lazy(() => import('../pages/Comunidad').then(m => ({ d
 
 // ── NUEVAS PÁGINAS (Ya unificadas) ─────────────────────────
 
+import { AppLayout } from '../components/layout'
+
+function PrivateRoot() {
+  return (
+    <PrivateRoute>
+      <AppLayout />
+    </PrivateRoute>
+  )
+}
+
 function Root() {
   return (
     <AuthProvider>
@@ -52,19 +62,24 @@ export const router = createBrowserRouter([
       { path: '/reset-password',       element: <PublicRoute><ResetPassword /></PublicRoute> },
 
       // ── Privadas ────────────────────────────────────────────
-      { path: '/dashboard',            element: <PrivateRoute><DashboardPage /></PrivateRoute> },
-      { path: '/movimientos',          element: <PrivateRoute><MovimientosPage /></PrivateRoute> },
-      { path: '/planificacion',        element: <PrivateRoute><PlanificacionPage /></PrivateRoute> },
-      { path: '/agenda',               element: <PrivateRoute><AgendaPage /></PrivateRoute> },
-      { path: '/chat',                 element: <PrivateRoute><ChatPage /></PrivateRoute> },
-      { path: '/cotizaciones',         element: <PrivateRoute><CotizacionesPage /></PrivateRoute> },
-      { path: '/inversiones',          element: <PrivateRoute><InversionesPage /></PrivateRoute> },
-      { path: '/configuracion',        element: <PrivateRoute><ConfiguracionPage /></PrivateRoute> },
-      { path: '/configuracion/planes', element: <PrivateRoute><PlanesPage /></PrivateRoute> },
-      { path: '/recursos',             element: <PrivateRoute><RecursosPage /></PrivateRoute> },
-      { path: '/nafta',                element: <PrivateRoute><NaftaPage /></PrivateRoute> },
-      { path: '/calculadora',          element: <PrivateRoute><CalculadoraPage /></PrivateRoute> },
-      { path: '/comunidad',            element: <PrivateRoute><ComunidadPage /></PrivateRoute> },
+      {
+        element: <PrivateRoot />,
+        children: [
+          { path: '/dashboard',            element: <DashboardPage /> },
+          { path: '/movimientos',          element: <MovimientosPage /> },
+          { path: '/planificacion',        element: <PlanificacionPage /> },
+          { path: '/agenda',               element: <AgendaPage /> },
+          { path: '/chat',                 element: <ChatPage /> },
+          { path: '/cotizaciones',         element: <CotizacionesPage /> },
+          { path: '/inversiones',          element: <InversionesPage /> },
+          { path: '/configuracion',        element: <ConfiguracionPage /> },
+          { path: '/configuracion/planes', element: <PlanesPage /> },
+          { path: '/recursos',             element: <RecursosPage /> },
+          { path: '/nafta',                element: <NaftaPage /> },
+          { path: '/calculadora',          element: <CalculadoraPage /> },
+          { path: '/comunidad',            element: <ComunidadPage /> },
+        ]
+      },
 
       // ── NUEVAS (Ya unificadas) ──────────────────────────────
 

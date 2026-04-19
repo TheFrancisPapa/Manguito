@@ -1,4 +1,5 @@
 export { PageWrapper, PageHeader } from './PageWrapper'
+export { AppLayout }               from './AppLayout'
 export { BottomNav }               from './BottomNav'
 export { Sidebar }                 from './Sidebar'
 export { MovCard }                 from './MovCard'

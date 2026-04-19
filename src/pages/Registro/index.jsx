@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabase'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { registrarUsuario } from '../../api/auth'
 import { Input, Spinner } from '../../components/ui'
@@ -31,7 +31,7 @@ export function RegistroPage() {
   const formDataRef = useRef({})
 
   const [formData, setFormData] = useState({
-    email: '', password: '', nombre: '', fechaNacimiento: '',
+    email: '', password: '', nombre: '', diaNac: '', mesNac: '', anioNac: '',
     objetivo: '', metaActiva: false, metaEmoji: '🎯', metaNombre: '', metaMonto: '',
   })
 
@@ -41,6 +41,18 @@ export function RegistroPage() {
     setFormData(prev => ({ ...prev, [campo]: valor }))
     setError('')
   }
+
+  const edadCalculada = useMemo(() => {
+    const { diaNac, mesNac, anioNac } = formData
+    if (!diaNac || !mesNac || !anioNac || anioNac.length !== 4) return null
+    const baseDate = new Date(`${anioNac}-${mesNac.padStart(2, '0')}-${diaNac.padStart(2, '0')}T00:00:00`)
+    if (isNaN(baseDate.getTime())) return null
+    const now = new Date()
+    let age = now.getFullYear() - baseDate.getFullYear()
+    const m = now.getMonth() - baseDate.getMonth()
+    if (m < 0 || (m === 0 && now.getDate() < baseDate.getDate())) age--
+    return age >= 0 && age <= 120 ? age : null
+  }, [formData.diaNac, formData.mesNac, formData.anioNac])
 
   const avanzar = () => {
     if (paso === 1 && (!formData.email || formData.password.length < 6)) {
@@ -59,7 +71,13 @@ export function RegistroPage() {
   }
 
   const finalizar = useCallback(async () => {
-    const datos = formDataRef.current
+    const datos = { ...formDataRef.current }
+    if (datos.diaNac && datos.mesNac && datos.anioNac) {
+      datos.fechaNacimiento = `${datos.anioNac}-${datos.mesNac.padStart(2, '0')}-${datos.diaNac.padStart(2, '0')}`
+    } else {
+      datos.fechaNacimiento = null
+    }
+
     try {
       await registrarUsuario(datos)
       if (datos.metaActiva && datos.metaNombre && datos.metaMonto) {
@@ -256,8 +274,36 @@ export function RegistroPage() {
                 <Input label="Tu nombre o apodo" placeholder="Ej: Maxi" autoFocus
                   value={formData.nombre} onChange={e => set('nombre', e.target.value)} />
 
-                <Input label="Fecha de nacimiento (opcional)" type="date"
-                  value={formData.fechaNacimiento} onChange={e => set('fechaNacimiento', e.target.value)} />
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 tracking-wide">
+                    Fecha de nacimiento (opcional)
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <input type="number" placeholder="Día" min="1" max="31"
+                      value={formData.diaNac} onChange={e => set('diaNac', e.target.value)}
+                      className="w-full bg-zinc-50/80 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60
+                        rounded-xl px-3 py-2.5 text-center text-sm font-medium focus:outline-none focus:ring-2 
+                        focus:ring-[var(--mango)]/30 focus:border-[var(--mango)]/60 transition-all text-zinc-900 dark:text-white"
+                    />
+                    <input type="number" placeholder="Mes" min="1" max="12"
+                      value={formData.mesNac} onChange={e => set('mesNac', e.target.value)}
+                      className="w-full bg-zinc-50/80 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60
+                        rounded-xl px-3 py-2.5 text-center text-sm font-medium focus:outline-none focus:ring-2 
+                        focus:ring-[var(--mango)]/30 focus:border-[var(--mango)]/60 transition-all text-zinc-900 dark:text-white"
+                    />
+                    <input type="number" placeholder="Año" min="1900" max={new Date().getFullYear()}
+                      value={formData.anioNac} onChange={e => set('anioNac', e.target.value)}
+                      className="w-full bg-zinc-50/80 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60
+                        rounded-xl px-3 py-2.5 text-center text-sm font-medium focus:outline-none focus:ring-2 
+                        focus:ring-[var(--mango)]/30 focus:border-[var(--mango)]/60 transition-all text-zinc-900 dark:text-white"
+                    />
+                  </div>
+                  {edadCalculada !== null && (
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-0.5 animate-in fade-in">
+                      🎉 ¡Tenés {edadCalculada} años!
+                    </p>
+                  )}
+                </div>
 
                 <div className="flex gap-3 mt-1">
                   <button onClick={() => setPaso(1)}
