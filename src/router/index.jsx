@@ -29,7 +29,7 @@ const ComunidadPage     = lazy(() => import('../pages/Comunidad').then(m => ({ d
 
 // ── NUEVAS PÁGINAS (Ya unificadas) ─────────────────────────
 
-import { AppLayout } from '../components/layout'
+import { AppLayout, AppShell } from '../components/layout'
 
 function PrivateRoot() {
   return (
@@ -43,7 +43,9 @@ function Root() {
   return (
     <AuthProvider>
       <Suspense fallback={<PageLoader />}>
-        <Outlet />
+        <AppShell>
+          <Outlet />
+        </AppShell>
       </Suspense>
     </AuthProvider>
   )
