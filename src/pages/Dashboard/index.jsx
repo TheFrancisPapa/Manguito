@@ -1,4 +1,9 @@
-// src/pages/Dashboard/index.jsx — Sistema Bento Grid
+// src/pages/Dashboard/index.jsx — MEJORADO
+// Mejoras del documento estratégico:
+// 1. Widget "Brecha Cambiaria" (MEP vs Tarjeta)
+// 2. Toggle "Modo Inflación" — valores nominales vs reales
+// 3. Integración de BentoBrecha en el Bento Grid
+
 import { useState, useCallback } from 'react'
 import { PageWrapper } from '../../components/layout'
 import { MobileDrawer } from '../../components/layout/MobileDrawer'
@@ -9,26 +14,58 @@ import { useMovimientos, useBalance, useEvolucionMensual } from '../../hooks/use
 import { usePresupuestos } from '../../hooks/usePresupuestos'
 import { useRangoMes } from './helpers'
 
-import { BentoBalance } from '../../components/bento/BentoBalance'
-import { BentoChart } from '../../components/bento/BentoChart'
-import { BentoDolar } from './components/BentoDolar'
+import { BentoBalance }     from '../../components/bento/BentoBalance'
+import { BentoChart }        from '../../components/bento/BentoChart'
+import { BentoDolar }        from './components/BentoDolar'
+import { BentoBrecha }       from '../../components/bento/BentoBrecha'
 import { BentoPresupuestos } from '../../components/bento/BentoPresupuestos'
-import { BentoGastos } from './components/BentoGastos'
-import { BentoMetas } from './components/BentoMetas'
-import { BentoAcciones } from './components/BentoAcciones'
-import { BentoMovimientos } from './components/BentoMovimientos'
+import { BentoGastos }       from './components/BentoGastos'
+import { BentoMetas }        from './components/BentoMetas'
+import { BentoAcciones }     from './components/BentoAcciones'
+import { BentoMovimientos }  from './components/BentoMovimientos'
+
+// ── Toggle de Modo Inflación ──────────────────────────────────
+function ModoInflacionToggle({ activo, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold
+        border transition-all ${
+        activo
+          ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400'
+          : 'bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300'
+      }`}
+      title={activo ? 'Mostrando valores ajustados por inflación — click para volver a valores nominales' : 'Activar Modo Inflación (valores reales)'}
+    >
+      <span>{activo ? '📉' : '📈'}</span>
+      {activo ? 'Modo Real' : 'Modo Nominal'}
+    </button>
+  )
+}
 
 export function DashboardPage() {
   const { usuario } = useAuthContext()
   const [drawerAbierto, setDrawerAbierto] = useState(false)
   const [modalAbierto, setModalAbierto]   = useState(false)
   const [tipoDefault, setTipoDefault]     = useState('gasto')
+  const [modoInflacion, setModoInflacion] = useState(false)
 
   const { desde, hasta } = useRangoMes(0)
   const { agregar } = useMovimientos({ desde, hasta })
   const { balance, cargando: cBal } = useBalance(desde, hasta)
   const { datos: evolucion, cargando: cEvo } = useEvolucionMensual(6)
   const { presupuestos } = usePresupuestos()
+
+  // Índice de inflación mensual estimado (5% = 0.05) para deflactar
+  // En producción esto vendría de una API de INDEC o similar
+  const INFLACION_MENSUAL = 0.05
+
+  // Ajusta valores si el modo inflación está activo
+  const balanceAjustado = modoInflacion && balance ? {
+    ...balance,
+    total_ingresos: balance.total_ingresos / (1 + INFLACION_MENSUAL),
+    total_gastos:   balance.total_gastos   / (1 + INFLACION_MENSUAL),
+  } : balance
 
   const abrirModal = useCallback((tipo = 'gasto') => {
     setTipoDefault(tipo)
@@ -42,16 +79,42 @@ export function DashboardPage() {
 
   return (
     <>
+      {/* Toggle modo inflación — flotante en el header */}
+      <div className="flex justify-end px-4 pt-2 pb-0 max-w-md mx-auto md:max-w-[600px]">
+        <ModoInflacionToggle
+          activo={modoInflacion}
+          onToggle={() => setModoInflacion(v => !v)}
+        />
+      </div>
+
+      {/* Banner cuando el modo inflación está activo */}
+      {modoInflacion && (
+        <div className="mx-4 mb-0 max-w-md mx-auto md:max-w-[600px]">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl
+            bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-800/40
+            text-[10px] text-red-600 dark:text-red-400 font-medium">
+            <span>📉</span>
+            <span>
+              Modo inflación activo — valores deflactados asumiendo <strong>~5%/mes</strong> de inflación.
+              Los números reflejan tu poder adquisitivo real, no el nominal.
+            </span>
+          </div>
+        </div>
+      )}
+
       <main
         role="main"
         aria-label="Panel principal de Manguito"
         className="bento-grid pb-4"
       >
-        {/* ── Celda principal: balance ── */}
-        <BentoBalance balance={balance} cargando={cBal} />
+        {/* ── Celda principal: balance (ajustado si modo inflación) ── */}
+        <BentoBalance balance={balanceAjustado} cargando={cBal} />
 
         {/* ── Dólar blue ── */}
         <BentoDolar />
+
+        {/* ── NUEVA: Brecha cambiaria MEP vs Tarjeta ── */}
+        <BentoBrecha />
 
         {/* ── Presupuestos ── */}
         <BentoPresupuestos presupuestos={presupuestos} />
@@ -64,11 +127,11 @@ export function DashboardPage() {
 
         {/* ── Metas ── */}
         <BentoMetas />
-        
+
         {/* ── Acciones (botones + AI) ── */}
-        <BentoAcciones 
-          onNuevoGasto={() => abrirModal('gasto')} 
-          onNuevoIngreso={() => abrirModal('ingreso')} 
+        <BentoAcciones
+          onNuevoGasto={() => abrirModal('gasto')}
+          onNuevoIngreso={() => abrirModal('ingreso')}
         />
 
         {/* ── Últimos movimientos (full width) ── */}
@@ -95,7 +158,6 @@ export function DashboardPage() {
   )
 }
 
-// ─── Wrapper ──────────────────────────────────────────────────
 export default function DashboardPageWrapped() {
   return (
     <div className="animate-in fade-in duration-500 min-h-screen mesh-bg">
