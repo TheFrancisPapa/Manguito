@@ -47,9 +47,6 @@ export const CHANGELOG = [
 // La versión más reciente es siempre la primera del array
 export const VERSION_ACTUAL = CHANGELOG[0].version
 
-// Clave que se guarda en localStorage
-const STORAGE_KEY = 'manguito_ultima_version_vista'
-
 // Devuelve true si hay novedades que el usuario no vio todavía
 import { secureStorage } from './secureStorage'
 const CHANGELOG_KEY = 'changelog_ultima_version'
@@ -67,13 +64,4 @@ export async function getCambiosNuevos() {
   const idx = CHANGELOG.findIndex(v => v.version === ultimaVista)
   if (idx <= 0) return [CHANGELOG[0]]
   return CHANGELOG.slice(0, idx)
-}
-
-// Devuelve solo los cambios nuevos desde la última versión vista
-export function getCambiosNuevos() {
-  const ultimaVista = localStorage.getItem(STORAGE_KEY)
-  if (!ultimaVista) return CHANGELOG // primera vez: mostrar todo
-  const indiceUltimaVista = CHANGELOG.findIndex(v => v.version === ultimaVista)
-  if (indiceUltimaVista <= 0) return [CHANGELOG[0]]
-  return CHANGELOG.slice(0, indiceUltimaVista)
 }
