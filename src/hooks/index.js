@@ -9,3 +9,4 @@ export { useVencimientos }                                   from './useVencimie
 export { useSuscripciones }                                  from './useSuscripciones'
 export { useInversiones }                                    from './useInversiones'
 export { useGamificacion }                                   from './useGamificacion'
+export { useMonotributo }                                    from './useMonotributo'

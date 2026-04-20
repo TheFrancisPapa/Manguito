@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Button, Select, Spinner } from '../ui/index.js'
-import { useCategorias } from '../../hooks/index.js'
+import { useCategorias, useMonotributo } from '../../hooks/index.js'
 import { EscanerTicket } from './EscanerTicket.jsx'
 
 // ─────────────────────────────────────────────────────────────
@@ -222,11 +222,14 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
 
   const [sugerencia, setSugerencia]                 = useState(null)
   const [sugerenciaRechazada, setSugerenciaRechazada] = useState(false)
+  const [alertaFiscal, setAlertaFiscal]             = useState(null)
+  const bypassAlertaRef                             = useRef(false)
 
   const importeRef     = useRef(null)
   const descripcionRef = useRef(null)
 
   const { gastos, ingresos, cargando: cargandoCat } = useCategorias()
+  const { procesarIngreso } = useMonotributo()
   const categoriasOptions = tipo === 'gasto' ? gastos : ingresos
 
   useEffect(() => {
@@ -313,6 +316,19 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
     }
     setCargando(true)
     try {
+      // ── Módulo Monotributo: Alerta Fiscal ──
+      if (tipo === 'ingreso' && !bypassAlertaRef.current) {
+        const resFiscal = procesarIngreso(Number(importeNum))
+        if (resFiscal?.alerta.nivel === 'critico' || resFiscal?.alerta.nivel === 'excedido') {
+          setAlertaFiscal(resFiscal.alerta)
+          setCargando(false)
+          return // Detenemos para que el usuario vea la alerta
+        }
+      }
+
+      // Si llegamos acá, o no es ingreso, o no es crítico, o el usuario confirmó bypass
+      bypassAlertaRef.current = false // Reseteamos para el próximo
+
       await onSubmit({
         tipo,
         monto:        Number(importeNum),
@@ -530,6 +546,45 @@ export function FormMovimiento({ onSubmit, onCancel, valoresIniciales = null }) 
           border border-red-100 dark:border-red-900 font-medium">
           ⚠ {error}
         </p>
+      )}
+
+      {/* Alerta Fiscal (Monotributo) */}
+      {alertaFiscal && (
+        <div className="flex flex-col gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-start gap-2.5">
+            <span className="text-lg leading-none mt-0.5">{alertaFiscal.emoji}</span>
+            <div className="flex-1">
+              <p className="text-xs font-bold text-red-700 dark:text-red-400">
+                Alerta Monotributo: Nivel {alertaFiscal.nivel.toUpperCase()}
+              </p>
+              <p className="text-[11px] text-red-600/80 dark:text-red-400/70 leading-relaxed mt-0.5">
+                {alertaFiscal.mensaje}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex gap-2 mt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setAlertaFiscal(null)
+                bypassAlertaRef.current = true
+                // Reintentamos el submit ignorando la alerta
+                handleSubmit({ preventDefault: () => {} })
+              }}
+              className="flex-1 py-2 rounded-lg bg-red-600 text-white text-[10px] font-bold hover:bg-red-700 transition-colors"
+            >
+              Entendido, guardar igual
+            </button>
+            <button
+              type="button"
+              onClick={() => setAlertaFiscal(null)}
+              className="flex-1 py-2 rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 text-[10px] font-bold hover:bg-zinc-300 dark:hover:bg-zinc-700 transition-colors"
+            >
+              Revisar importes
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Acciones */}
