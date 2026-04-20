@@ -21,19 +21,28 @@ const LABEL_TIPO = {
 
 export function ChangelogModal() {
   const [abierto, setAbierto] = useState(false)
-  const versiones = getCambiosNuevos()
+  const [versiones, setVersiones] = useState([])
 
   useEffect(() => {
     // Solo mostramos si hay novedades y el usuario está en una ruta privada
-    if (hayNovedades()) {
-      // Pequeño delay para que no aparezca antes de que cargue la página
-      const timer = setTimeout(() => setAbierto(true), 1200)
-      return () => clearTimeout(timer)
+    async function checkNovedades() {
+      try {
+        const hasNew = await hayNovedades()
+        if (hasNew) {
+          const list = await getCambiosNuevos()
+          setVersiones(list)
+          // Pequeño delay para que no aparezca antes de que cargue la página
+          setTimeout(() => setAbierto(true), 1200)
+        }
+      } catch (err) {
+        console.error('[ChangelogModal] error:', err)
+      }
     }
+    checkNovedades()
   }, [])
 
-  function cerrar() {
-    marcarComoVisto()
+  async function cerrar() {
+    await marcarComoVisto()
     setAbierto(false)
   }
 

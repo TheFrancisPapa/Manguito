@@ -51,14 +51,22 @@ export const VERSION_ACTUAL = CHANGELOG[0].version
 const STORAGE_KEY = 'manguito_ultima_version_vista'
 
 // Devuelve true si hay novedades que el usuario no vio todavía
-export function hayNovedades() {
-  const ultimaVista = localStorage.getItem(STORAGE_KEY)
+import { secureStorage } from './secureStorage'
+const CHANGELOG_KEY = 'changelog_ultima_version'
+ 
+export async function hayNovedades() {
+  const ultimaVista = await secureStorage.getItem(CHANGELOG_KEY, null)
   return ultimaVista !== VERSION_ACTUAL
 }
-
-// Marca la versión actual como "ya vista"
-export function marcarComoVisto() {
-  localStorage.setItem(STORAGE_KEY, VERSION_ACTUAL)
+export async function marcarComoVisto() {
+  await secureStorage.setItem(CHANGELOG_KEY, VERSION_ACTUAL)
+}
+export async function getCambiosNuevos() {
+  const ultimaVista = await secureStorage.getItem(CHANGELOG_KEY, null)
+  if (!ultimaVista) return CHANGELOG
+  const idx = CHANGELOG.findIndex(v => v.version === ultimaVista)
+  if (idx <= 0) return [CHANGELOG[0]]
+  return CHANGELOG.slice(0, idx)
 }
 
 // Devuelve solo los cambios nuevos desde la última versión vista

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { getPerfil } from '../api/auth.js'
+import { secureStorage } from '../lib/secureStorage.js'
 
 const AuthContext = createContext({})
 
@@ -35,6 +36,10 @@ export const AuthProvider = ({ children }) => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
         if (error) throw error
+        
+        // Atar la clave de cifrado al usuario actual
+        await secureStorage.bindUser(session?.user?.id || '')
+
         if (montado && session) {
           setSession(session)
           await cargarPerfil(session)
@@ -48,9 +53,12 @@ export const AuthProvider = ({ children }) => {
 
     getInitialSession()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
       if (montado) {
         setSession(newSession)
+        // Atar la clave de cifrado al nuevo usuario (o limpiar si es logout)
+        await secureStorage.bindUser(newSession?.user?.id || '')
+        
         cargarPerfil(newSession).finally(() => {
           if (montado) setCargando(false)
         })

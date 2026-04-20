@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuthContext } from '../context/AuthContext'
 import { useBalance } from './useMovimientos'
+import { useSecureStorage } from '../lib/secureStorage'
 import {
   calcularAlertaMonotributo,
   calcularReservaFiscal,
@@ -28,36 +29,16 @@ const STORAGE_KEY_FISCAL = 'manguito_perfil_fiscal'
  * Carga y persiste el perfil fiscal del usuario en localStorage
  * (fallback cuando no hay tabla dedicada en la DB).
  */
-function cargarPerfilFiscal() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_FISCAL)
-    if (!raw) return null
-    return JSON.parse(raw)
-  } catch {
-    return null
-  }
-}
-
-function guardarPerfilFiscal(perfil) {
-  try {
-    localStorage.setItem(STORAGE_KEY_FISCAL, JSON.stringify(perfil))
-  } catch {}
-}
-
-// ─────────────────────────────────────────────────────────────
 export function useMonotributo() {
   const { usuario } = useAuthContext()
 
   // ── Perfil fiscal (categoría, tipo de actividad) ─────────────
-  const [perfilFiscal, setPerfilFiscal] = useState(() => {
-    const guardado = cargarPerfilFiscal()
-    return guardado ?? {
-      categoria:          null,   // 'A' ... 'H'
-      tipoActividad:      'servicios',
-      porcentajeReserva:  PORCENTAJE_RESERVA_DEFAULT,
-      nombreMetaReserva:  'Reserva Fiscal Monotributo',
-      metaReservaId:      null,   // id de la meta en Supabase
-    }
+  const [perfilFiscal, setPerfilFiscal, , { loading: cargandoPerfil }] = useSecureStorage(STORAGE_KEY_FISCAL, {
+    categoria:          null,   // 'A' ... 'H'
+    tipoActividad:      'servicios',
+    porcentajeReserva:  PORCENTAJE_RESERVA_DEFAULT,
+    nombreMetaReserva:  'Reserva Fiscal Monotributo',
+    metaReservaId:      null,   // id de la meta en Supabase
   })
 
   // ── Ingresos del año actual desde Supabase ────────────────────
@@ -246,11 +227,9 @@ export function useMonotributo() {
   // ─────────────────────────────────────────────────────────────
   //  Configurar perfil fiscal
   // ─────────────────────────────────────────────────────────────
-  const configurarPerfil = useCallback((cambios) => {
-    const nuevo = { ...perfilFiscal, ...cambios }
-    setPerfilFiscal(nuevo)
-    guardarPerfilFiscal(nuevo)
-  }, [perfilFiscal])
+  const configurarPerfil = useCallback(async (cambios) => {
+    await setPerfilFiscal(prev => ({ ...prev, ...cambios }))
+  }, [setPerfilFiscal])
 
   /**
    * Crea la meta de reserva fiscal en Supabase si no existe.
@@ -297,7 +276,7 @@ export function useMonotributo() {
     categoriaDetectada,
 
     // ── Loading
-    cargando: cargandoIngresos || cargandoMeta,
+    cargando: cargandoIngresos || cargandoMeta || cargandoPerfil,
     errorIngresos,
 
     // ── Acciones
