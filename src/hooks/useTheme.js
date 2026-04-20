@@ -1,4 +1,4 @@
-import { useSecureStorage } from './secureStorage'
+import { useSecureStorage } from '../lib/secureStorage'
 import { useState, useEffect } from 'react';
 
 export const useTheme = () => {
