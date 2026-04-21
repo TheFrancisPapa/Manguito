@@ -94,7 +94,7 @@ function LineaTemporal({ datos = [], cargando, ...ariaProps }) {
   )
 }
 
-export function BentoChart({ datos, cargando }) {
+export function BentoChart({ datos, cargando, className = '' }) {
   // Descripción textual de los datos para lectores de pantalla
   const resumenTexto = datos?.length
     ? `Evolución de los últimos ${datos.length} meses.
@@ -108,7 +108,7 @@ export function BentoChart({ datos, cargando }) {
   return (
     <BentoCell
       cols={8}
-      className="col-span-12 md:col-span-8"
+      className={`col-span-12 md:col-span-8 ${className}`}
       role="region"
       aria-labelledby="chart-heading"
     >

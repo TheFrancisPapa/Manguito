@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { BentoCell, BentoAmount, BentoHeader } from '../../../components/bento/BentoCell'
 
-export function BentoDolar() {
+export function BentoDolar({ className = '' }) {
   const [dolar, setDolar] = useState(null)
   const [cargando, setCargando] = useState(true)
 
@@ -17,7 +17,7 @@ export function BentoDolar() {
 
   if (cargando) {
     return (
-      <BentoCell className="col-span-6 md:col-span-4 flex items-center justify-center">
+      <BentoCell className={`col-span-6 md:col-span-4 flex items-center justify-center ${className}`}>
         <div className="animate-pulse flex items-center gap-2">
             <span className="text-2xl opacity-50 grayscale">💵</span>
             <div className="h-6 w-16 bg-zinc-100 dark:bg-zinc-800 rounded-md" />
@@ -27,7 +27,7 @@ export function BentoDolar() {
   }
 
   return (
-    <BentoCell className="col-span-6 md:col-span-4 flex flex-col justify-between">
+    <BentoCell className={`col-span-6 md:col-span-4 flex flex-col justify-between ${className}`}>
       <div className="flex items-center justify-between">
         <BentoHeader icon="💵" title="Dólar Blue" />
         <div className="flex items-center gap-1.5 -mt-3">

@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 
-export function BentoAcciones({ onNuevoGasto, onNuevoIngreso }) {
+export function BentoAcciones({ onNuevoGasto, onNuevoIngreso, className = '' }) {
   return (
-    <div className="col-span-12 md:col-span-6 grid grid-cols-2 gap-2.5">
+    <div className={`col-span-12 md:col-span-6 grid grid-cols-2 gap-2.5 ${className}`}>
       <button
         onClick={onNuevoGasto}
         className="flex flex-col items-start p-5 rounded-[24px] bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/20 active:scale-[0.98] transition-all shadow-sm group"

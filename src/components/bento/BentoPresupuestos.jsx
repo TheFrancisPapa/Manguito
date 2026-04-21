@@ -1,11 +1,11 @@
 // src/components/bento/BentoPresupuestos.jsx
 import { BentoCell, BentoLabel } from './BentoCell'
 
-export function BentoPresupuestos({ presupuestos }) {
+export function BentoPresupuestos({ presupuestos, className = '' }) {
   if (!presupuestos || presupuestos.length === 0) return (
     <BentoCell
       cols={4}
-      className="col-span-12 md:col-span-4"
+      className={`col-span-12 md:col-span-4 ${className}`}
       role="region"
       aria-labelledby="presup-heading"
     >
@@ -21,7 +21,7 @@ export function BentoPresupuestos({ presupuestos }) {
   return (
     <BentoCell
       cols={4}
-      className="col-span-12 md:col-span-4"
+      className={`col-span-12 md:col-span-4 ${className}`}
       role="region"
       aria-labelledby="presup-heading"
     >

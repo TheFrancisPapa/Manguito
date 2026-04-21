@@ -33,11 +33,11 @@ function MovReciente({ m }) {
   )
 }
 
-export function BentoMovimientos() {
+export function BentoMovimientos({ className = '' }) {
   const { movimientos: ultimos, cargando: cUlt } = useUltimosMovimientos(5)
 
   return (
-    <BentoCell className="col-span-12 mb-6" cols={12}>
+    <BentoCell className={`col-span-12 mb-6 ${className}`} cols={12}>
       <div className="flex items-center justify-between pb-4">
         <p className="text-[10px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-[0.12em]">
           Últimos movimientos
