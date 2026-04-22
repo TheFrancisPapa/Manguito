@@ -8,7 +8,7 @@ const MENU_ITEMS = [
   { path: '/dashboard',     label: 'Panel Principal',     icono: '🏠', grupo: 'dinero' },
   { path: '/movimientos',   label: 'Movimientos',         icono: '💸', grupo: 'dinero' },
   { path: '/inversiones',   label: 'Inversiones',         icono: '📈', grupo: 'dinero' },
-  { path: '/planificacion', label: 'Planificación',       icono: '📊', grupo: 'organizacion' },
+  { path: '/planificacion', label: 'Organizar',           icono: '📊', grupo: 'organizacion' },
   { path: '/agenda',        label: 'Agenda de Pagos',     icono: '📅', grupo: 'organizacion'  },
   { path: '/chat',          label: 'ManguitoAI',          icono: '🤖', grupo: 'herramientas', badge: 'Pronto' },
   { path: '/cotizaciones',  label: 'Cotizaciones',        icono: '💱', grupo: 'herramientas' },

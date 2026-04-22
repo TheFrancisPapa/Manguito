@@ -7,7 +7,7 @@ const MENU = [
   { path: '/movimientos',  icono: '💸', label: 'Movimientos',  grupo: 'Mi Dinero' },
   { path: '/inversiones',  icono: '📈', label: 'Inversiones',  grupo: 'Mi Dinero' },
   // Organización
-  { path: '/planificacion',icono: '📊', label: 'Planificación',grupo: 'Organización' },
+  { path: '/planificacion',icono: '📊', label: 'Organizar',    grupo: 'Organización' },
   { path: '/agenda',       icono: '📅', label: 'Agenda Pagos', grupo: 'Organización' },
   // Herramientas
   { path: '/chat',         icono: '🤖', label: 'ManguitoAI',   grupo: 'Herramientas', badge: '🛠️' },
