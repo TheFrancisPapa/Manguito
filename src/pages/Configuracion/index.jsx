@@ -70,6 +70,15 @@ function SectionCard({ title, children, className = '' }) {
   )
 }
 
+// ── Mask email for privacy ──────────────────────────────────
+function maskEmail(email) {
+  if (!email) return ''
+  const [user, domain] = email.split('@')
+  if (!domain) return email
+  const visible = user.slice(0, 2)
+  return `${visible}${'•'.repeat(Math.max(user.length - 2, 3))}@${domain}`
+}
+
 export function ConfiguracionPage() {
   const navigate = useNavigate()
   const { usuario, session, recargarPerfil } = useAuthContext()
@@ -194,8 +203,9 @@ export function ConfiguracionPage() {
               <h1 className="text-2xl font-black font-display text-zinc-900 dark:text-white leading-tight">
                 {nombre || 'Tu nombre'}
               </h1>
-              <p className="text-sm text-zinc-400 dark:text-zinc-500 mt-0.5">
-                {usuario?.email}
+              <p className="text-sm text-zinc-400 dark:text-zinc-500 mt-0.5 flex items-center gap-1.5">
+                <span className="text-xs">🔒</span>
+                {maskEmail(usuario?.email)}
               </p>
             </div>
 
@@ -285,11 +295,15 @@ export function ConfiguracionPage() {
               />
             </SettingRow>
 
-            {/* Email */}
+            {/* Email — masked for privacy */}
             <SettingRow icon="✉️" iconBg="bg-indigo-100 dark:bg-indigo-900/30" label="Email">
-              <span className="text-sm text-zinc-400 dark:text-zinc-500 truncate max-w-[180px]">
-                {usuario?.email ?? ''}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm text-zinc-400 dark:text-zinc-500 truncate max-w-[180px]">
+                  {maskEmail(usuario?.email ?? '')}
+                </span>
+                <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20
+                  px-1.5 py-0.5 rounded-full">protegido</span>
+              </div>
             </SettingRow>
 
             {/* Moneda */}

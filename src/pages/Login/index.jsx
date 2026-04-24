@@ -183,24 +183,24 @@ export function LoginPage() {
             </p>
           </div>
 
-          {/* Feature highlights instead of fake stats */}
+          {/* Feature highlights — security focused */}
           <div className="space-y-3">
             <FeatureHighlight
-              emoji="🔒"
-              title="Datos 100% seguros"
-              desc="Encriptación bancaria de extremo a extremo."
+              emoji="🔐"
+              title="Contraseña encriptada"
+              desc="Tu contraseña nunca se almacena en texto plano."
               delay="400ms"
+            />
+            <FeatureHighlight
+              emoji="🛡️"
+              title="Email protegido"
+              desc="Tu email solo se usa para acceder. Nunca lo compartimos."
+              delay="550ms"
             />
             <FeatureHighlight
               emoji="⚡"
               title="Acceso instantáneo"
               desc="Tu panel financiero listo en un segundo."
-              delay="550ms"
-            />
-            <FeatureHighlight
-              emoji="🤖"
-              title="IA incluida"
-              desc="ManguitoAI analiza tus finanzas en cada sesión."
               delay="700ms"
             />
           </div>
@@ -346,8 +346,8 @@ export function LoginPage() {
                 </button>
               </form>
 
-              <div className="mt-6 pt-5 border-t border-zinc-100 dark:border-zinc-700/40 text-center">
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+              <div className="mt-6 pt-5 border-t border-zinc-100 dark:border-zinc-700/40 space-y-3">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium text-center">
                   ¿No tenés cuenta?{' '}
                   <Link to="/registro"
                     className="font-bold text-[var(--mango-dark)] dark:text-[var(--mango)]
@@ -355,6 +355,15 @@ export function LoginPage() {
                     Registrate gratis →
                   </Link>
                 </p>
+
+                {/* Security tip */}
+                <div className="flex items-center gap-2 bg-blue-50/60 dark:bg-blue-900/10 rounded-xl px-3 py-2
+                  border border-blue-100/40 dark:border-blue-800/20">
+                  <span className="text-xs flex-shrink-0">💡</span>
+                  <p className="text-[10px] text-blue-600/80 dark:text-blue-400/80 font-medium leading-snug">
+                    Nunca compartas tu contraseña. Si la olvidaste, usá el link "¿La olvidaste?" arriba.
+                  </p>
+                </div>
               </div>
             </div>
           )}

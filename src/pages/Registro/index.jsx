@@ -5,9 +5,9 @@ import { registrarUsuario } from '../../api/auth'
 import { Input, Spinner } from '../../components/ui'
 
 /* ═══════════════════════════════════════════════════════
-   🥭  REGISTRO PAGE — Dopamine-Driven Onboarding
-   Multi-step wizard with gamification, celebration states,
-   progress rewards, and gratifying micro-interactions
+   🥭  REGISTRO PAGE — Secure Dopamine-Driven Onboarding
+   Multi-step wizard with strong password requirements,
+   confirmation, credential reminder, and gamification
    ═══════════════════════════════════════════════════════ */
 
 const OBJETIVOS = [
@@ -18,7 +18,7 @@ const OBJETIVOS = [
   { id: 'inversion',   icono: '📈', titulo: 'Empezar a invertir', desc: 'Hacer que mi plata rinda más.', color: '#8B5CF6' },
 ]
 
-const PASOS = ['Cuenta', 'Perfil', 'Objetivo', 'Meta']
+const PASOS = ['Cuenta', 'Perfil', 'Objetivo', 'Meta', 'Seguridad']
 
 const FRASES = [
   { text: 'Preparando tu espacio...', emoji: '🏗️' },
@@ -26,6 +26,18 @@ const FRASES = [
   { text: 'Activando ManguitoAI...', emoji: '🤖' },
   { text: '¡Todo listo! 🎉', emoji: '🚀' },
 ]
+
+// ── Password validation rules ──
+const PASSWORD_RULES = [
+  { id: 'length',  test: pw => pw.length >= 8,           label: 'Mínimo 8 caracteres' },
+  { id: 'upper',   test: pw => /[A-Z]/.test(pw),         label: 'Al menos 1 mayúscula (A-Z)' },
+  { id: 'number',  test: pw => /[0-9]/.test(pw),         label: 'Al menos 1 número (0-9)' },
+  { id: 'special', test: pw => /[^A-Za-z0-9]/.test(pw),  label: 'Al menos 1 carácter especial (!@#$...)' },
+]
+
+function isPasswordStrong(pw) {
+  return PASSWORD_RULES.every(r => r.test(pw))
+}
 
 // ── Step completion celebration ──
 function StepCelebration({ emoji }) {
@@ -41,44 +53,57 @@ function StepCelebration({ emoji }) {
   )
 }
 
-// ── Password strength with dopamine progression ──
+// ── Password strength with dopamine progression + rule checklist ──
 function PasswordStrength({ password }) {
   if (!password) return null
 
-  const getStrength = (pw) => {
-    let score = 0
-    if (pw.length >= 6) score++
-    if (pw.length >= 8) score++
-    if (/[A-Z]/.test(pw)) score++
-    if (/[0-9]/.test(pw)) score++
-    if (/[^A-Za-z0-9]/.test(pw)) score++
-    return score
-  }
+  const passed = PASSWORD_RULES.filter(r => r.test(password)).length
+  const total = PASSWORD_RULES.length
 
-  const strength = getStrength(password)
   const levels = [
-    { label: 'Muy débil', color: '#EF4444', width: 20, emoji: '😰' },
-    { label: 'Débil', color: '#F97316', width: 40, emoji: '😐' },
-    { label: 'Regular', color: '#EAB308', width: 60, emoji: '🙂' },
-    { label: 'Fuerte', color: '#22C55E', width: 80, emoji: '💪' },
-    { label: '¡Excelente!', color: '#10B981', width: 100, emoji: '🔒' },
+    { label: 'Muy débil', color: '#EF4444', emoji: '😰' },
+    { label: 'Débil', color: '#F97316', emoji: '😐' },
+    { label: 'Regular', color: '#EAB308', emoji: '🙂' },
+    { label: 'Fuerte', color: '#22C55E', emoji: '💪' },
+    { label: '¡Excelente!', color: '#10B981', emoji: '🔒' },
   ]
 
-  const level = levels[Math.min(strength, levels.length) - 1] || levels[0]
+  // Map 0-4 rules passed to 0-4 index (with length >=6 as bonus entry feel)
+  const idx = Math.min(passed, levels.length - 1)
+  const level = levels[idx]
+  const pct = (passed / total) * 100
 
   return (
-    <div className="space-y-1 animate-in fade-in duration-300">
+    <div className="space-y-2 animate-in fade-in duration-300">
       <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all duration-700 ease-out"
-          style={{ width: `${level.width}%`, background: level.color }}
+          style={{ width: `${pct}%`, background: level.color }}
         />
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-1">
         <p className="text-[10px] font-bold tracking-wide" style={{ color: level.color }}>
           {level.label}
         </p>
         <span className="text-xs transition-all duration-300">{level.emoji}</span>
+      </div>
+
+      {/* Rule checklist */}
+      <div className="grid grid-cols-1 gap-1">
+        {PASSWORD_RULES.map(rule => {
+          const ok = rule.test(password)
+          return (
+            <div key={rule.id}
+              className={`flex items-center gap-2 text-[11px] font-medium transition-all duration-300 ${
+                ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'
+              }`}>
+              <span className={`text-xs transition-transform duration-300 ${ok ? 'scale-110' : 'scale-90'}`}>
+                {ok ? '✅' : '○'}
+              </span>
+              <span className={ok ? 'line-through opacity-70' : ''}>{rule.label}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -115,6 +140,137 @@ function AmbientParticles() {
   )
 }
 
+// ── Credential reminder card (shown before final step) ──
+function CredentialReminder({ email, password, showPass, setShowPass, confirmed, setConfirmed, onContinue, onBack }) {
+  const [copied, setCopied] = useState(false)
+
+  const maskEmail = (e) => {
+    const [user, domain] = e.split('@')
+    if (!domain) return e
+    const visible = user.slice(0, 2)
+    return `${visible}${'•'.repeat(Math.max(user.length - 2, 3))}@${domain}`
+  }
+
+  const copyCredentials = () => {
+    const text = `🥭 Manguito\nEmail: ${email}\n(Contraseña: la que elegiste al registrarte)`
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    }).catch(() => {})
+  }
+
+  return (
+    <div className="flex flex-col gap-4 animate-in slide-in-from-right-4 fade-in duration-400">
+      <div>
+        <h2 className="text-2xl font-black font-display text-zinc-900 dark:text-white mb-1">
+          Guardá tus datos 🔐
+        </h2>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+          Antes de crear tu cuenta, asegurate de recordar tus credenciales
+        </p>
+      </div>
+
+      {/* Warning banner */}
+      <div className="bg-amber-50 dark:bg-amber-900/15 border border-amber-200/60 dark:border-amber-700/30
+        rounded-2xl p-4 flex items-start gap-3">
+        <span className="text-xl flex-shrink-0 mt-0.5">⚠️</span>
+        <div>
+          <p className="text-sm font-bold text-amber-800 dark:text-amber-300 mb-1">
+            ¡Importante!
+          </p>
+          <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+            Anotá tu email y contraseña en un lugar seguro. Si los olvidás, la única opción es recuperar
+            la contraseña por email, pero es mejor tenerlos a mano.
+          </p>
+        </div>
+      </div>
+
+      {/* Credential card */}
+      <div className="bg-zinc-50/80 dark:bg-zinc-800/50 rounded-2xl p-5 border border-zinc-100 dark:border-zinc-700/50
+        space-y-4">
+        {/* Email */}
+        <div>
+          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1 block">
+            Tu email
+          </label>
+          <div className="flex items-center gap-2 bg-white dark:bg-[var(--dark-card)] rounded-xl px-4 py-3
+            border border-zinc-100 dark:border-zinc-700/40">
+            <span className="text-base">📧</span>
+            <span className="text-sm font-bold text-zinc-800 dark:text-white flex-1 font-mono tracking-wide">
+              {email}
+            </span>
+          </div>
+        </div>
+
+        {/* Password */}
+        <div>
+          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1 block">
+            Tu contraseña
+          </label>
+          <div className="flex items-center gap-2 bg-white dark:bg-[var(--dark-card)] rounded-xl px-4 py-3
+            border border-zinc-100 dark:border-zinc-700/40">
+            <span className="text-base">🔑</span>
+            <span className="text-sm font-bold text-zinc-800 dark:text-white flex-1 font-mono tracking-wide">
+              {showPass ? password : '•'.repeat(password.length)}
+            </span>
+            <button type="button" onClick={() => setShowPass(s => !s)}
+              className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300
+                transition-all text-sm hover:scale-110 active:scale-95">
+              {showPass ? '🙈' : '👁️'}
+            </button>
+          </div>
+        </div>
+
+        {/* Copy button */}
+        <button onClick={copyCredentials}
+          className={`w-full py-2.5 rounded-xl text-sm font-bold border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
+            copied
+              ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700 text-emerald-600 dark:text-emerald-400'
+              : 'bg-white dark:bg-[var(--dark-card)] border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-[var(--mango)] hover:text-[var(--mango)]'
+          }`}>
+          <span className="text-base">{copied ? '✅' : '📋'}</span>
+          {copied ? '¡Copiado!' : 'Copiar email al portapapeles'}
+        </button>
+      </div>
+
+      {/* Confirmation checkbox */}
+      <label className="flex items-start gap-3 cursor-pointer group select-none">
+        <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center flex-shrink-0 mt-0.5
+          transition-all duration-200 ${
+            confirmed
+              ? 'bg-emerald-500 border-emerald-500 scale-105'
+              : 'border-zinc-300 dark:border-zinc-600 group-hover:border-[var(--mango)]'
+          }`}
+          onClick={() => setConfirmed(c => !c)}>
+          {confirmed && <span className="text-white text-xs font-bold animate-pop-in">✓</span>}
+        </div>
+        <span className="text-sm text-zinc-600 dark:text-zinc-400 font-medium leading-snug"
+          onClick={() => setConfirmed(c => !c)}>
+          Confirmo que anoté o guardé mis datos de acceso en un lugar seguro. Entiendo que son necesarios para entrar a mi cuenta.
+        </span>
+      </label>
+
+      <div className="flex gap-3 mt-1">
+        <button onClick={onBack}
+          className="flex-1 py-3 rounded-2xl border border-zinc-200 dark:border-zinc-700
+            text-sm font-semibold text-zinc-600 dark:text-zinc-400
+            hover:bg-zinc-50 dark:hover:bg-zinc-800/60 hover:border-zinc-300
+            active:scale-[0.98] transition-all duration-150">
+          ← Atrás
+        </button>
+        <button
+          onClick={onContinue}
+          disabled={!confirmed}
+          className="btn-primary flex-1 py-3 rounded-2xl text-white text-sm font-bold
+            hover:scale-[1.01] active:scale-[0.98] transition-transform duration-150
+            disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100">
+          Crear cuenta 🚀
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ══════════════════════════════════════════════════════
 //  Main Registration Page
 // ══════════════════════════════════════════════════════
@@ -126,12 +282,15 @@ export function RegistroPage() {
   const [error, setError] = useState('')
   const [fraseIdx, setFraseIdx] = useState(0)
   const [showPass, setShowPass] = useState(false)
+  const [showConfirmPass, setShowConfirmPass] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [celebrating, setCelebrating] = useState(false)
+  const [credentialsConfirmed, setCredentialsConfirmed] = useState(false)
   const formDataRef = useRef({})
 
   const [formData, setFormData] = useState({
-    email: '', password: '', nombre: '', diaNac: '', mesNac: '', anioNac: '',
+    email: '', password: '', confirmPassword: '',
+    nombre: '', diaNac: '', mesNac: '', anioNac: '',
     objetivo: '', metaActiva: false, metaEmoji: '🎯', metaNombre: '', metaMonto: '',
   })
 
@@ -168,14 +327,31 @@ export function RegistroPage() {
   }
 
   const avanzar = () => {
-    if (paso === 1 && (!formData.email || formData.password.length < 6)) {
-      setError('Ingresá un email válido y contraseña de al menos 6 caracteres.')
-      return
+    // Step 1: Account — email + strong password + confirmation
+    if (paso === 1) {
+      if (!formData.email) {
+        setError('Ingresá tu email para continuar.')
+        return
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        setError('El email no parece válido. Revisalo.')
+        return
+      }
+      if (!isPasswordStrong(formData.password)) {
+        setError('Tu contraseña no cumple todos los requisitos de seguridad. Revisá la lista abajo.')
+        return
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Las contraseñas no coinciden. Volvé a escribirla.')
+        return
+      }
     }
+    // Step 2: Profile
     if (paso === 2 && !formData.nombre.trim()) {
       setError('Completá tu nombre para continuar.')
       return
     }
+    // Step 3: Objective
     if (paso === 3 && !formData.objetivo) {
       setError('Elegí un objetivo para personalizar tu experiencia.')
       return
@@ -215,8 +391,9 @@ export function RegistroPage() {
     }
   }, [navigate])
 
+  // Paso 6 = loading animation (was 5, now shifted because of credential step)
   useEffect(() => {
-    if (paso !== 5) return
+    if (paso !== 6) return
     const iv = setInterval(() => {
       setFraseIdx(prev => {
         if (prev < FRASES.length - 1) return prev + 1
@@ -232,11 +409,14 @@ export function RegistroPage() {
 
   // Step-specific motivational subtitles
   const stepMotivation = {
-    1: { icon: '🚀', text: 'Tu camino financiero empieza acá' },
+    1: { icon: '🔐', text: 'Creá tu cuenta con una contraseña segura' },
     2: { icon: '👤', text: 'Hacemos Manguito personal para vos' },
     3: { icon: '🎯', text: 'Personalizamos todo según tu objetivo' },
-    4: { icon: '⭐', text: '¡Último paso! Ya casi está' },
+    4: { icon: '⭐', text: '¡Último paso antes de asegurar todo!' },
+    5: { icon: '🔒', text: 'Verificá tus datos de acceso' },
   }
+
+  const totalVisibleSteps = PASOS.length
 
   return (
     <div className="min-h-screen w-full flex overflow-hidden bg-[var(--cream-soft)] dark:bg-[var(--dark-bg)]">
@@ -285,7 +465,7 @@ export function RegistroPage() {
                 a medida 🎯
               </>
             )}
-            {paso >= 4 && (
+            {paso === 4 && (
               <>
                 ¡Ya casi
                 <br />
@@ -294,9 +474,20 @@ export function RegistroPage() {
                 Un paso más ✨
               </>
             )}
+            {paso === 5 && (
+              <>
+                Tu seguridad
+                <br />
+                <span className="text-gradient-gold">es prioridad</span>
+                <br />
+                para nosotros 🔐
+              </>
+            )}
           </h2>
           <p className="text-zinc-500 dark:text-zinc-400 text-sm leading-relaxed font-medium max-w-xs">
-            En 2 minutos tenés tu cuenta lista y empezás a tomar control de tu plata.
+            {paso === 5
+              ? 'Guardá tus datos en un lugar seguro antes de continuar.'
+              : 'En 2 minutos tenés tu cuenta lista y empezás a tomar control de tu plata.'}
           </p>
 
           {/* Progress visualization */}
@@ -327,7 +518,7 @@ export function RegistroPage() {
 
         {/* Bottom — Trust indicators */}
         <div className="relative z-10 space-y-2.5">
-          {['Sin tarjeta requerida', 'Datos seguros y encriptados', 'Plan gratuito para siempre'].map((t, i) => (
+          {['Sin tarjeta requerida', 'Contraseña encriptada de extremo a extremo', 'Plan gratuito para siempre'].map((t, i) => (
             <div key={t} className={`flex items-center gap-2.5 text-sm text-zinc-600 dark:text-zinc-400 font-medium
               animate-fade-up opacity-0`}
               style={{ animationDelay: `${400 + i * 150}ms`, animationFillMode: 'forwards' }}>
@@ -360,21 +551,21 @@ export function RegistroPage() {
           </div>
 
           {/* Mobile progress bar — compact */}
-          {paso < 5 && (
+          {paso <= totalVisibleSteps && (
             <div className="lg:hidden mb-5">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 font-semibold">
                   {stepMotivation[paso]?.icon} {stepMotivation[paso]?.text}
                 </p>
                 <span className="text-[10px] font-bold text-[var(--mango)]">
-                  {paso}/4
+                  {paso}/{totalVisibleSteps}
                 </span>
               </div>
               <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-700 ease-out"
                   style={{
-                    width: `${(paso / PASOS.length) * 100}%`,
+                    width: `${(paso / totalVisibleSteps) * 100}%`,
                     background: 'var(--gradient-mango)'
                   }}
                 />
@@ -383,7 +574,7 @@ export function RegistroPage() {
           )}
 
           {/* Desktop progress - above card */}
-          {paso < 5 && (
+          {paso <= totalVisibleSteps && (
             <div className="hidden lg:block mb-5">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-base">{stepMotivation[paso]?.icon}</span>
@@ -395,7 +586,7 @@ export function RegistroPage() {
                 <div
                   className="h-full rounded-full transition-all duration-700 ease-out"
                   style={{
-                    width: `${(paso / PASOS.length) * 100}%`,
+                    width: `${(paso / totalVisibleSteps) * 100}%`,
                     background: 'var(--gradient-mango)'
                   }}
                 />
@@ -415,27 +606,40 @@ export function RegistroPage() {
               <div className="mb-5 flex items-center gap-2.5 bg-red-50 dark:bg-red-900/20
                 text-red-600 dark:text-red-400 text-sm px-4 py-3 rounded-2xl
                 border border-red-100 dark:border-red-800/40 font-medium
-                animate-in slide-in-from-top-2 duration-300">
+                animate-in slide-in-from-top-2 duration-300"
+                style={{ animation: 'shake 0.4s ease-in-out' }}>
                 <span className="text-base flex-shrink-0">⚠️</span>
                 <span>{error}</span>
               </div>
             )}
 
-            {/* ═══ PASO 1: Cuenta ═══ */}
+            {/* ═══ PASO 1: Cuenta (email + strong password + confirm) ═══ */}
             {paso === 1 && (
-              <div className="flex flex-col gap-5 animate-in slide-in-from-right-4 fade-in duration-400">
+              <div className="flex flex-col gap-4 animate-in slide-in-from-right-4 fade-in duration-400">
                 <div>
                   <h1 className="text-2xl font-black font-display text-zinc-900 dark:text-white mb-1">
                     Creá tu cuenta
                   </h1>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
-                    El primer paso para tomar el control 💪
+                    Usá un email real y una contraseña segura 🔐
                   </p>
                 </div>
 
                 <Input label="Email" type="email" placeholder="tu@email.com" autoFocus
                   value={formData.email} onChange={e => set('email', e.target.value)} />
 
+                {/* Security tip about email */}
+                {formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
+                  <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/15 rounded-xl px-3 py-2
+                    border border-blue-100/60 dark:border-blue-800/30 animate-in fade-in duration-300">
+                    <span className="text-xs">🛡️</span>
+                    <p className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+                      Tu email se usa solo para acceder. Nunca lo compartimos.
+                    </p>
+                  </div>
+                )}
+
+                {/* Password field */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 tracking-wide">
                     Contraseña
@@ -443,7 +647,7 @@ export function RegistroPage() {
                   <div className="relative group">
                     <input
                       type={showPass ? 'text' : 'password'}
-                      placeholder="Mínimo 6 caracteres"
+                      placeholder="Mínimo 8 caracteres, segura"
                       value={formData.password}
                       onChange={e => set('password', e.target.value)}
                       className="w-full bg-zinc-50/80 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/60
@@ -461,6 +665,49 @@ export function RegistroPage() {
                   </div>
                   <PasswordStrength password={formData.password} />
                 </div>
+
+                {/* Confirm password field — only shown when password is strong */}
+                {isPasswordStrong(formData.password) && (
+                  <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <label className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 tracking-wide">
+                      Confirmar contraseña
+                    </label>
+                    <div className="relative group">
+                      <input
+                        type={showConfirmPass ? 'text' : 'password'}
+                        placeholder="Escribila de nuevo"
+                        value={formData.confirmPassword}
+                        onChange={e => set('confirmPassword', e.target.value)}
+                        className={`w-full bg-zinc-50/80 dark:bg-zinc-800/60 border rounded-xl px-3.5 py-2.5 pr-11
+                          text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--mango)]/30
+                          hover:border-zinc-300 dark:hover:border-zinc-600
+                          transition-all text-zinc-900 dark:text-white ${
+                            formData.confirmPassword
+                              ? formData.confirmPassword === formData.password
+                                ? 'border-emerald-300 dark:border-emerald-700 focus:border-emerald-400'
+                                : 'border-red-300 dark:border-red-700 focus:border-red-400'
+                              : 'border-zinc-200 dark:border-zinc-700/60 focus:border-[var(--mango)]/60'
+                          }`}
+                      />
+                      <button type="button" onClick={() => setShowConfirmPass(s => !s)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400
+                          hover:text-zinc-600 dark:hover:text-zinc-300
+                          transition-all text-sm hover:scale-110 active:scale-95">
+                        {showConfirmPass ? '🙈' : '👁️'}
+                      </button>
+                    </div>
+                    {formData.confirmPassword && (
+                      <div className={`flex items-center gap-1.5 text-[11px] font-bold transition-all duration-300 ${
+                        formData.confirmPassword === formData.password
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-red-500 dark:text-red-400'
+                      }`}>
+                        <span className="text-xs">{formData.confirmPassword === formData.password ? '✅' : '❌'}</span>
+                        {formData.confirmPassword === formData.password ? '¡Las contraseñas coinciden!' : 'Las contraseñas no coinciden'}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <button onClick={avanzar}
                   className="btn-primary w-full py-3.5 rounded-2xl text-white text-sm font-bold mt-1
@@ -668,10 +915,10 @@ export function RegistroPage() {
                           active:scale-[0.98] transition-all duration-150">
                         ← Atrás
                       </button>
-                      <button onClick={() => setPaso(5)}
+                      <button onClick={celebrateAndAdvance}
                         className="btn-primary flex-1 py-3 rounded-2xl text-white text-sm font-bold
                           hover:scale-[1.01] active:scale-[0.98] transition-transform duration-150">
-                        Crear cuenta →
+                        Continuar →
                       </button>
                     </div>
                   </div>
@@ -722,10 +969,10 @@ export function RegistroPage() {
                           active:scale-[0.98] transition-all duration-150">
                         ← Atrás
                       </button>
-                      <button onClick={() => setPaso(5)}
+                      <button onClick={celebrateAndAdvance}
                         className="btn-primary flex-1 py-3 rounded-2xl text-white text-sm font-bold
                           hover:scale-[1.01] active:scale-[0.98] transition-transform duration-150">
-                        Crear cuenta →
+                        Continuar →
                       </button>
                     </div>
                   </>
@@ -733,8 +980,22 @@ export function RegistroPage() {
               </div>
             )}
 
-            {/* ═══ PASO 5: Loading celebration ═══ */}
+            {/* ═══ PASO 5: Credential reminder ═══ */}
             {paso === 5 && (
+              <CredentialReminder
+                email={formData.email}
+                password={formData.password}
+                showPass={showPass}
+                setShowPass={setShowPass}
+                confirmed={credentialsConfirmed}
+                setConfirmed={setCredentialsConfirmed}
+                onBack={() => setPaso(4)}
+                onContinue={() => setPaso(6)}
+              />
+            )}
+
+            {/* ═══ PASO 6: Loading celebration ═══ */}
+            {paso === 6 && (
               <div className="flex flex-col items-center justify-center gap-6 py-10 animate-in fade-in duration-500">
                 {/* Animated icon with rings */}
                 <div className="relative">
@@ -786,7 +1047,7 @@ export function RegistroPage() {
           </div>
 
           {/* Footer links */}
-          {paso < 5 && (
+          {paso <= totalVisibleSteps && (
             <div className="text-center mt-4">
               <Link to="/" className="text-xs text-zinc-400 hover:text-[var(--mango-dark)] dark:hover:text-[var(--mango)]
                 font-medium transition-colors">
