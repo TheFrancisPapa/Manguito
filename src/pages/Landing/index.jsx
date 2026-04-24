@@ -155,37 +155,7 @@ function FeatureCard({ emoji, title, desc, color, stat, statLabel, delay }) {
   )
 }
 
-// ── Testimonial card (social proof dopamine) ──
-function TestimonialCard({ name, role, text, emoji, delay }) {
-  return (
-    <div
-      className="bg-white/80 dark:bg-[var(--dark-card)]/80 backdrop-blur-sm rounded-2xl p-5
-        border border-zinc-100/80 dark:border-white/6
-        animate-fade-up opacity-0 hover:shadow-lg transition-all duration-300"
-      style={{ animationDelay: delay, animationFillMode: 'forwards' }}
-    >
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500
-          flex items-center justify-center text-lg border-2 border-white dark:border-[var(--dark-bg)]
-          shadow-md">
-          {emoji}
-        </div>
-        <div>
-          <p className="text-sm font-bold text-zinc-900 dark:text-white">{name}</p>
-          <p className="text-[11px] text-zinc-400 font-medium">{role}</p>
-        </div>
-      </div>
-      <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed italic">
-        "{text}"
-      </p>
-      <div className="flex gap-0.5 mt-3">
-        {[1,2,3,4,5].map(s => (
-          <span key={s} className="text-amber-400 text-xs">★</span>
-        ))}
-      </div>
-    </div>
-  )
-}
+
 
 // ── Floating stat pill (attention reward) ──
 function StatPill({ emoji, value, label, delay, className = '' }) {
@@ -295,7 +265,7 @@ export function LandingPage() {
 
             {/* Left: Copy */}
             <div className="space-y-8">
-              {/* Urgency badge */}
+              {/* App badge */}
               <div
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-full
                   bg-[var(--mango)]/12 border border-[var(--mango)]/25
@@ -307,7 +277,7 @@ export function LandingPage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--mango)] opacity-75" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--mango)]" />
                 </span>
-                +47 personas se unieron hoy 🔥
+                100% gratuito · Hecho en Argentina 🇦🇷
               </div>
 
               {/* Headline with staggered reveal */}
@@ -362,30 +332,7 @@ export function LandingPage() {
                 </button>
               </div>
 
-              {/* Social proof with animated counters */}
-              <div
-                className={`flex items-center gap-4 transition-all duration-700 delay-[400ms] ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-              >
-                <div className="flex -space-x-2.5">
-                  {['🧑','👩','👨','👱','🧔','👩‍🦰'].map((e, i) => (
-                    <div key={i} className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-orange-500
-                      flex items-center justify-center text-sm border-2 border-white dark:border-[var(--dark-bg)]
-                      shadow-sm hover:scale-110 hover:z-10 transition-transform duration-200"
-                      style={{ animationDelay: `${i * 100}ms` }}
-                    >
-                      {e}
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-zinc-700 dark:text-zinc-200">
-                    +<AnimatedCounter end={2400} suffix="" duration={2500} /> usuarios
-                  </p>
-                  <p className="text-[11px] text-zinc-400 font-medium">
-                    ya controlan su plata con Manguito
-                  </p>
-                </div>
-              </div>
+
             </div>
 
             {/* Right: Dashboard mockup */}
@@ -583,72 +530,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── SOCIAL PROOF (testimonials — social dopamine) ── */}
-      <section className="py-24 relative bg-zinc-50/50 dark:bg-white/[0.01]">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-zinc-200/60 dark:via-white/8 to-transparent" />
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center max-w-2xl mx-auto mb-14">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full
-              bg-amber-50 dark:bg-amber-900/10 border border-amber-200/60 dark:border-amber-800/20
-              text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-6">
-              ⭐ Historias reales
-            </div>
-            <h2 className="text-3xl md:text-4xl font-black font-display text-zinc-900 dark:text-white mb-3">
-              Lo que dicen nuestros usuarios
-            </h2>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <TestimonialCard
-              emoji="👩"
-              name="Camila R."
-              role="Estudiante, Buenos Aires"
-              text="Antes gastaba sin darme cuenta. Con Manguito ahorro un 30% más cada mes y ya cumplí mi primera meta."
-              delay="100ms"
-            />
-            <TestimonialCard
-              emoji="👨"
-              name="Martín L."
-              role="Freelancer, Córdoba"
-              text="El seguimiento del dólar y la IA financiera me ahorró horas de investigación. Es como tener un contador gratis."
-              delay="200ms"
-            />
-            <TestimonialCard
-              emoji="🧔"
-              name="Diego F."
-              role="Emprendedor, Rosario"
-              text="Me pasé de Excel a Manguito y no lo puedo creer. Todo más claro, más rápido, y las alertas de presupuesto me salvaron."
-              delay="300ms"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ── STATS (animated counters — dopamine: big numbers) ── */}
-      <section className="py-24 relative">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { end: 2400, suffix: '+', label: 'Usuarios activos', emoji: '👥', color: 'from-amber-400 to-orange-500' },
-              { end: 850, suffix: 'K', label: 'Movimientos registrados', emoji: '📊', prefix: '', color: 'from-emerald-400 to-green-600' },
-              { end: 99, suffix: '.9%', label: 'Uptime garantizado', emoji: '⚡', color: 'from-blue-400 to-indigo-500' },
-              { end: 47, suffix: '', label: 'Nuevos usuarios hoy', emoji: '🔥', color: 'from-red-400 to-pink-500' },
-            ].map((stat, i) => (
-              <div key={i} className="text-center group">
-                <div className={`w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${stat.color}
-                  flex items-center justify-center text-2xl shadow-lg
-                  group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
-                  {stat.emoji}
-                </div>
-                <p className="text-3xl md:text-4xl font-black font-display text-zinc-900 dark:text-white mb-1">
-                  <AnimatedCounter end={stat.end} suffix={stat.suffix} prefix={stat.prefix || ''} duration={2500} delay={i * 200} />
-                </p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── PLANS ── */}
       <section className="py-28 relative">
