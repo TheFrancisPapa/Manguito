@@ -8,13 +8,14 @@ export function PlanesPage() {
   const { usuario } = useAuthContext()
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState(null)
+  const [tipoFacturacion, setTipoFacturacion] = useState('mensual')
   const planActual = usuario?.plan || 'basico'
 
-  const handlePagar = async () => {
+  const handlePagar = async (tipo) => {
     setCargando(true)
     setError(null)
     try {
-      await iniciarPago({ userId: usuario?.id, email: usuario?.email })
+      await iniciarPago({ userId: usuario?.id, email: usuario?.email, tipoPlan: tipo })
     } catch (err) {
       console.error('Error al iniciar pago:', err)
       setError('No se pudo conectar con el servicio de pagos. Intentá de nuevo.')
@@ -39,6 +40,21 @@ export function PlanesPage() {
             {error}
           </div>
         )}
+
+        <div className="flex justify-center items-center gap-4 mb-10 mt-6">
+          <span className={`text-sm font-bold transition-colors ${tipoFacturacion === 'mensual' ? 'text-[var(--charcoal)] dark:text-white' : 'text-zinc-500'}`}>Mensual</span>
+          <button 
+            onClick={() => setTipoFacturacion(t => t === 'mensual' ? 'anual' : 'mensual')}
+            className="w-14 h-8 bg-[var(--mango)] rounded-full p-1 relative transition-colors duration-300 shadow-inner"
+            aria-label="Alternar facturación"
+          >
+            <div className={`w-6 h-6 bg-white rounded-full shadow-md transition-transform duration-300 ${tipoFacturacion === 'anual' ? 'translate-x-6' : 'translate-x-0'}`} />
+          </button>
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-bold transition-colors ${tipoFacturacion === 'anual' ? 'text-[var(--charcoal)] dark:text-white' : 'text-zinc-500'}`}>Anual</span>
+            <span className="text-[10px] bg-[var(--primary-vibrant)] text-[var(--dark-bg)] px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider animate-pulse shadow-sm">Ahorrá 33%</span>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 max-w-4xl mx-auto items-stretch">
 
@@ -105,9 +121,18 @@ export function PlanesPage() {
               <h3 className="text-2xl font-black text-[var(--charcoal)] dark:text-white">Plan Pro</h3>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 italic font-medium">Poder ilimitado e IA</p>
               <div className="flex items-baseline gap-1 mt-6">
-                <span className="text-4xl font-black text-[var(--charcoal)] dark:text-white">$1.999</span>
-                <span className="text-zinc-400 font-bold">/mes</span>
+                <span className="text-4xl font-black text-[var(--charcoal)] dark:text-white">
+                  ${tipoFacturacion === 'mensual' ? '4.999' : '39.999'}
+                </span>
+                <span className="text-zinc-400 font-bold">
+                  {tipoFacturacion === 'mensual' ? '/mes' : '/año'}
+                </span>
               </div>
+              {tipoFacturacion === 'anual' && (
+                <div className="text-sm font-bold text-[var(--leaf)] dark:text-[var(--primary-vibrant)] mt-1 mb-[-24px]">
+                  (Equivale a $3.333 / mes)
+                </div>
+              )}
             </div>
 
             <div className="flex-1 space-y-4 mb-10">
@@ -137,7 +162,7 @@ export function PlanesPage() {
                   ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed border-none'
                   : 'bg-[var(--primary-vibrant)] hover:bg-[var(--leaf)] text-zinc-900 hover:text-white border-none'
               }`}
-              onClick={handlePagar}
+              onClick={() => handlePagar(tipoFacturacion)}
               cargando={cargando}
               disabled={planActual === 'pro'}
               icono={planActual === 'pro' ? null : '🚀'}

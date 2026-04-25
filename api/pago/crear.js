@@ -11,14 +11,22 @@ export default async function handler(req, res) {
   const preference = new Preference(client);
 
   try {
+    const tipoPlan = req.body.tipoPlan || 'mensual';
+    const precios = {
+      mensual: 4999,
+      anual: 39999
+    };
+    const precio = precios[tipoPlan] || precios.mensual;
+    const title = tipoPlan === 'anual' ? 'Manguito Pro (Anual)' : 'Manguito Pro (Mensual)';
+
     const result = await preference.create({
       body: {
         items: [
           {
             id: 'plan_premium',
-            title: 'Manguito Premium',
+            title: title,
             quantity: 1,
-            unit_price: 100, // Precio de prueba: 100 pesos
+            unit_price: precio,
             currency_id: 'ARS',
           }
         ],
