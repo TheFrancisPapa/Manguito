@@ -236,7 +236,199 @@ export function LandingPage() {
       </header>
 
       {/* ── HERO ── */}
-      <AnimatedHero />
+      <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <GradientOrb
+            className="top-[-15%] left-[-8%] opacity-25"
+            color1="rgba(245,166,35,0.4)"
+            color2="rgba(245,166,35,0)"
+            size={700}
+          />
+          <GradientOrb
+            className="bottom-[-15%] right-[-8%] opacity-15 animation-delay-2000"
+            color1="rgba(16,185,129,0.3)"
+            color2="rgba(16,185,129,0)"
+            size={600}
+          />
+          <GradientOrb
+            className="top-[40%] left-[50%] -translate-x-1/2 opacity-10 animation-delay-4000"
+            color1="rgba(251,191,36,0.25)"
+            color2="rgba(251,191,36,0)"
+            size={900}
+          />
+        </div>
+
+        <FloatingParticles />
+
+        <div className="relative max-w-6xl mx-auto px-6 w-full py-16">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+
+            {/* Left: Copy */}
+            <div className="space-y-8">
+              {/* App badge */}
+              <div
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full
+                  bg-[var(--mango)]/12 border border-[var(--mango)]/25
+                  text-[var(--mango-dark)] dark:text-[var(--mango)]
+                  text-xs font-bold uppercase tracking-widest
+                  transition-all duration-700 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+              >
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--mango)] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--mango)]" />
+                </span>
+                100% gratuito · Hecho en Argentina 🇦🇷
+              </div>
+
+              {/* Headline with staggered reveal */}
+              <div
+                className={`transition-all duration-700 delay-100 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+              >
+                <h1 className="font-display text-5xl md:text-6xl lg:text-7xl font-black leading-[1.02] tracking-tight">
+                  <span className="text-zinc-900 dark:text-white">Tu plata,</span>
+                  <br />
+                  <div className="flex items-center text-zinc-900 dark:text-white mt-1">
+                    <span className="mr-3 md:mr-4">tu</span>
+                    <AnimatedHero />
+                  </div>
+                </h1>
+              </div>
+
+              {/* Subheadline */}
+              <p
+                className={`text-lg text-zinc-500 dark:text-zinc-400 leading-relaxed max-w-lg
+                  font-medium transition-all duration-700 delay-200 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+              >
+                Registrá gastos, armá presupuestos, invertí con confianza y dejá que la
+                IA te dé consejos personalizados para cada situación.
+              </p>
+
+              {/* CTA Buttons */}
+              <div
+                className={`flex flex-col sm:flex-row gap-3 transition-all duration-700 delay-300 ${heroVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+              >
+                <Button
+                  onClick={() => navigate('/registro')}
+                  className="text-base px-8 py-4 rounded-2xl font-bold shadow-[0_8px_32px_rgba(245,166,35,0.4)]
+                    hover:shadow-[0_12px_48px_rgba(245,166,35,0.5)] hover:scale-[1.02] transition-all duration-300"
+                >
+                  ✨ Empezar gratis — 30 seg
+                </Button>
+                <button
+                  onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}
+                  className="flex items-center justify-center gap-2 px-8 py-4 rounded-2xl
+                    text-base font-semibold text-zinc-600 dark:text-zinc-300
+                    bg-white/80 dark:bg-white/5 backdrop-blur-sm
+                    border border-zinc-200/80 dark:border-white/8
+                    hover:border-[var(--mango)]/30 hover:text-[var(--mango-dark)]
+                    dark:hover:text-[var(--mango)] transition-all duration-300
+                    hover:shadow-md"
+                >
+                  Ver funciones
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M8 3v10M3 8l5 5 5-5"/>
+                  </svg>
+                </button>
+              </div>
+
+
+            </div>
+
+            {/* Right: Dashboard mockup */}
+            <div className="relative hidden lg:block">
+              {/* Main card */}
+              <div
+                className={`relative rounded-3xl bg-white dark:bg-[var(--dark-card)]
+                  shadow-2xl border border-zinc-100/80 dark:border-white/8 p-6
+                  transition-all duration-1000 delay-300 ${heroVisible ? 'opacity-100 translate-y-0 rotate-0' : 'opacity-0 translate-y-12 rotate-1'}`}
+              >
+                {/* Header mockup */}
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <p className="text-xs text-zinc-400 font-medium mb-1">Balance del mes</p>
+                    <p className="text-3xl font-black font-display text-zinc-900 dark:text-white">
+                      $<AnimatedCounter end={420500} duration={3000} delay={800} />
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                        ↗ +12.3%
+                      </span>
+                      <span className="text-[10px] text-zinc-400">vs mes anterior</span>
+                    </div>
+                  </div>
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-xl
+                    animate-pulse-subtle">
+                    📈
+                  </div>
+                </div>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  <div className="bg-emerald-50 dark:bg-emerald-900/15 rounded-2xl p-3.5 border border-emerald-100/60 dark:border-emerald-800/30
+                    hover:scale-[1.02] transition-transform duration-200">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">Ingresos</p>
+                    <p className="text-lg font-black font-display text-emerald-700 dark:text-emerald-400">
+                      $<AnimatedCounter end={850} suffix="K" duration={2000} delay={1200} />
+                    </p>
+                  </div>
+                  <div className="bg-red-50 dark:bg-red-900/15 rounded-2xl p-3.5 border border-red-100/60 dark:border-red-800/30
+                    hover:scale-[1.02] transition-transform duration-200">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 mb-1">Gastos</p>
+                    <p className="text-lg font-black font-display text-red-700 dark:text-red-400">
+                      $<AnimatedCounter end={429} suffix="K" duration={2000} delay={1400} />
+                    </p>
+                  </div>
+                </div>
+
+                {/* Animated chart bars */}
+                <div className="flex items-end gap-1 h-16 mb-4">
+                  {[40,65,45,80,55,95,70,88,60,75,90,100].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-sm transition-all duration-1000 ease-out"
+                      style={{
+                        height: heroVisible ? `${h}%` : '5%',
+                        transitionDelay: `${1500 + i * 80}ms`,
+                        background: i === 11
+                          ? 'var(--gradient-mango)'
+                          : i % 2 === 0
+                            ? 'rgba(16,185,129,0.25)'
+                            : 'rgba(239,68,68,0.2)',
+                      }} />
+                  ))}
+                </div>
+
+                {/* Movements */}
+                {[
+                  { cat: '🛒', name: 'Supermercado', amount: '-$12.400', color: 'text-red-500' },
+                  { cat: '💰', name: 'Sueldo', amount: '+$285.000', color: 'text-emerald-600' },
+                  { cat: '🚗', name: 'Nafta', amount: '-$8.200', color: 'text-red-500' },
+                ].map((m, i) => (
+                  <div key={i} className="flex items-center gap-3 py-2.5 border-b border-zinc-50 dark:border-zinc-700/40 last:border-0
+                    hover:bg-zinc-50/50 dark:hover:bg-white/[0.02] rounded-lg px-1 -mx-1 transition-colors duration-200">
+                    <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-700/50 flex items-center justify-center text-base">
+                      {m.cat}
+                    </div>
+                    <p className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">{m.name}</p>
+                    <p className={`text-sm font-bold ${m.color}`}>{m.amount}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Floating pills with enhanced animations */}
+              <div className="absolute -left-14 top-[20%]">
+                <StatPill emoji="📊" value="87%" label="Tasa de ahorro" delay="800ms" />
+              </div>
+              <div className="absolute -right-10 bottom-[20%]">
+                <StatPill emoji="🎯" value="3 metas" label="Completadas" delay="1000ms" />
+              </div>
+              <div className="absolute -top-8 right-[20%]">
+                <StatPill emoji="🤖" value="IA activa" label="Análisis listo" delay="1200ms" />
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
 
       {/* ── TRUST BANNER (dopamine: validation from authority) ── */}
       <section className="py-8 border-y border-zinc-100/60 dark:border-white/[0.04] bg-white/40 dark:bg-white/[0.02]">
