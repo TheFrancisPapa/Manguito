@@ -15,3 +15,10 @@ export function formatMoneda(valor, moneda = 'ARS', mostrarCentavos = false) {
     maximumFractionDigits: mostrarCentavos ? 2 : 0,
   });
 }
+
+import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs) {
+  return twMerge(clsx(inputs));
+}
