@@ -12,6 +12,7 @@ const MENU = [
   // Herramientas
   { path: '/chat',         icono: '🤖', label: 'ManguitoAI',   grupo: 'Herramientas', badge: '🛠️' },
   { path: '/cotizaciones', icono: '💱', label: 'Cotizaciones', grupo: 'Herramientas' },
+  { path: '/mercado',      icono: '🛒', label: 'Mercado',     grupo: 'Herramientas', badge: '🆕' },
   { path: '/nafta',        icono: '⛽', label: 'Nafta (arg)',  grupo: 'Herramientas' },
   { path: '/calculadora',  icono: '🧮', label: 'Calculadora',  grupo: 'Herramientas' },
   // Más

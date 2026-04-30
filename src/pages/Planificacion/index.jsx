@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PageWrapper, PageHeader } from '../../components/layout'
+import { TipContextual } from '../../components/ui/TipContextual'
 import { PresupuestosView } from './Presupuestos'
 import { MetasView } from './Metas'
 
@@ -13,6 +14,8 @@ export function PlanificacionPage() {
           titulo="Planificación" 
           subtitulo="Organizá tus límites y metas de ahorro"
         />
+
+        <TipContextual seccion="planificacion" className="mb-5" />
 
         <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1 mb-5">
           <button

@@ -5,6 +5,7 @@ import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, CardHeader, Button, EmptyState, Modal } from '../../components/ui'
 import { FormInversion } from '../../components/forms/FormInversion'
 import { FormVenta } from '../../components/forms/FormVenta'
+import { TipContextual } from '../../components/ui/TipContextual'
 
 // ── Formateo ────────────────────────────────────────────────
 const fmt = (n, dec = 2) =>
@@ -424,6 +425,8 @@ export function InversionesPage() {
             </div>
           }
         />
+
+        <TipContextual seccion="inversiones" className="mb-5" />
 
         {/* Portfolio summary */}
         <ResumenPortfolio

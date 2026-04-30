@@ -2,6 +2,7 @@
 // Perfiles de Instagram rotan diariamente (6 por día) de un pool de 40 cuentas.
 import { useState, useMemo } from 'react'
 import { PageWrapper, PageHeader } from '../../components/layout'
+import { TabLibros } from './TabLibros'
 
 // ── Pool completo de cuentas de Instagram ────────────────────
 // Organizadas en categorías para la vista de "Categoría del día"
@@ -647,7 +648,7 @@ function ProximoCambio() {
 
 // ── Página principal ──────────────────────────────────────────
 export function RecursosPage() {
-  const [tab, setTab] = useState('instagram')
+  const [tab, setTab] = useState('libros')
   const [verTodos, setVerTodos] = useState(false)
 
   const perfilesDelDia = useMemo(() => getPerfilesDelDia(), [])
@@ -682,6 +683,16 @@ export function RecursosPage() {
         {/* Tabs */}
         <div className="flex bg-zinc-100 dark:bg-zinc-800 rounded-xl p-1 mb-5">
           <button
+            onClick={() => setTab('libros')}
+            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              tab === 'libros'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300'
+            }`}
+          >
+            📚 Libros
+          </button>
+          <button
             onClick={() => setTab('instagram')}
             className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
               tab === 'instagram'
@@ -702,6 +713,11 @@ export function RecursosPage() {
             ▶️ YouTube
           </button>
         </div>
+
+        {/* ── LIBROS ── */}
+        {tab === 'libros' && (
+          <TabLibros />
+        )}
 
         {/* ── INSTAGRAM ── */}
         {tab === 'instagram' && (

@@ -23,6 +23,7 @@ import { BentoGastos }     from './components/BentoGastos'
 import { BentoMetas }      from './components/BentoMetas'
 import { BentoAcciones }   from './components/BentoAcciones'
 import { BentoMovimientos } from './components/BentoMovimientos'
+import { TipContextual }   from '../../components/ui/TipContextual'
 
 export function DashboardPage() {
   const { usuario } = useAuthContext()
@@ -60,6 +61,8 @@ export function DashboardPage() {
         aria-label="Panel principal de Manguito"
         className="bento-grid pb-4"
       >
+        <TipContextual seccion="movimientos" className="col-span-12" />
+
         {/* ── Balance con variación real ── */}
         <BentoBalance
           balance={balance}

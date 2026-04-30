@@ -12,6 +12,7 @@ const MENU_ITEMS = [
   { path: '/agenda',        label: 'Agenda de Pagos',     icono: '📅', grupo: 'organizacion'  },
   { path: '/chat',          label: 'ManguitoAI',          icono: '🤖', grupo: 'herramientas', badge: 'Pronto' },
   { path: '/cotizaciones',  label: 'Cotizaciones',        icono: '💱', grupo: 'herramientas' },
+  { path: '/mercado',     label: 'Mercado',             icono: '🛒', grupo: 'herramientas', badge: 'Nuevo' },
   { path: '/nafta',         label: 'Precios de Nafta',    icono: '⛽', grupo: 'herramientas' },
   { path: '/calculadora',   label: 'Calculadoras',        icono: '🧮', grupo: 'herramientas' },
   { path: '/comunidad',    label: 'Comunidad',           icono: '🌐', grupo: 'mas'  },
