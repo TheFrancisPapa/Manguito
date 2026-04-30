@@ -63,6 +63,8 @@ export const router = createBrowserRouter([
       { path: '/registro',             element: <PublicRoute><RegistroPage /></PublicRoute> },
       { path: '/recuperar-password',   element: <PublicRoute><RecuperarPassword /></PublicRoute> },
       { path: '/reset-password',       element: <PublicRoute><ResetPassword /></PublicRoute> },
+      // Mercado es público — cualquiera puede ver precios
+      { path: '/mercado',              element: <MercadoPage /> },
 
       // ── Privadas ────────────────────────────────────────────
       {
@@ -81,7 +83,6 @@ export const router = createBrowserRouter([
           { path: '/nafta',                element: <NaftaPage /> },
           { path: '/calculadora',          element: <CalculadoraPage /> },
           { path: '/comunidad',            element: <ComunidadPage /> },
-          { path: '/mercado',              element: <MercadoPage /> },
         ]
       },
 

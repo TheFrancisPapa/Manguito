@@ -520,17 +520,255 @@ export function LandingPage() {
             <FeatureCard
               emoji="📱"
               title="Control de suscripciones"
-              desc="Catálogo completo con precios reales por método de pago actualizados por la comunidad."
+              desc="Registrá cuánto pagás por Netflix, Spotify y más. Visualizá tu gasto mensual recurrente y decidí qué cortar."
               color="#EC4899"
               stat={45}
               statLabel="ahorro"
               delay="600ms"
             />
+            <FeatureCard
+              emoji="🛒"
+              title="Mercado de precios"
+              desc="La comunidad reporta precios en tiempo real. Compará entre comercios de tu ciudad y ahorrá en cada compra."
+              color="#10B981"
+              stat={95}
+              statLabel="cobertura"
+              delay="700ms"
+            />
+            <FeatureCard
+              emoji="⛽"
+              title="Nafta más barata"
+              desc="Encontrá la estación con el mejor precio cerca tuyo. Precios verificados por la comunidad en tiempo real."
+              color="#F59E0B"
+              stat={80}
+              statLabel="en vivo"
+              delay="800ms"
+            />
           </div>
         </div>
       </section>
 
+      {/* ── MERCADO PREVIEW (the hook for non-logged users) ── */}
+      <section className="py-28 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-zinc-200/60 dark:via-white/8 to-transparent" />
+          <GradientOrb
+            className="top-[-20%] right-[-10%] opacity-15"
+            color1="rgba(16,185,129,0.3)"
+            color2="rgba(16,185,129,0)"
+            size={600}
+          />
+        </div>
 
+        <div className="max-w-6xl mx-auto px-6 relative">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+
+            {/* Left: Copy */}
+            <div>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full
+                bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-200/60 dark:border-emerald-800/20
+                text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-6">
+                🛒 Nuevo · Mercado
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black font-display text-zinc-900 dark:text-white mb-4 leading-tight">
+                Compará precios<br />
+                <span className="text-gradient-gold">en tu ciudad</span>
+              </h2>
+              <p className="text-lg text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed mb-6">
+                La comunidad carga precios reales de supermercados, kioscos, verdulerías
+                y mayoristas. Vos elegís dónde comprar más barato.
+              </p>
+              <div className="flex flex-wrap gap-3 mb-8">
+                {[
+                  { emoji: '🏪', text: 'Supermercados' },
+                  { emoji: '📦', text: 'Mayoristas' },
+                  { emoji: '🥬', text: 'Verdulerías' },
+                  { emoji: '👕', text: 'Ropa' },
+                  { emoji: '💊', text: 'Farmacias' },
+                ].map(t => (
+                  <span key={t.text} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full
+                    bg-zinc-100 dark:bg-zinc-800/60 text-xs font-semibold text-zinc-600 dark:text-zinc-300
+                    border border-zinc-200/60 dark:border-zinc-700/40">
+                    {t.emoji} {t.text}
+                  </span>
+                ))}
+              </div>
+              <Button onClick={() => navigate('/mercado')} className="px-8 py-4 rounded-2xl text-base font-bold">
+                🔍 Explorar precios gratis
+              </Button>
+            </div>
+
+            {/* Right: Price comparison mockup */}
+            <div className="relative">
+              <div className="bg-white dark:bg-[var(--dark-card)] rounded-3xl shadow-2xl
+                border border-zinc-100/80 dark:border-white/8 p-6 overflow-hidden">
+
+                {/* Search bar mockup */}
+                <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50
+                  rounded-2xl px-4 py-3 mb-5 border border-zinc-200/40 dark:border-zinc-700/30">
+                  <span className="text-zinc-400">🔍</span>
+                  <span className="text-sm text-zinc-400 font-medium">Yerba Mate Taragüí 1kg</span>
+                </div>
+
+                {/* Location */}
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-xs text-zinc-400 font-medium">📍 Corrientes, Corrientes</span>
+                  <span className="text-[10px] text-zinc-400">· 5 comercios</span>
+                </div>
+
+                {/* Price cards */}
+                {[
+                  { shop: 'Maxiconsumo', type: '📦', price: '$3.800', badge: '🏆', best: true },
+                  { shop: 'Canga Centro', type: '🛒', price: '$4.100', diff: '+$300' },
+                  { shop: 'Carrefour',    type: '🛒', price: '$4.200', diff: '+$400' },
+                  { shop: 'Impulso',      type: '🛒', price: '$4.350', diff: '+$550' },
+                  { shop: 'Supermax',     type: '🛒', price: '$4.450', diff: '+$650', tag: 'Oferta' },
+                ].map((item, i) => (
+                  <div
+                    key={item.shop}
+                    className={`flex items-center justify-between py-3 px-3 -mx-1 rounded-xl transition-all
+                      ${item.best
+                        ? 'bg-emerald-50/60 dark:bg-emerald-900/10 ring-1 ring-emerald-200/50 dark:ring-emerald-800/30'
+                        : 'hover:bg-zinc-50 dark:hover:bg-zinc-800/30'
+                      } ${i < 4 ? 'border-b border-zinc-100/60 dark:border-zinc-800/40' : ''}`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base">{item.type}</span>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-bold text-zinc-800 dark:text-white">{item.shop}</span>
+                          {item.tag && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-black
+                              bg-red-100 dark:bg-red-900/30 text-red-600 uppercase">
+                              {item.tag}
+                            </span>
+                          )}
+                        </div>
+                        {item.badge && (
+                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                            {item.badge} Mejor precio
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-sm font-black ${
+                        item.best ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-800 dark:text-white'
+                      }`}>
+                        {item.price}
+                      </span>
+                      {item.diff && (
+                        <p className="text-[10px] text-red-400 font-semibold">{item.diff}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Savings banner */}
+                <div className="mt-4 p-3 rounded-xl border-l-4 border-emerald-500"
+                  style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, transparent 100%)' }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      💡 Ahorro potencial
+                    </span>
+                    <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
+                      $650 (−15%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating badges */}
+              <div className="absolute -left-8 top-[15%] hidden lg:block">
+                <StatPill emoji="👥" value="Comunidad" label="Precios actualizados" delay="600ms" />
+              </div>
+              <div className="absolute -right-6 bottom-[15%] hidden lg:block">
+                <StatPill emoji="🔄" value="Tiempo real" label="Votos en vivo" delay="800ms" />
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ── LO QUE NOS HACE ÚNICOS (vs Impuestito, etc.) ── */}
+      <section className="py-24 bg-zinc-50/50 dark:bg-white/[0.01]">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <h2 className="text-3xl md:text-4xl font-black font-display text-zinc-900 dark:text-white mb-3 leading-tight">
+              Más que una app de finanzas
+            </h2>
+            <p className="text-zinc-500 dark:text-zinc-400 text-lg">
+              Herramientas únicas que no vas a encontrar en ningún otro lado.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Mercado */}
+            <div className="bg-white dark:bg-[var(--dark-card)] rounded-2xl p-6
+              border border-zinc-100/80 dark:border-white/6
+              hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20
+                flex items-center justify-center text-2xl mb-4
+                group-hover:scale-110 transition-transform duration-300">
+                🛒
+              </div>
+              <h3 className="font-bold font-display text-zinc-900 dark:text-white mb-2">
+                Mercado de Precios
+              </h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-3">
+                Compará precios de productos reales entre comercios de tu ciudad.
+                La comunidad actualiza y la competencia hace el resto.
+              </p>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                Libre mercado en tu bolsillo
+              </span>
+            </div>
+
+            {/* Nafta */}
+            <div className="bg-white dark:bg-[var(--dark-card)] rounded-2xl p-6
+              border border-zinc-100/80 dark:border-white/6
+              hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20
+                flex items-center justify-center text-2xl mb-4
+                group-hover:scale-110 transition-transform duration-300">
+                ⛽
+              </div>
+              <h3 className="font-bold font-display text-zinc-900 dark:text-white mb-2">
+                Precios de Nafta
+              </h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-3">
+                Encontrá la estación más barata cerca tuyo. Precios actualizados
+                por usuarios reales con sistema de verificación.
+              </p>
+              <span className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                Ya disponible en Argentina
+              </span>
+            </div>
+
+            {/* Impuesto-aware */}
+            <div className="bg-white dark:bg-[var(--dark-card)] rounded-2xl p-6
+              border border-zinc-100/80 dark:border-white/6
+              hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+              <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-900/20
+                flex items-center justify-center text-2xl mb-4
+                group-hover:scale-110 transition-transform duration-300">
+                🧮
+              </div>
+              <h3 className="font-bold font-display text-zinc-900 dark:text-white mb-2">
+                Calculadora Total
+              </h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed mb-3">
+                Convertí precios en USD a pesos con todos los impuestos.
+                Compará entre tarjetas y billeteras virtuales.
+              </p>
+              <span className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">
+                IVA + PAIS + Ganancias incluidos
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── PLANS ── */}
       <section className="py-28 relative">
