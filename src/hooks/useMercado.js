@@ -281,6 +281,33 @@ export function useComercios(ciudad, provincia) {
   return { comercios, cargando, recargar: cargar }
 }
 
+// ── Hook para productos populares ────────────────────────────
+export function usePopulares(ciudad, provincia) {
+  const [populares, setPopulares] = useState([])
+  const [cargando, setCargando] = useState(false)
+
+  const cargar = useCallback(async () => {
+    setCargando(true)
+    try {
+      const { data, error } = await supabase.rpc('productos_populares', {
+        p_ciudad: ciudad || null,
+        p_provincia: provincia || null,
+        p_limite: 8,
+      })
+      if (error) throw error
+      setPopulares(data || [])
+    } catch (e) {
+      console.error('Error cargando populares:', e)
+    } finally {
+      setCargando(false)
+    }
+  }, [ciudad, provincia])
+
+  useEffect(() => { cargar() }, [cargar])
+
+  return { populares, cargando }
+}
+
 // ── Helpers ──────────────────────────────────────────────────
 export function fmtPrecio(n) {
   if (!n && n !== 0) return '—'

@@ -250,6 +250,45 @@ language sql security definer set search_path = public as $$
   order by pp.precio asc;
 $$;
 
+-- Productos populares (los que tienen más precios cargados)
+create or replace function productos_populares(
+  p_ciudad text default null,
+  p_provincia text default null,
+  p_limite integer default 10
+)
+returns table (
+  producto_id     uuid,
+  nombre          text,
+  marca           text,
+  categoria       text,
+  presentacion    text,
+  imagen_url      text,
+  precio_min      numeric,
+  precio_max      numeric,
+  cant_comercios  bigint
+)
+language sql security definer set search_path = public as $$
+  select
+    p.id as producto_id,
+    p.nombre,
+    p.marca,
+    p.categoria,
+    p.presentacion,
+    p.imagen_url,
+    min(pp.precio) as precio_min,
+    max(pp.precio) as precio_max,
+    count(distinct pp.comercio_id) as cant_comercios
+  from productos p
+  join precios_productos pp on pp.producto_id = p.id
+  join comercios c on c.id = pp.comercio_id
+  where
+    (p_ciudad is null or c.ciudad = p_ciudad)
+    and (p_provincia is null or c.provincia = p_provincia)
+  group by p.id, p.nombre, p.marca, p.categoria, p.presentacion, p.imagen_url
+  order by cant_comercios desc, max(pp.updated_at) desc
+  limit p_limite;
+$$;
+
 
 -- ══════════════════════════════════════════════
 --  6. TRIGGERS

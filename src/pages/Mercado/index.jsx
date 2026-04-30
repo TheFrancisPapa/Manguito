@@ -4,8 +4,8 @@ import { PageWrapper, PageHeader } from '../../components/layout'
 import { Card, CardHeader, Button } from '../../components/ui'
 import { useAuthContext } from '../../context/AuthContext'
 import {
-  useUbicacion, useBusqueda, usePreciosProducto, useComercios,
-  crearComercio, crearProducto, reportarPrecio,
+  useUbicacion, useBusqueda, usePreciosProducto, useComercios, usePopulares,
+  crearComercio, crearProducto, reportarPrecio, votarPrecio,
   PROVINCIAS_AR, CIUDADES_POR_PROVINCIA, CATEGORIAS_PRODUCTO, TIPOS_COMERCIO,
   fmtPrecio, tiempoDesde,
 } from '../../hooks/useMercado'
@@ -145,8 +145,24 @@ function ResultadoCard({ producto, onSelect }) {
 
 // ── Vista detalle: precios de un producto ────────────────────
 function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio }) {
-  const { precios, cargando } = usePreciosProducto(producto.producto_id, ciudad, provincia)
+  const { precios, cargando, recargar } = usePreciosProducto(producto.producto_id, ciudad, provincia)
   const catInfo = CATEGORIAS_PRODUCTO.find(c => c.id === producto.categoria)
+  const [votando, setVotando] = useState(null)
+
+  // Estadísticas de precios
+  const precioMin = precios.length ? Math.min(...precios.map(p => p.en_oferta && p.precio_oferta ? p.precio_oferta : p.precio)) : 0
+  const precioMax = precios.length ? Math.max(...precios.map(p => p.precio)) : 0
+  const ahorro = precioMax > 0 ? precioMax - precioMin : 0
+  const ahorroPct = precioMax > 0 ? Math.round((ahorro / precioMax) * 100) : 0
+
+  const handleVoto = async (precioId, tipo) => {
+    setVotando(precioId)
+    try {
+      await votarPrecio(precioId, tipo)
+      await recargar()
+    } catch (e) { console.error(e) }
+    finally { setVotando(null) }
+  }
 
   return (
     <div className="animate-in fade-in duration-300">
@@ -164,7 +180,7 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
           <div className="w-14 h-14 rounded-2xl bg-[var(--mango)]/8 flex items-center justify-center text-3xl">
             {catInfo?.emoji || '📦'}
           </div>
-          <div>
+          <div className="flex-1">
             <h2 className="text-lg font-bold text-zinc-900 dark:text-white">{producto.nombre}</h2>
             <p className="text-sm text-zinc-400">
               {producto.marca} {producto.presentacion && `· ${producto.presentacion}`}
@@ -173,9 +189,37 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
         </div>
       </div>
 
+      {/* Tarjeta de ahorro — solo si hay más de 1 precio */}
+      {precios.length > 1 && ahorro > 0 && (
+        <div className="card-premium p-4 mb-4 border-l-4 border-emerald-500"
+          style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, transparent 100%)' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                💡 Ahorro potencial
+              </p>
+              <p className="text-[11px] text-zinc-400 mt-0.5">
+                Comprando en el más barato vs el más caro
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                {fmtPrecio(ahorro)}
+              </p>
+              <p className="text-[10px] font-bold text-emerald-500/70">
+                −{ahorroPct}% menos
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Lista de precios */}
       <h3 className="text-sm font-bold text-zinc-500 dark:text-zinc-400 mb-3 flex items-center gap-2">
         💰 Precios en {ciudad || 'tu zona'}
+        <span className="text-[10px] font-normal text-zinc-400 ml-auto">
+          {precios.length} comercio{precios.length !== 1 ? 's' : ''}
+        </span>
         {cargando && <div className="w-4 h-4 border-2 border-[var(--mango)]/30 border-t-[var(--mango)] rounded-full animate-spin" />}
       </h3>
 
@@ -193,21 +237,34 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
         <div className="flex flex-col gap-2">
           {precios.map((p, i) => {
             const tipoInfo = TIPOS_COMERCIO.find(t => t.id === p.comercio_tipo)
+            const precioEfectivo = p.en_oferta && p.precio_oferta ? p.precio_oferta : p.precio
+            const diffVsPrimero = i > 0 ? precioEfectivo - precioMin : 0
             return (
               <div
                 key={p.precio_id}
-                className={`card-premium p-4 ${i === 0 ? 'ring-2 ring-[var(--mango)]/20' : ''}`}
+                className={`card-premium p-4 transition-all ${i === 0 ? 'ring-2 ring-emerald-500/25' : ''}`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800
-                      flex items-center justify-center text-lg flex-shrink-0">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${
+                      i === 0
+                        ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                        : 'bg-zinc-100 dark:bg-zinc-800'
+                    }`}>
                       {tipoInfo?.emoji || '🏪'}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">
-                        {p.comercio_nombre}
-                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">
+                          {p.comercio_nombre}
+                        </p>
+                        {p.en_oferta && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-black
+                            bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 uppercase">
+                            Oferta
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[11px] text-zinc-400 truncate">
                         {p.comercio_dir || tipoInfo?.nombre}
                         {p.comercio_cadena && ` · ${p.comercio_cadena}`}
@@ -220,21 +277,51 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
                         ? 'text-emerald-600 dark:text-emerald-400'
                         : 'text-zinc-900 dark:text-white'
                     }`}>
-                      {fmtPrecio(p.en_oferta && p.precio_oferta ? p.precio_oferta : p.precio)}
+                      {fmtPrecio(precioEfectivo)}
                     </p>
                     {p.en_oferta && p.precio_oferta && (
                       <p className="text-[10px] text-zinc-400 line-through">{fmtPrecio(p.precio)}</p>
                     )}
+                    {i > 0 && diffVsPrimero > 0 && (
+                      <p className="text-[10px] text-red-400 font-semibold">+{fmtPrecio(diffVsPrimero)}</p>
+                    )}
                     <p className="text-[10px] text-zinc-400">{tiempoDesde(p.updated_at)}</p>
                   </div>
                 </div>
-                {i === 0 && precios.length > 1 && (
-                  <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+
+                {/* Footer: badge + votos */}
+                <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                  {i === 0 && precios.length > 1 ? (
                     <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                       🏆 Mejor precio
                     </span>
+                  ) : (
+                    <span className="text-[10px] text-zinc-400">
+                      {p.votos_ok > 0 && `✓ ${p.votos_ok} confirmaron`}
+                      {p.votos_desactual > 0 && ` · ⚠ ${p.votos_desactual} reportaron`}
+                    </span>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleVoto(p.precio_id, 'ok')}
+                      disabled={votando === p.precio_id}
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold
+                        bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400
+                        hover:bg-emerald-100 active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      👍 Confirmo
+                    </button>
+                    <button
+                      onClick={() => handleVoto(p.precio_id, 'desactual')}
+                      disabled={votando === p.precio_id}
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold
+                        bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400
+                        hover:bg-amber-100 active:scale-95 transition-all disabled:opacity-50"
+                    >
+                      📢 Desactualizado
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
             )
           })}
@@ -528,6 +615,7 @@ export function MercadoPage() {
   const { ubicacion, cambiarUbicacion } = useUbicacion()
   const { query, resultados, cargando, error, buscarConDebounce } = useBusqueda()
   const { comercios } = useComercios(ubicacion.ciudad, ubicacion.provincia)
+  const { populares } = usePopulares(ubicacion.ciudad, ubicacion.provincia)
   const [categoriaFiltro, setCategoriaFiltro] = useState(null)
   const [productoSeleccionado, setProductoSeleccionado] = useState(null)
   const [mostrarModalPrecio, setMostrarModalPrecio] = useState(false)
@@ -597,7 +685,27 @@ export function MercadoPage() {
 
         {/* Resultados */}
         {!query || query.length < 2 ? (
-          <EstadoInicial onSearch={handleSearch} />
+          <>
+            <EstadoInicial onSearch={handleSearch} />
+
+            {/* Productos populares */}
+            {populares.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-bold text-zinc-600 dark:text-zinc-300 mb-3 flex items-center gap-2">
+                  🔥 Populares en {ubicacion.ciudad}
+                </h3>
+                <div className="flex flex-col gap-2">
+                  {populares.map(prod => (
+                    <ResultadoCard
+                      key={prod.producto_id}
+                      producto={prod}
+                      onSelect={setProductoSeleccionado}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
         ) : resultadosFiltrados.length === 0 && !cargando ? (
           <SinResultados query={query} />
         ) : (
