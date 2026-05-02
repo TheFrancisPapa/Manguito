@@ -2,9 +2,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   crearComercio, crearProducto, reportarPrecio,
-  buscarProductoExistente, normalizarPresentacion,
+  buscarProductoExistente, buscarPrecioEnComercio, actualizarPrecio,
+  normalizarPresentacion, votarPrecio,
   CATEGORIAS_PRODUCTO, TIPOS_COMERCIO,
   ETIQUETAS_POR_CATEGORIA, LOCALES_CORRIENTES,
+  fmtPrecio, tiempoDesde,
 } from '../../hooks/useMercado'
 
 // ── Step indicator ───────────────────────────────────────────
@@ -150,6 +152,11 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
   const [enOferta, setEnOferta] = useState(false)
   const [precioOferta, setPrecioOferta] = useState('')
   const [esRetornable, setEsRetornable] = useState(false)
+
+  // Precio existente (si ya hay un precio para ese producto en ese comercio)
+  const [precioExistente, setPrecioExistente] = useState(null)
+  const [verificandoPrecio, setVerificandoPrecio] = useState(false)
+  const [modoActualizar, setModoActualizar] = useState(false)
 
   // General
   const [guardando, setGuardando] = useState(false)
@@ -584,12 +591,70 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
                 </>
               )}
 
-              <button onClick={() => { setErrorMsg(''); setPaso(3) }} disabled={!paso2Valido}
+              {/* Al avanzar al paso 3, primero resolver comercio y chequear precio existente */}
+              <button
+                onClick={async () => {
+                  setErrorMsg('')
+                  setVerificandoPrecio(true)
+                  try {
+                    // Resolver comercioId
+                    let resolvedComercioId = comercioId
+                    if (usarLocalConocido && localSeleccionado !== null) {
+                      const local = localesFiltrados[localSeleccionado] || LOCALES_CORRIENTES[localSeleccionado]
+                      if (local) {
+                        const existing = comercios.find(c => c.nombre === local.nombre)
+                        if (existing) {
+                          resolvedComercioId = existing.id
+                        } else {
+                          const com = await crearComercio({
+                            nombre: local.nombre, tipo: local.tipo,
+                            direccion: local.direccion, ciudad: local.ciudad,
+                            provincia: local.provincia,
+                          })
+                          resolvedComercioId = com.id
+                        }
+                        setComercioId(resolvedComercioId)
+                      }
+                    }
+
+                    // Resolver productoId si no existe
+                    let resolvedProductoId = productoId
+                    if (!resolvedProductoId && productoNombre.trim() && productoMarca.trim()) {
+                      const prod = await crearProducto({
+                        nombre: productoNombre.trim(), marca: productoMarca.trim(),
+                        categoria: productoCategoria,
+                        subcategoria: productoEtiqueta || null,
+                        presentacion: normalizarPresentacion(productoPresentacion),
+                      })
+                      resolvedProductoId = prod.id
+                      setProductoId(resolvedProductoId)
+                    }
+
+                    // Chequear si ya hay precio para este producto en este comercio
+                    if (resolvedProductoId && resolvedComercioId) {
+                      const existente = await buscarPrecioEnComercio(resolvedProductoId, resolvedComercioId)
+                      setPrecioExistente(existente)
+                      setModoActualizar(false)
+                    }
+
+                    setPaso(3)
+                  } catch (e) {
+                    setErrorMsg(e.message || 'Error al verificar')
+                  } finally {
+                    setVerificandoPrecio(false)
+                  }
+                }}
+                disabled={!paso2Valido || verificandoPrecio}
                 className="w-full py-3 rounded-2xl bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
                   text-sm font-bold text-[var(--charcoal)] disabled:opacity-40 press-scale mt-1
                   shadow-lg transition-all"
                 style={{ boxShadow: paso2Valido ? '0 4px 16px rgba(245,166,35,0.3)' : 'none' }}>
-                Siguiente — Cargar precio →
+                {verificandoPrecio ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-[var(--charcoal)]/30 border-t-[var(--charcoal)] rounded-full animate-spin" />
+                    Verificando...
+                  </span>
+                ) : 'Siguiente — Cargar precio →'}
               </button>
             </div>
           )}
@@ -597,7 +662,7 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
           {/* ─── PASO 3: Precio ───────────────────────────── */}
           {paso === 3 && (
             <div className="flex flex-col gap-4 animate-in fade-in duration-200">
-              <button onClick={() => setPaso(2)}
+              <button onClick={() => { setPaso(2); setPrecioExistente(null); setModoActualizar(false) }}
                 className="text-xs text-[var(--mango-dark)] dark:text-[var(--mango)] font-semibold self-start
                   flex items-center gap-1 press-light">
                 ← Cambiar lugar
@@ -633,60 +698,188 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
                 )}
               </div>
 
-              <FieldGroup label="Precio ($)" emoji="💰">
-                <input type="number" value={precio} onChange={e => setPrecio(e.target.value)}
-                  placeholder="Ej: 4500"
-                  className="field-base !py-3.5 text-base !px-4 font-bold" autoFocus
-                  inputMode="decimal" />
-              </FieldGroup>
-
-              <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl
-                bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800">
-                <input type="checkbox" checked={enOferta} onChange={e => setEnOferta(e.target.checked)} />
-                <div>
-                  <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">¿Está en oferta?</span>
-                  <p className="text-[10px] text-zinc-400">Marcá si el precio es promocional</p>
-                </div>
-              </label>
-
-              {enOferta && (
-                <FieldGroup label="Precio de oferta ($)" emoji="🔥">
-                  <input type="number" value={precioOferta} onChange={e => setPrecioOferta(e.target.value)}
-                    placeholder="Precio con descuento"
-                    className="field-base !py-3 text-sm !px-4" inputMode="decimal" />
-                </FieldGroup>
-              )}
-
-              {/* Toggle retornable — solo para bebidas */}
-              {(productoCategoria === 'bebidas' || productoPreseleccionado?.categoria === 'bebidas') && (
-                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl
-                  bg-sky-50/60 dark:bg-sky-900/10 border border-sky-200/60 dark:border-sky-800/40">
-                  <input type="checkbox" checked={esRetornable} onChange={e => setEsRetornable(e.target.checked)}
-                    className="mt-0.5" />
-                  <div>
-                    <span className="text-sm font-semibold text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
-                      ♻️ ¿Envase retornable?
-                    </span>
-                    <p className="text-[10px] text-sky-500/80 dark:text-sky-400/70 mt-0.5 leading-relaxed">
-                      Marcá esto si entregaste un envase retornable y te hicieron descuento.
-                      Sin envase, el precio suele ser más alto.
-                    </p>
+              {/* ===== PRECIO YA EXISTE: Confirmación/Actualización ===== */}
+              {precioExistente && !modoActualizar ? (
+                <div className="flex flex-col gap-3">
+                  <div className="card-premium p-5 border-l-4 border-amber-400
+                    bg-gradient-to-r from-amber-50/50 to-transparent dark:from-amber-900/10">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-lg">⚠️</span>
+                      <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
+                        Este producto ya tiene precio acá
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-2xl font-black text-zinc-900 dark:text-white">
+                          {fmtPrecio(precioExistente.en_oferta && precioExistente.precio_oferta
+                            ? precioExistente.precio_oferta : precioExistente.precio)}
+                        </p>
+                        {precioExistente.en_oferta && precioExistente.precio_oferta && (
+                          <p className="text-xs text-zinc-400 line-through">
+                            {fmtPrecio(precioExistente.precio)}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-zinc-400">{tiempoDesde(precioExistente.updated_at)}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {precioExistente.es_retornable && (
+                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black
+                              bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 uppercase">
+                              ♻️ Retornable
+                            </span>
+                          )}
+                          {precioExistente.en_oferta && (
+                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black
+                              bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 uppercase">
+                              Oferta
+                            </span>
+                          )}
+                        </div>
+                        {precioExistente.votos_ok > 0 && (
+                          <p className="text-[10px] text-emerald-500 mt-1">✓ {precioExistente.votos_ok} confirmaron</p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </label>
+
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center font-medium">
+                    ¿Este precio sigue vigente?
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={async () => {
+                        setGuardando(true)
+                        try {
+                          await votarPrecio(precioExistente.id, 'ok')
+                          setExito(true)
+                          setTimeout(onCerrar, 1500)
+                        } catch (e) { setErrorMsg(e.message) }
+                        finally { setGuardando(false) }
+                      }}
+                      disabled={guardando}
+                      className="py-3.5 rounded-2xl text-sm font-bold press-scale transition-all
+                        bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400
+                        hover:bg-emerald-200 dark:hover:bg-emerald-900/50
+                        shadow-lg disabled:opacity-40"
+                    >
+                      👍 Confirmo este precio
+                    </button>
+                    <button
+                      onClick={() => setModoActualizar(true)}
+                      disabled={guardando}
+                      className="py-3.5 rounded-2xl text-sm font-bold press-scale transition-all
+                        bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400
+                        hover:bg-amber-200 dark:hover:bg-amber-900/50
+                        shadow-lg disabled:opacity-40"
+                    >
+                      ✏️ Actualizar precio
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* ===== CARGAR/ACTUALIZAR PRECIO ===== */
+                <>
+                  {modoActualizar && precioExistente && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg
+                      bg-amber-50 dark:bg-amber-900/10 border border-amber-200/60 dark:border-amber-800/40">
+                      <span className="text-sm">✏️</span>
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                        Precio anterior: <span className="font-bold">{fmtPrecio(precioExistente.precio)}</span>
+                        {' — '} Ingresá el nuevo precio
+                      </p>
+                    </div>
+                  )}
+
+                  <FieldGroup label="Precio ($)" emoji="💰">
+                    <input type="number" value={precio} onChange={e => setPrecio(e.target.value)}
+                      placeholder="Ej: 4500"
+                      className="field-base !py-3.5 text-base !px-4 font-bold" autoFocus
+                      inputMode="decimal" />
+                  </FieldGroup>
+
+                  <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl
+                    bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800">
+                    <input type="checkbox" checked={enOferta} onChange={e => setEnOferta(e.target.checked)} />
+                    <div>
+                      <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">¿Está en oferta?</span>
+                      <p className="text-[10px] text-zinc-400">Marcá si el precio es promocional</p>
+                    </div>
+                  </label>
+
+                  {enOferta && (
+                    <FieldGroup label="Precio de oferta ($)" emoji="🔥">
+                      <input type="number" value={precioOferta} onChange={e => setPrecioOferta(e.target.value)}
+                        placeholder="Precio con descuento"
+                        className="field-base !py-3 text-sm !px-4" inputMode="decimal" />
+                    </FieldGroup>
+                  )}
+
+                  {/* Toggle retornable — solo para bebidas */}
+                  {(productoCategoria === 'bebidas' || productoPreseleccionado?.categoria === 'bebidas') && (
+                    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl
+                      bg-sky-50/60 dark:bg-sky-900/10 border border-sky-200/60 dark:border-sky-800/40">
+                      <input type="checkbox" checked={esRetornable} onChange={e => setEsRetornable(e.target.checked)}
+                        className="mt-0.5" />
+                      <div>
+                        <span className="text-sm font-semibold text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                          ♻️ ¿Envase retornable?
+                        </span>
+                        <p className="text-[10px] text-sky-500/80 dark:text-sky-400/70 mt-0.5 leading-relaxed">
+                          Marcá esto si entregaste un envase retornable y te hicieron descuento.
+                          Sin envase, el precio suele ser más alto.
+                        </p>
+                      </div>
+                    </label>
+                  )}
+
+                  <button
+                    onClick={async () => {
+                      setErrorMsg('')
+                      if (!precio || isNaN(precio) || Number(precio) <= 0) {
+                        setErrorMsg('Ingresá un precio válido')
+                        return
+                      }
+                      setGuardando(true)
+                      try {
+                        if (modoActualizar && precioExistente) {
+                          await actualizarPrecio(precioExistente.id, Number(precio))
+                        } else {
+                          await reportarPrecio({
+                            productoId, comercioId,
+                            precio: Number(precio), enOferta,
+                            precioOferta: enOferta && precioOferta ? Number(precioOferta) : null,
+                            esRetornable,
+                          })
+                        }
+                        setExito(true)
+                        setTimeout(onCerrar, 1500)
+                      } catch (e) {
+                        setErrorMsg(e.message || 'Error al guardar')
+                      } finally {
+                        setGuardando(false)
+                      }
+                    }}
+                    disabled={guardando || !precio}
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
+                      text-sm font-bold text-[var(--charcoal)] disabled:opacity-40 press-scale mt-1
+                      shadow-lg transition-all"
+                    style={{ boxShadow: '0 4px 16px rgba(245,166,35,0.3)' }}>
+                    {guardando ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-4 h-4 border-2 border-[var(--charcoal)]/30 border-t-[var(--charcoal)] rounded-full animate-spin" />
+                        Guardando...
+                      </span>
+                    ) : modoActualizar ? '✏️ Actualizar precio' : '💰 Cargar precio'}
+                  </button>
+                </>
               )}
 
-              <button onClick={handleGuardar} disabled={guardando || !precio}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
-                  text-sm font-bold text-[var(--charcoal)] disabled:opacity-40 press-scale mt-1
-                  shadow-lg transition-all"
-                style={{ boxShadow: '0 4px 16px rgba(245,166,35,0.3)' }}>
-                {guardando ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-[var(--charcoal)]/30 border-t-[var(--charcoal)] rounded-full animate-spin" />
-                    Guardando...
-                  </span>
-                ) : '💰 Cargar precio'}
-              </button>
+              {errorMsg && (
+                <p className="text-xs text-red-500 font-semibold text-center">{errorMsg}</p>
+              )}
             </div>
           )}
         </div>

@@ -61,6 +61,21 @@ export async function buscarProductoExistente(nombre, marca, presentacion) {
   return data
 }
 
+// ── Buscar precio existente de un producto en un comercio ────
+export async function buscarPrecioEnComercio(productoId, comercioId) {
+  if (!productoId || !comercioId) return null
+
+  const { data, error } = await supabase
+    .from('precios_productos')
+    .select('id, precio, en_oferta, precio_oferta, es_retornable, votos_ok, votos_desactual, updated_at')
+    .eq('producto_id', productoId)
+    .eq('comercio_id', comercioId)
+    .maybeSingle()
+
+  if (error || !data) return null
+  return data
+}
+
 // ── Provincias de Argentina ──────────────────────────────────
 export const PROVINCIAS_AR = [
   'Buenos Aires', 'CABA', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba',
