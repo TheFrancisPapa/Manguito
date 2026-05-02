@@ -4,6 +4,63 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
+// ── Normalización de presentación ────────────────────────────
+// Convierte texto libre a formato estándar: "2 litros" → "2L", "500 gramos" → "500g"
+export function normalizarPresentacion(raw) {
+  if (!raw) return ''
+  let s = raw.trim().toLowerCase()
+
+  // Mapeo de unidades comunes
+  const reemplazos = [
+    [/\b(litros?|lts?|ltrs?)\b/gi, 'L'],
+    [/\b(mililitros?|mls?)\b/gi, 'ml'],
+    [/\b(kilogramos?|kilos?|kgs?)\b/gi, 'kg'],
+    [/\b(gramos?|grs?)\b/gi, 'g'],
+    [/\b(unidades?|uds?|unis?)\b/gi, 'u'],
+    [/\b(centimetros?|cms?)\b/gi, 'cm'],
+  ]
+
+  for (const [regex, unit] of reemplazos) {
+    s = s.replace(regex, unit)
+  }
+
+  // Limpiar espacios entre número y unidad: "2 L" → "2L", "500 g" → "500g"
+  s = s.replace(/(\d+(?:[.,]\d+)?)\s*(L|ml|kg|g|u|cm)\b/gi, (_, num, unit) => {
+    return num + unit.charAt(0).toUpperCase() + unit.slice(1).toLowerCase()
+  })
+
+  // Formato "x6", "x12" etc.
+  s = s.replace(/\bx\s*(\d+)/gi, 'x$1')
+
+  // Capitalizar primera letra
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+// ── Buscar producto existente para evitar duplicados ─────────
+export async function buscarProductoExistente(nombre, marca, presentacion) {
+  if (!nombre || nombre.trim().length < 2) return []
+
+  const { data, error } = await supabase
+    .from('productos')
+    .select('id, nombre, marca, categoria, subcategoria, presentacion')
+    .or(`nombre.ilike.%${nombre.trim()}%,marca.ilike.%${nombre.trim()}%`)
+    .limit(8)
+
+  if (error || !data) return []
+
+  // Si hay marca, priorizar los que coincidan
+  if (marca && marca.trim()) {
+    const marcaLower = marca.trim().toLowerCase()
+    data.sort((a, b) => {
+      const aMatch = a.marca?.toLowerCase().includes(marcaLower) ? 0 : 1
+      const bMatch = b.marca?.toLowerCase().includes(marcaLower) ? 0 : 1
+      return aMatch - bMatch
+    })
+  }
+
+  return data
+}
+
 // ── Provincias de Argentina ──────────────────────────────────
 export const PROVINCIAS_AR = [
   'Buenos Aires', 'CABA', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba',
@@ -479,6 +536,23 @@ export async function votarPrecio(precioId, tipoVoto) {
     .eq('id', precioId)
 
   if (error) throw error
+}
+
+// Actualizar precio existente (para "Desactualizado" → editar)
+export async function actualizarPrecio(precioId, nuevoPrecio) {
+  const { data, error } = await supabase
+    .from('precios_productos')
+    .update({
+      precio: Number(nuevoPrecio),
+      votos_desactual: 0,  // Reset votos desactual al actualizar
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', precioId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
 }
 
 // ── Hook para listar comercios ───────────────────────────────

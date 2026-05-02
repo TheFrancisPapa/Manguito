@@ -1,7 +1,8 @@
 // src/pages/Mercado/ModalCargarPrecio.jsx
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   crearComercio, crearProducto, reportarPrecio,
+  buscarProductoExistente, normalizarPresentacion,
   CATEGORIAS_PRODUCTO, TIPOS_COMERCIO,
   ETIQUETAS_POR_CATEGORIA, LOCALES_CORRIENTES,
 } from '../../hooks/useMercado'
@@ -129,6 +130,11 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
   const [productoEtiqueta, setProductoEtiqueta] = useState('')
   const [productoId, setProductoId] = useState(productoPreseleccionado?.producto_id || null)
 
+  // Búsqueda de productos existentes (evitar duplicados)
+  const [sugerencias, setSugerencias] = useState([])
+  const [buscandoSugerencias, setBuscandoSugerencias] = useState(false)
+  const [productoExistenteSeleccionado, setProductoExistenteSeleccionado] = useState(null)
+
   // Paso 2 — Lugar
   const [localSeleccionado, setLocalSeleccionado] = useState(null) // from LOCALES_CORRIENTES
   const [comercioId, setComercioId] = useState('')
@@ -156,6 +162,48 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
       setProductoMarca(productoPreseleccionado.marca || '')
     }
   }, [productoPreseleccionado])
+
+  // Debounced search for existing products
+  useEffect(() => {
+    if (productoId || productoPreseleccionado || productoExistenteSeleccionado) return
+    if (productoNombre.trim().length < 2) { setSugerencias([]); return }
+
+    const timer = setTimeout(async () => {
+      setBuscandoSugerencias(true)
+      try {
+        const results = await buscarProductoExistente(productoNombre, productoMarca)
+        setSugerencias(results)
+      } catch { setSugerencias([]) }
+      finally { setBuscandoSugerencias(false) }
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [productoNombre, productoMarca, productoId, productoPreseleccionado, productoExistenteSeleccionado])
+
+  // Auto-normalize presentación on blur
+  const handlePresentacionBlur = useCallback(() => {
+    if (productoPresentacion.trim()) {
+      setProductoPresentacion(normalizarPresentacion(productoPresentacion))
+    }
+  }, [productoPresentacion])
+
+  // Select existing product
+  const seleccionarProductoExistente = useCallback((prod) => {
+    setProductoExistenteSeleccionado(prod)
+    setProductoId(prod.id)
+    setProductoNombre(prod.nombre)
+    setProductoMarca(prod.marca || '')
+    setProductoCategoria(prod.categoria || 'almacen')
+    setProductoPresentacion(prod.presentacion || '')
+    setProductoEtiqueta(prod.subcategoria || '')
+    setSugerencias([])
+  }, [])
+
+  // Clear selected product to create new
+  const limpiarSeleccion = useCallback(() => {
+    setProductoExistenteSeleccionado(null)
+    setProductoId(null)
+    setSugerencias([])
+  }, [])
 
   // Filter known locales
   const localesFiltrados = useMemo(() => {
@@ -193,10 +241,10 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
           return
         }
         const prod = await crearProducto({
-          nombre: productoNombre, marca: productoMarca,
+          nombre: productoNombre.trim(), marca: productoMarca.trim(),
           categoria: productoCategoria,
           subcategoria: productoEtiqueta || null,
-          presentacion: productoPresentacion,
+          presentacion: normalizarPresentacion(productoPresentacion),
         })
         finalProductoId = prod.id
       }
@@ -311,38 +359,118 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
           {/* ─── PASO 1: Producto ─────────────────────────── */}
           {paso === 1 && (
             <div className="flex flex-col gap-4 animate-in fade-in duration-200">
-              <FieldGroup label="Nombre del producto" emoji="📦">
-                <input value={productoNombre} onChange={e => setProductoNombre(e.target.value)}
-                  placeholder="Ej: Coca Cola, Nesquik, Arroz..."
-                  className="field-base !py-3 text-sm !px-4" autoFocus />
-              </FieldGroup>
+              {/* Banner si hay producto existente seleccionado */}
+              {productoExistenteSeleccionado && (
+                <div className="flex items-center gap-3 p-3 rounded-xl
+                  bg-emerald-50/80 dark:bg-emerald-900/15 border border-emerald-200/60 dark:border-emerald-800/40">
+                  <span className="text-xl">✅</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                      Producto existente seleccionado
+                    </p>
+                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 truncate">
+                      {productoExistenteSeleccionado.nombre}
+                      {productoExistenteSeleccionado.presentacion && ` · ${productoExistenteSeleccionado.presentacion}`}
+                      {' — '}{productoExistenteSeleccionado.marca}
+                    </p>
+                  </div>
+                  <button onClick={limpiarSeleccion}
+                    className="text-[10px] font-bold text-emerald-500 hover:text-emerald-700 transition-colors">
+                    ✕ Cambiar
+                  </button>
+                </div>
+              )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <FieldGroup label="Marca" emoji="🏭">
-                  <input value={productoMarca} onChange={e => setProductoMarca(e.target.value)}
-                    placeholder="Ej: Arcor, Quilmes"
-                    className="field-base !py-3 text-sm !px-4" />
-                </FieldGroup>
-                <FieldGroup label="Cantidad" emoji="⚖️">
-                  <input value={productoPresentacion} onChange={e => setProductoPresentacion(e.target.value)}
-                    placeholder="Ej: 500g, 1.5L, x6"
-                    className="field-base !py-3 text-sm !px-4" />
-                </FieldGroup>
-              </div>
+              {!productoExistenteSeleccionado && (
+                <>
+                  <FieldGroup label="Nombre del producto" emoji="📦">
+                    <input value={productoNombre} onChange={e => setProductoNombre(e.target.value)}
+                      placeholder="Ej: Coca Cola, Nesquik, Arroz..."
+                      className="field-base !py-3 text-sm !px-4" autoFocus />
+                  </FieldGroup>
 
-              <FieldGroup label="Categoría" emoji="📂">
-                <select value={productoCategoria}
-                  onChange={e => { setProductoCategoria(e.target.value); setProductoEtiqueta('') }}
-                  className="field-base field-select text-sm !py-3 !px-4">
-                  {CATEGORIAS_PRODUCTO.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.nombre}</option>)}
-                </select>
-              </FieldGroup>
+                  {/* Sugerencias de productos existentes */}
+                  {sugerencias.length > 0 && (
+                    <div className="-mt-2 rounded-xl border border-amber-200/60 dark:border-amber-800/40
+                      bg-amber-50/50 dark:bg-amber-900/10 overflow-hidden">
+                      <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 px-3 pt-2 pb-1
+                        flex items-center gap-1.5">
+                        ⚠️ ¿Es alguno de estos? Evitá crear duplicados
+                      </p>
+                      <div className="flex flex-col max-h-[140px] overflow-y-auto">
+                        {sugerencias.map(s => {
+                          const cat = CATEGORIAS_PRODUCTO.find(c => c.id === s.categoria)
+                          return (
+                            <button key={s.id} onClick={() => seleccionarProductoExistente(s)}
+                              className="flex items-center gap-2.5 px-3 py-2 text-left hover:bg-amber-100/50
+                                dark:hover:bg-amber-800/20 transition-colors border-t border-amber-100
+                                dark:border-amber-800/30 first:border-0">
+                              <span className="text-base">{cat?.emoji || '📦'}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
+                                  {s.nombre}
+                                  {s.presentacion && <span className="text-zinc-400 font-normal"> · {s.presentacion}</span>}
+                                </p>
+                                <p className="text-[10px] text-zinc-400 truncate">{s.marca}</p>
+                              </div>
+                              <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400
+                                bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                                Seleccionar
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {buscandoSugerencias && (
+                    <p className="text-[10px] text-zinc-400 -mt-2 flex items-center gap-1.5">
+                      <span className="w-3 h-3 border-2 border-zinc-300 border-t-[var(--mango)] rounded-full animate-spin" />
+                      Buscando productos similares...
+                    </p>
+                  )}
 
-              <EtiquetaSelector
-                categoria={productoCategoria}
-                seleccionada={productoEtiqueta}
-                onSelect={setProductoEtiqueta}
-              />
+                  <div className="grid grid-cols-2 gap-3">
+                    <FieldGroup label="Marca" emoji="🏭">
+                      <input value={productoMarca} onChange={e => setProductoMarca(e.target.value)}
+                        placeholder="Ej: Arcor, Quilmes"
+                        className="field-base !py-3 text-sm !px-4" />
+                    </FieldGroup>
+                    <FieldGroup label="Cantidad" emoji="⚖️">
+                      <input value={productoPresentacion}
+                        onChange={e => setProductoPresentacion(e.target.value)}
+                        onBlur={handlePresentacionBlur}
+                        placeholder="Ej: 500g, 1.5L, x6"
+                        className="field-base !py-3 text-sm !px-4" />
+                    </FieldGroup>
+                  </div>
+
+                  {/* Preview del nombre normalizado */}
+                  {productoNombre.trim() && productoPresentacion.trim() && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg
+                      bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-700">
+                      <span className="text-[10px] text-zinc-400">Se guardará como:</span>
+                      <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                        {productoNombre.trim()} {normalizarPresentacion(productoPresentacion)}
+                      </span>
+                    </div>
+                  )}
+
+                  <FieldGroup label="Categoría" emoji="📂">
+                    <select value={productoCategoria}
+                      onChange={e => { setProductoCategoria(e.target.value); setProductoEtiqueta('') }}
+                      className="field-base field-select text-sm !py-3 !px-4">
+                      {CATEGORIAS_PRODUCTO.map(c => <option key={c.id} value={c.id}>{c.emoji} {c.nombre}</option>)}
+                    </select>
+                  </FieldGroup>
+
+                  <EtiquetaSelector
+                    categoria={productoCategoria}
+                    seleccionada={productoEtiqueta}
+                    onSelect={setProductoEtiqueta}
+                  />
+                </>
+              )}
 
               <button onClick={() => { setErrorMsg(''); setPaso(2) }} disabled={!paso1Valido}
                 className="w-full py-3 rounded-2xl bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]

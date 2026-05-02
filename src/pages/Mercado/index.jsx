@@ -4,7 +4,7 @@ import { PageWrapper, PageHeader } from '../../components/layout'
 import { useAuthContext } from '../../context/AuthContext'
 import {
   useUbicacion, useBusqueda, usePreciosProducto, useComercios, usePopulares,
-  votarPrecio,
+  votarPrecio, actualizarPrecio,
   PROVINCIAS_AR, CIUDADES_POR_PROVINCIA, CATEGORIAS_PRODUCTO, TIPOS_COMERCIO,
   fmtPrecio, tiempoDesde,
 } from '../../hooks/useMercado'
@@ -166,6 +166,9 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
   const { precios, cargando, recargar } = usePreciosProducto(producto.producto_id, ciudad, provincia)
   const catInfo = CATEGORIAS_PRODUCTO.find(c => c.id === producto.categoria)
   const [votando, setVotando] = useState(null)
+  const [editandoPrecioId, setEditandoPrecioId] = useState(null)
+  const [nuevoPrecioInput, setNuevoPrecioInput] = useState('')
+  const [guardandoPrecio, setGuardandoPrecio] = useState(false)
 
   // Estadísticas de precios
   const precioMin = precios.length ? Math.min(...precios.map(p => p.en_oferta && p.precio_oferta ? p.precio_oferta : p.precio)) : 0
@@ -180,6 +183,18 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
       await recargar()
     } catch (e) { console.error(e) }
     finally { setVotando(null) }
+  }
+
+  const handleActualizarPrecio = async (precioId) => {
+    if (!nuevoPrecioInput || isNaN(nuevoPrecioInput) || Number(nuevoPrecioInput) <= 0) return
+    setGuardandoPrecio(true)
+    try {
+      await actualizarPrecio(precioId, Number(nuevoPrecioInput))
+      await recargar()
+      setEditandoPrecioId(null)
+      setNuevoPrecioInput('')
+    } catch (e) { console.error(e) }
+    finally { setGuardandoPrecio(false) }
   }
 
   return (
@@ -257,6 +272,7 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
             const tipoInfo = TIPOS_COMERCIO.find(t => t.id === p.comercio_tipo)
             const precioEfectivo = p.en_oferta && p.precio_oferta ? p.precio_oferta : p.precio
             const diffVsPrimero = i > 0 ? precioEfectivo - precioMin : 0
+            const isEditing = editandoPrecioId === p.precio_id
             return (
               <div
                 key={p.precio_id}
@@ -325,39 +341,85 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
                   </div>
                 )}
 
-                {/* Footer: badge + votos */}
-                <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                  {i === 0 && precios.length > 1 ? (
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                      🏆 Mejor precio
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-zinc-400">
-                      {p.votos_ok > 0 && `✓ ${p.votos_ok} confirmaron`}
-                      {p.votos_desactual > 0 && ` · ⚠ ${p.votos_desactual} reportaron`}
-                    </span>
-                  )}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleVoto(p.precio_id, 'ok')}
-                      disabled={votando === p.precio_id}
-                      className="px-2 py-1 rounded-lg text-[10px] font-bold
-                        bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400
-                        hover:bg-emerald-100 active:scale-95 transition-all disabled:opacity-50"
-                    >
-                      👍 Confirmo
-                    </button>
-                    <button
-                      onClick={() => handleVoto(p.precio_id, 'desactual')}
-                      disabled={votando === p.precio_id}
-                      className="px-2 py-1 rounded-lg text-[10px] font-bold
-                        bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400
-                        hover:bg-amber-100 active:scale-95 transition-all disabled:opacity-50"
-                    >
-                      📢 Desactualizado
-                    </button>
+                {/* Editor inline de precio (aparece al tocar "Desactualizado") */}
+                {isEditing && (
+                  <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800/40
+                    bg-amber-50/50 dark:bg-amber-900/10 -mx-4 -mb-4 px-4 pb-4 rounded-b-2xl
+                    animate-in slide-in-from-top-2 duration-200">
+                    <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300 mb-2 flex items-center gap-1.5">
+                      ✏️ ¿Cuánto sale ahora?
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400">$</span>
+                        <input
+                          type="number"
+                          value={nuevoPrecioInput}
+                          onChange={e => setNuevoPrecioInput(e.target.value)}
+                          placeholder={String(p.precio)}
+                          className="field-base !py-2.5 !pl-8 !pr-3 text-sm font-bold"
+                          inputMode="decimal"
+                          autoFocus
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleActualizarPrecio(p.precio_id)}
+                        disabled={guardandoPrecio || !nuevoPrecioInput}
+                        className="px-4 py-2.5 rounded-xl text-xs font-bold
+                          bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
+                          text-[var(--charcoal)] disabled:opacity-40 press-scale transition-all"
+                      >
+                        {guardandoPrecio ? '...' : '✓ Actualizar'}
+                      </button>
+                      <button
+                        onClick={() => { setEditandoPrecioId(null); setNuevoPrecioInput('') }}
+                        className="px-2 py-2.5 rounded-xl text-xs font-bold text-zinc-400
+                          hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Footer: badge + votos */}
+                {!isEditing && (
+                  <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                    {i === 0 && precios.length > 1 ? (
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                        🏆 Mejor precio
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-zinc-400">
+                        {p.votos_ok > 0 && `✓ ${p.votos_ok} confirmaron`}
+                        {p.votos_desactual > 0 && ` · ⚠ ${p.votos_desactual} reportaron`}
+                      </span>
+                    )}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleVoto(p.precio_id, 'ok')}
+                        disabled={votando === p.precio_id}
+                        className="px-2 py-1 rounded-lg text-[10px] font-bold
+                          bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400
+                          hover:bg-emerald-100 active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        👍 Confirmo
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditandoPrecioId(p.precio_id)
+                          setNuevoPrecioInput('')
+                        }}
+                        disabled={votando === p.precio_id}
+                        className="px-2 py-1 rounded-lg text-[10px] font-bold
+                          bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400
+                          hover:bg-amber-100 active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        📢 Actualizar precio
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })}
