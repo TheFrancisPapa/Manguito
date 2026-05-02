@@ -143,6 +143,7 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
   const [precio, setPrecio] = useState('')
   const [enOferta, setEnOferta] = useState(false)
   const [precioOferta, setPrecioOferta] = useState('')
+  const [esRetornable, setEsRetornable] = useState(false)
 
   // General
   const [guardando, setGuardando] = useState(false)
@@ -241,6 +242,7 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
         productoId: finalProductoId, comercioId: finalComercioId,
         precio: Number(precio), enOferta,
         precioOferta: enOferta && precioOferta ? Number(precioOferta) : null,
+        esRetornable,
       })
 
       setExito(true)
@@ -525,6 +527,24 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
                     placeholder="Precio con descuento"
                     className="field-base !py-3 text-sm !px-4" inputMode="decimal" />
                 </FieldGroup>
+              )}
+
+              {/* Toggle retornable — solo para bebidas */}
+              {(productoCategoria === 'bebidas' || productoPreseleccionado?.categoria === 'bebidas') && (
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl
+                  bg-sky-50/60 dark:bg-sky-900/10 border border-sky-200/60 dark:border-sky-800/40">
+                  <input type="checkbox" checked={esRetornable} onChange={e => setEsRetornable(e.target.checked)}
+                    className="mt-0.5" />
+                  <div>
+                    <span className="text-sm font-semibold text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                      ♻️ ¿Envase retornable?
+                    </span>
+                    <p className="text-[10px] text-sky-500/80 dark:text-sky-400/70 mt-0.5 leading-relaxed">
+                      Marcá esto si entregaste un envase retornable y te hicieron descuento.
+                      Sin envase, el precio suele ser más alto.
+                    </p>
+                  </div>
+                </label>
               )}
 
               <button onClick={handleGuardar} disabled={guardando || !precio}

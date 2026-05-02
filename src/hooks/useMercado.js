@@ -442,7 +442,7 @@ export async function crearProducto({ nombre, marca, categoria, subcategoria, pr
   return data
 }
 
-export async function reportarPrecio({ productoId, comercioId, precio, enOferta = false, precioOferta = null }) {
+export async function reportarPrecio({ productoId, comercioId, precio, enOferta = false, precioOferta = null, esRetornable = false }) {
   const { data, error } = await supabase
     .from('precios_productos')
     .upsert({
@@ -451,6 +451,7 @@ export async function reportarPrecio({ productoId, comercioId, precio, enOferta 
       precio: Number(precio),
       en_oferta: enOferta,
       precio_oferta: precioOferta ? Number(precioOferta) : null,
+      es_retornable: esRetornable,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'producto_id,comercio_id' })
     .select()

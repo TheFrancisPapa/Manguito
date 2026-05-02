@@ -100,6 +100,7 @@ function ChipsCategorias({ seleccionada, onSelect }) {
 // ── Card de resultado de búsqueda ────────────────────────────
 function ResultadoCard({ producto, onSelect }) {
   const catInfo = CATEGORIAS_PRODUCTO.find(c => c.id === producto.categoria)
+  const tipoInfo = TIPOS_COMERCIO.find(t => t.id === producto.comercio_mejor_tipo)
   return (
     <button
       onClick={() => onSelect(producto)}
@@ -117,7 +118,7 @@ function ResultadoCard({ producto, onSelect }) {
           <p className="text-xs text-zinc-400 mt-0.5">
             {producto.marca} {producto.presentacion && `· ${producto.presentacion}`}
           </p>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             {producto.precio_min ? (
               <>
                 <span className="text-base font-black text-[var(--mango-dark)] dark:text-[var(--mango)]">
@@ -128,7 +129,13 @@ function ResultadoCard({ producto, onSelect }) {
                     — {fmtPrecio(producto.precio_max)}
                   </span>
                 )}
-                <span className="text-[10px] text-zinc-400 ml-auto">
+                {producto.precio_mejor_retornable && (
+                  <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black
+                    bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 uppercase flex-shrink-0">
+                    ♻️ Retornable
+                  </span>
+                )}
+                <span className="text-[10px] text-zinc-400 ml-auto flex-shrink-0">
                   {producto.cant_comercios} comercio{producto.cant_comercios !== 1 ? 's' : ''}
                 </span>
               </>
@@ -136,6 +143,18 @@ function ResultadoCard({ producto, onSelect }) {
               <span className="text-xs text-zinc-400 italic">Sin precios aún</span>
             )}
           </div>
+          {/* Dónde se consigue al mejor precio */}
+          {producto.comercio_mejor && (
+            <div className="flex items-center gap-1.5 mt-2 pt-1.5 border-t border-zinc-100 dark:border-zinc-800">
+              <span className="text-[11px]">{tipoInfo?.emoji || '🏪'}</span>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+                <span className="font-semibold">{producto.comercio_mejor}</span>
+                {producto.comercio_mejor_dir && (
+                  <span className="text-zinc-400 dark:text-zinc-500"> · 📍 {producto.comercio_mejor_dir}</span>
+                )}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </button>
@@ -253,7 +272,7 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
                       {tipoInfo?.emoji || '🏪'}
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">
                           {p.comercio_nombre}
                         </p>
@@ -261,6 +280,12 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
                           <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-black
                             bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 uppercase">
                             Oferta
+                          </span>
+                        )}
+                        {p.es_retornable && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-black
+                            bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 uppercase">
+                            ♻️ Retornable
                           </span>
                         )}
                       </div>
@@ -287,6 +312,18 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
                     <p className="text-[10px] text-zinc-400">{tiempoDesde(p.updated_at)}</p>
                   </div>
                 </div>
+
+                {/* Retornable info note */}
+                {p.es_retornable && (
+                  <div className="mt-2 pt-2 border-t border-sky-100 dark:border-sky-900/30
+                    flex items-start gap-2 px-1">
+                    <span className="text-sm flex-shrink-0">♻️</span>
+                    <p className="text-[10px] text-sky-600 dark:text-sky-400 leading-relaxed">
+                      <span className="font-bold">Precio con envase retornable.</span> Necesitás llevar una botella
+                      retornable para acceder a este precio. Sin envase, el precio será más alto.
+                    </p>
+                  </div>
+                )}
 
                 {/* Footer: badge + votos */}
                 <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
