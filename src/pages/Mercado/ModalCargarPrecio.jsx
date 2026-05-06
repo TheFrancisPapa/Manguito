@@ -1,10 +1,10 @@
 // src/pages/Mercado/ModalCargarPrecio.jsx
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
-  crearComercio, crearProducto, reportarPrecio,
-  buscarProductoExistente, buscarPrecioEnComercio, actualizarPrecio,
+  crearComercio, crearProducto, reportarPrecio, reportarPreciosMultiCanal,
+  buscarProductoExistente, buscarPrecioEnComercio, buscarTodosPreciosEnComercio, actualizarPrecio,
   normalizarPresentacion, votarPrecio,
-  CATEGORIAS_PRODUCTO, TIPOS_COMERCIO,
+  CATEGORIAS_PRODUCTO, TIPOS_COMERCIO, CANALES_COMPRA,
   ETIQUETAS_POR_CATEGORIA, LOCALES_CORRIENTES,
   fmtPrecio, tiempoDesde,
 } from '../../hooks/useMercado'
@@ -147,14 +147,17 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
   const [nuevoComercioDir, setNuevoComercioDir] = useState('')
   const [busquedaLocal, setBusquedaLocal] = useState('')
 
-  // Paso 3 — Precio
-  const [precio, setPrecio] = useState('')
+  // Paso 3 — Precios multi-canal
+  const [precioLocal, setPrecioLocal] = useState('')
+  const [precioPedidosYa, setPrecioPedidosYa] = useState('')
+  const [precioRappi, setPrecioRappi] = useState('')
+  const [precioOnline, setPrecioOnline] = useState('')
   const [enOferta, setEnOferta] = useState(false)
   const [precioOferta, setPrecioOferta] = useState('')
   const [esRetornable, setEsRetornable] = useState(false)
 
-  // Precio existente (si ya hay un precio para ese producto en ese comercio)
-  const [precioExistente, setPrecioExistente] = useState(null)
+  // Precios existentes (TODOS los canales de ese producto en ese comercio)
+  const [preciosExistentes, setPreciosExistentes] = useState([])
   const [verificandoPrecio, setVerificandoPrecio] = useState(false)
   const [modoActualizar, setModoActualizar] = useState(false)
 
@@ -230,8 +233,15 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
 
   const handleGuardar = async () => {
     setErrorMsg('')
-    if (!precio || isNaN(precio) || Number(precio) <= 0) {
-      setErrorMsg('Ingresá un precio válido')
+    const preciosCanales = {
+      local: precioLocal || null,
+      pedidos_ya: precioPedidosYa || null,
+      rappi: precioRappi || null,
+      online: precioOnline || null,
+    }
+    const hayAlgunPrecio = Object.values(preciosCanales).some(v => v && !isNaN(v) && Number(v) > 0)
+    if (!hayAlgunPrecio) {
+      setErrorMsg('Ingresá al menos un precio')
       return
     }
 
@@ -260,7 +270,6 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
       if (usarLocalConocido && localSeleccionado !== null) {
         const local = localesFiltrados[localSeleccionado] || LOCALES_CORRIENTES[localSeleccionado]
         if (local) {
-          // Check if comercio already exists by name
           const existing = comercios.find(c => c.nombre === local.nombre)
           if (existing) {
             finalComercioId = existing.id
@@ -293,9 +302,10 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
         return
       }
 
-      await reportarPrecio({
+      await reportarPreciosMultiCanal({
         productoId: finalProductoId, comercioId: finalComercioId,
-        precio: Number(precio), enOferta,
+        preciosCanales,
+        enOferta,
         precioOferta: enOferta && precioOferta ? Number(precioOferta) : null,
         esRetornable,
       })
@@ -630,10 +640,10 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
                       setProductoId(resolvedProductoId)
                     }
 
-                    // Chequear si ya hay precio para este producto en este comercio
+                    // Chequear si ya hay precio para este producto en este comercio (TODOS los canales)
                     if (resolvedProductoId && resolvedComercioId) {
-                      const existente = await buscarPrecioEnComercio(resolvedProductoId, resolvedComercioId)
-                      setPrecioExistente(existente)
+                      const existentes = await buscarTodosPreciosEnComercio(resolvedProductoId, resolvedComercioId)
+                      setPreciosExistentes(existentes || [])
                       setModoActualizar(false)
                     }
 
@@ -662,7 +672,7 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
           {/* ─── PASO 3: Precio ───────────────────────────── */}
           {paso === 3 && (
             <div className="flex flex-col gap-4 animate-in fade-in duration-200">
-              <button onClick={() => { setPaso(2); setPrecioExistente(null); setModoActualizar(false) }}
+              <button onClick={() => { setPaso(2); setPreciosExistentes([]); setModoActualizar(false) }}
                 className="text-xs text-[var(--mango-dark)] dark:text-[var(--mango)] font-semibold self-start
                   flex items-center gap-1 press-light">
                 ← Cambiar lugar
@@ -698,54 +708,72 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
                 )}
               </div>
 
-              {/* ===== PRECIO YA EXISTE: Confirmación/Actualización ===== */}
-              {precioExistente && !modoActualizar ? (
+              {/* ===== PRODUCTO YA EXISTE: Panel multi-canal ===== */}
+              {preciosExistentes.length > 0 && !modoActualizar ? (
                 <div className="flex flex-col gap-3">
                   <div className="card-premium p-5 border-l-4 border-amber-400
                     bg-gradient-to-r from-amber-50/50 to-transparent dark:from-amber-900/10">
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-lg">⚠️</span>
                       <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
-                        Este producto ya tiene precio acá
+                        Este producto ya tiene precios cargados acá
                       </p>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-2xl font-black text-zinc-900 dark:text-white">
-                          {fmtPrecio(precioExistente.en_oferta && precioExistente.precio_oferta
-                            ? precioExistente.precio_oferta : precioExistente.precio)}
-                        </p>
-                        {precioExistente.en_oferta && precioExistente.precio_oferta && (
-                          <p className="text-xs text-zinc-400 line-through">
-                            {fmtPrecio(precioExistente.precio)}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[10px] text-zinc-400">{tiempoDesde(precioExistente.updated_at)}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {precioExistente.es_retornable && (
-                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black
-                              bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 uppercase">
-                              ♻️ Retornable
-                            </span>
-                          )}
-                          {precioExistente.en_oferta && (
-                            <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black
-                              bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 uppercase">
-                              Oferta
-                            </span>
-                          )}
-                        </div>
-                        {precioExistente.votos_ok > 0 && (
-                          <p className="text-[10px] text-emerald-500 mt-1">✓ {precioExistente.votos_ok} confirmaron</p>
-                        )}
-                      </div>
+
+                    {/* Lista de precios existentes por canal */}
+                    <div className="flex flex-col gap-2">
+                      {preciosExistentes.map(pe => {
+                        const canalInfo = CANALES_COMPRA.find(c => c.id === pe.canal)
+                        return (
+                          <div key={pe.id} className="flex items-center justify-between py-2 px-3 rounded-lg
+                            bg-white/60 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-700/40">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-base">{canalInfo?.emoji || '🏪'}</span>
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-zinc-700 dark:text-zinc-200">
+                                  {canalInfo?.nombre || pe.canal}
+                                </p>
+                                <p className="text-[10px] text-zinc-400">{tiempoDesde(pe.updated_at)}</p>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0 ml-2">
+                              <p className="text-base font-black text-zinc-900 dark:text-white">
+                                {fmtPrecio(pe.en_oferta && pe.precio_oferta ? pe.precio_oferta : pe.precio)}
+                              </p>
+                              <div className="flex items-center gap-1 justify-end mt-0.5">
+                                {pe.es_retornable && (
+                                  <span className="px-1 py-0.5 rounded text-[8px] font-black
+                                    bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">♻️</span>
+                                )}
+                                {pe.en_oferta && (
+                                  <span className="px-1 py-0.5 rounded text-[8px] font-black
+                                    bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">Oferta</span>
+                                )}
+                                {pe.votos_ok > 0 && (
+                                  <span className="text-[9px] text-emerald-500">✓{pe.votos_ok}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
+
+                    {/* Canales faltantes */}
+                    {(() => {
+                      const canalesCargados = preciosExistentes.map(p => p.canal)
+                      const canalesFaltantes = CANALES_COMPRA.filter(c => !canalesCargados.includes(c.id))
+                      if (canalesFaltantes.length === 0) return null
+                      return (
+                        <p className="text-[10px] text-amber-600/70 dark:text-amber-400/60 mt-2 italic">
+                          Falta cargar: {canalesFaltantes.map(c => c.nombre).join(', ')}
+                        </p>
+                      )
+                    })()}
                   </div>
 
                   <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center font-medium">
-                    ¿Este precio sigue vigente?
+                    ¿Estos precios siguen vigentes?
                   </p>
 
                   <div className="grid grid-cols-2 gap-2">
@@ -753,7 +781,9 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
                       onClick={async () => {
                         setGuardando(true)
                         try {
-                          await votarPrecio(precioExistente.id, 'ok')
+                          for (const pe of preciosExistentes) {
+                            await votarPrecio(pe.id, 'ok')
+                          }
                           setExito(true)
                           setTimeout(onCerrar, 1500)
                         } catch (e) { setErrorMsg(e.message) }
@@ -765,7 +795,7 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
                         hover:bg-emerald-200 dark:hover:bg-emerald-900/50
                         shadow-lg disabled:opacity-40"
                     >
-                      👍 Confirmo este precio
+                      👍 Confirmo precios
                     </button>
                     <button
                       onClick={() => setModoActualizar(true)}
@@ -775,30 +805,80 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
                         hover:bg-amber-200 dark:hover:bg-amber-900/50
                         shadow-lg disabled:opacity-40"
                     >
-                      ✏️ Actualizar precio
+                      ✏️ Actualizar / Agregar
                     </button>
                   </div>
                 </div>
               ) : (
-                /* ===== CARGAR/ACTUALIZAR PRECIO ===== */
+                /* ===== CARGAR/ACTUALIZAR PRECIOS MULTI-CANAL ===== */
                 <>
-                  {modoActualizar && precioExistente && (
+                  {modoActualizar && preciosExistentes.length > 0 && (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg
                       bg-amber-50 dark:bg-amber-900/10 border border-amber-200/60 dark:border-amber-800/40">
                       <span className="text-sm">✏️</span>
                       <p className="text-[11px] text-amber-600 dark:text-amber-400">
-                        Precio anterior: <span className="font-bold">{fmtPrecio(precioExistente.precio)}</span>
-                        {' — '} Ingresá el nuevo precio
+                        Actualizá los precios que cambiaron o cargá los que faltan
                       </p>
                     </div>
                   )}
 
-                  <FieldGroup label="Precio ($)" emoji="💰">
-                    <input type="number" value={precio} onChange={e => setPrecio(e.target.value)}
-                      placeholder="Ej: 4500"
-                      className="field-base !py-3.5 text-base !px-4 font-bold" autoFocus
-                      inputMode="decimal" />
-                  </FieldGroup>
+                  {/* Precio en el LOCAL — principal */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium flex items-center gap-1">
+                      🏪 Precio en el local
+                      <span className="text-[8px] ml-1 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30
+                        text-emerald-600 dark:text-emerald-400 font-black uppercase">Principal</span>
+                    </label>
+                    <input type="number" value={precioLocal} onChange={e => setPrecioLocal(e.target.value)}
+                      placeholder={preciosExistentes.find(p => p.canal === 'local')
+                        ? `Actual: ${fmtPrecio(preciosExistentes.find(p => p.canal === 'local').precio)}`
+                        : 'Ej: 4500'}
+                      className="field-base !py-3.5 text-base !px-4 font-bold
+                        ring-2 ring-emerald-200/50 dark:ring-emerald-800/30"
+                      autoFocus inputMode="decimal" />
+                  </div>
+
+                  {/* Precios secundarios — delivery y online */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] text-zinc-400 uppercase tracking-wider font-medium flex items-center gap-1">
+                      📱 Precios en apps y online <span className="text-zinc-300 dark:text-zinc-600 font-normal">(opcionales)</span>
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {/* PedidosYa */}
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-bold text-violet-500 flex items-center gap-0.5">
+                          🛵 PedidosYa
+                        </span>
+                        <input type="number" value={precioPedidosYa} onChange={e => setPrecioPedidosYa(e.target.value)}
+                          placeholder={preciosExistentes.find(p => p.canal === 'pedidos_ya')
+                            ? fmtPrecio(preciosExistentes.find(p => p.canal === 'pedidos_ya').precio)
+                            : '$'}
+                          className="field-base !py-2 text-xs !px-3 font-semibold" inputMode="decimal" />
+                      </div>
+                      {/* Rappi */}
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-bold text-orange-500 flex items-center gap-0.5">
+                          🏍️ Rappi
+                        </span>
+                        <input type="number" value={precioRappi} onChange={e => setPrecioRappi(e.target.value)}
+                          placeholder={preciosExistentes.find(p => p.canal === 'rappi')
+                            ? fmtPrecio(preciosExistentes.find(p => p.canal === 'rappi').precio)
+                            : '$'}
+                          className="field-base !py-2 text-xs !px-3 font-semibold" inputMode="decimal" />
+                      </div>
+                      {/* Online */}
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-bold text-sky-500 flex items-center gap-0.5">
+                          🌐 Online
+                        </span>
+                        <input type="number" value={precioOnline} onChange={e => setPrecioOnline(e.target.value)}
+                          placeholder={preciosExistentes.find(p => p.canal === 'online')
+                            ? fmtPrecio(preciosExistentes.find(p => p.canal === 'online').precio)
+                            : '$'}
+                          className="field-base !py-2 text-xs !px-3 font-semibold" inputMode="decimal" />
+                      </div>
+                    </div>
+                  </div>
 
                   <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl
                     bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800">
@@ -836,33 +916,8 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
                   )}
 
                   <button
-                    onClick={async () => {
-                      setErrorMsg('')
-                      if (!precio || isNaN(precio) || Number(precio) <= 0) {
-                        setErrorMsg('Ingresá un precio válido')
-                        return
-                      }
-                      setGuardando(true)
-                      try {
-                        if (modoActualizar && precioExistente) {
-                          await actualizarPrecio(precioExistente.id, Number(precio))
-                        } else {
-                          await reportarPrecio({
-                            productoId, comercioId,
-                            precio: Number(precio), enOferta,
-                            precioOferta: enOferta && precioOferta ? Number(precioOferta) : null,
-                            esRetornable,
-                          })
-                        }
-                        setExito(true)
-                        setTimeout(onCerrar, 1500)
-                      } catch (e) {
-                        setErrorMsg(e.message || 'Error al guardar')
-                      } finally {
-                        setGuardando(false)
-                      }
-                    }}
-                    disabled={guardando || !precio}
+                    onClick={handleGuardar}
+                    disabled={guardando || (!precioLocal && !precioPedidosYa && !precioRappi && !precioOnline)}
                     className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
                       text-sm font-bold text-[var(--charcoal)] disabled:opacity-40 press-scale mt-1
                       shadow-lg transition-all"
@@ -872,7 +927,7 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
                         <span className="w-4 h-4 border-2 border-[var(--charcoal)]/30 border-t-[var(--charcoal)] rounded-full animate-spin" />
                         Guardando...
                       </span>
-                    ) : modoActualizar ? '✏️ Actualizar precio' : '💰 Cargar precio'}
+                    ) : modoActualizar ? '✏️ Actualizar precios' : '💰 Cargar precios'}
                   </button>
                 </>
               )}
@@ -882,6 +937,7 @@ export default function ModalCargarPrecio({ onCerrar, comercios, ubicacion, prod
               )}
             </div>
           )}
+
         </div>
       </div>
     </div>

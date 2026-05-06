@@ -62,17 +62,33 @@ export async function buscarProductoExistente(nombre, marca, presentacion) {
 }
 
 // ── Buscar precio existente de un producto en un comercio ────
-export async function buscarPrecioEnComercio(productoId, comercioId) {
+export async function buscarPrecioEnComercio(productoId, comercioId, canal = 'local') {
   if (!productoId || !comercioId) return null
 
   const { data, error } = await supabase
     .from('precios_productos')
-    .select('id, precio, en_oferta, precio_oferta, es_retornable, votos_ok, votos_desactual, updated_at')
+    .select('id, precio, en_oferta, precio_oferta, es_retornable, votos_ok, votos_desactual, updated_at, canal')
     .eq('producto_id', productoId)
     .eq('comercio_id', comercioId)
+    .eq('canal', canal)
     .maybeSingle()
 
   if (error || !data) return null
+  return data
+}
+
+// ── Buscar TODOS los precios de un producto en un comercio (todos los canales) ──
+export async function buscarTodosPreciosEnComercio(productoId, comercioId) {
+  if (!productoId || !comercioId) return []
+
+  const { data, error } = await supabase
+    .from('precios_productos')
+    .select('id, precio, en_oferta, precio_oferta, es_retornable, votos_ok, votos_desactual, updated_at, canal')
+    .eq('producto_id', productoId)
+    .eq('comercio_id', comercioId)
+    .order('canal')
+
+  if (error || !data) return []
   return data
 }
 
@@ -363,6 +379,14 @@ export const TIPOS_COMERCIO = [
   { id: 'otro',         nombre: 'Otro',          emoji: '🏷️' },
 ]
 
+// ── Canales de compra ───────────────────────────────────────
+export const CANALES_COMPRA = [
+  { id: 'local',      nombre: 'En el local',   emoji: '🏪', color: 'emerald', desc: 'Comprando directamente en el lugar' },
+  { id: 'pedidos_ya', nombre: 'Pedidos Ya',     emoji: '🛵', color: 'violet',  desc: 'Delivery por Pedidos Ya' },
+  { id: 'rappi',      nombre: 'Rappi',          emoji: '🏍️', color: 'orange',  desc: 'Delivery por Rappi' },
+  { id: 'online',     nombre: 'Página online',  emoji: '🌐', color: 'sky',     desc: 'Web / tienda online del comercio' },
+]
+
 const STORAGE_KEY_UBICACION = 'manguito_mercado_ubicacion'
 
 // ── Hook de ubicación manual ─────────────────────────────────
@@ -514,7 +538,7 @@ export async function crearProducto({ nombre, marca, categoria, subcategoria, pr
   return data
 }
 
-export async function reportarPrecio({ productoId, comercioId, precio, enOferta = false, precioOferta = null, esRetornable = false }) {
+export async function reportarPrecio({ productoId, comercioId, precio, enOferta = false, precioOferta = null, esRetornable = false, canal = 'local' }) {
   const { data, error } = await supabase
     .from('precios_productos')
     .upsert({
@@ -524,10 +548,38 @@ export async function reportarPrecio({ productoId, comercioId, precio, enOferta 
       en_oferta: enOferta,
       precio_oferta: precioOferta ? Number(precioOferta) : null,
       es_retornable: esRetornable,
+      canal,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'producto_id,comercio_id' })
+    }, { onConflict: 'producto_id,comercio_id,canal' })
     .select()
     .single()
+
+  if (error) throw error
+  return data
+}
+
+// ── Reportar precios en múltiples canales de una sola vez ────
+// preciosCanales = { local: 4500, pedidos_ya: 5200, rappi: null, online: 4100 }
+export async function reportarPreciosMultiCanal({ productoId, comercioId, preciosCanales, enOferta = false, precioOferta = null, esRetornable = false }) {
+  const rows = Object.entries(preciosCanales)
+    .filter(([, val]) => val && !isNaN(val) && Number(val) > 0)
+    .map(([canal, precio]) => ({
+      producto_id: productoId,
+      comercio_id: comercioId,
+      precio: Number(precio),
+      en_oferta: enOferta,
+      precio_oferta: precioOferta ? Number(precioOferta) : null,
+      es_retornable: esRetornable,
+      canal,
+      updated_at: new Date().toISOString(),
+    }))
+
+  if (rows.length === 0) throw new Error('Ingresá al menos un precio')
+
+  const { data, error } = await supabase
+    .from('precios_productos')
+    .upsert(rows, { onConflict: 'producto_id,comercio_id,canal' })
+    .select()
 
   if (error) throw error
   return data

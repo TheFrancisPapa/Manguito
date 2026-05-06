@@ -5,7 +5,7 @@ import { useAuthContext } from '../../context/AuthContext'
 import {
   useUbicacion, useBusqueda, usePreciosProducto, useComercios, usePopulares,
   votarPrecio, actualizarPrecio,
-  PROVINCIAS_AR, CIUDADES_POR_PROVINCIA, CATEGORIAS_PRODUCTO, TIPOS_COMERCIO,
+  PROVINCIAS_AR, CIUDADES_POR_PROVINCIA, CATEGORIAS_PRODUCTO, TIPOS_COMERCIO, CANALES_COMPRA,
   fmtPrecio, tiempoDesde,
 } from '../../hooks/useMercado'
 
@@ -169,10 +169,16 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
   const [editandoPrecioId, setEditandoPrecioId] = useState(null)
   const [nuevoPrecioInput, setNuevoPrecioInput] = useState('')
   const [guardandoPrecio, setGuardandoPrecio] = useState(false)
+  const [canalFiltro, setCanalFiltro] = useState(null)
+
+  // Filtrar precios por canal
+  const preciosFiltrados = canalFiltro
+    ? precios.filter(p => p.canal === canalFiltro)
+    : precios
 
   // Estadísticas de precios
-  const precioMin = precios.length ? Math.min(...precios.map(p => p.en_oferta && p.precio_oferta ? p.precio_oferta : p.precio)) : 0
-  const precioMax = precios.length ? Math.max(...precios.map(p => p.precio)) : 0
+  const precioMin = preciosFiltrados.length ? Math.min(...preciosFiltrados.map(p => p.en_oferta && p.precio_oferta ? p.precio_oferta : p.precio)) : 0
+  const precioMax = preciosFiltrados.length ? Math.max(...preciosFiltrados.map(p => p.precio)) : 0
   const ahorro = precioMax > 0 ? precioMax - precioMin : 0
   const ahorroPct = precioMax > 0 ? Math.round((ahorro / precioMax) * 100) : 0
 
@@ -247,182 +253,238 @@ function DetalleProducto({ producto, ciudad, provincia, onVolver, onCargarPrecio
         </div>
       )}
 
+      {/* Filtro por canal */}
+      {precios.length > 0 && (
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-2 mb-3 -mx-1 px-1">
+          <button
+            onClick={() => setCanalFiltro(null)}
+            className={`flex-shrink-0 px-2.5 py-1.5 rounded-full text-[10px] font-bold border transition-all ${
+              !canalFiltro
+                ? 'bg-[var(--mango)]/10 border-[var(--mango)]/30 text-[var(--mango-dark)] dark:text-[var(--mango)]'
+                : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-300'
+            }`}
+          >
+            Todos
+          </button>
+          {CANALES_COMPRA.map(canal => {
+            const count = precios.filter(p => p.canal === canal.id).length
+            if (count === 0) return null
+            return (
+              <button
+                key={canal.id}
+                onClick={() => setCanalFiltro(canalFiltro === canal.id ? null : canal.id)}
+                className={`flex-shrink-0 px-2.5 py-1.5 rounded-full text-[10px] font-bold border transition-all whitespace-nowrap ${
+                  canalFiltro === canal.id
+                    ? 'bg-[var(--mango)]/10 border-[var(--mango)]/30 text-[var(--mango-dark)] dark:text-[var(--mango)]'
+                    : 'border-zinc-200 dark:border-zinc-700 text-zinc-500 hover:border-zinc-300'
+                }`}
+              >
+                {canal.emoji} {canal.nombre} ({count})
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       {/* Lista de precios */}
       <h3 className="text-sm font-bold text-zinc-500 dark:text-zinc-400 mb-3 flex items-center gap-2">
         💰 Precios en {ciudad || 'tu zona'}
         <span className="text-[10px] font-normal text-zinc-400 ml-auto">
-          {precios.length} comercio{precios.length !== 1 ? 's' : ''}
+          {preciosFiltrados.length} comercio{preciosFiltrados.length !== 1 ? 's' : ''}
         </span>
         {cargando && <div className="w-4 h-4 border-2 border-[var(--mango)]/30 border-t-[var(--mango)] rounded-full animate-spin" />}
       </h3>
 
-      {precios.length === 0 && !cargando ? (
+      {preciosFiltrados.length === 0 && !cargando ? (
         <div className="card-premium p-6 text-center">
           <p className="text-3xl mb-2">🏷️</p>
           <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
-            Aún no hay precios para este producto en {ciudad}
+            {canalFiltro
+              ? `No hay precios por ${CANALES_COMPRA.find(c => c.id === canalFiltro)?.nombre || canalFiltro}`
+              : `Aún no hay precios para este producto en ${ciudad}`}
           </p>
           <p className="text-xs text-zinc-400 mt-1">
-            ¡Sé el primero en cargar un precio!
+            {canalFiltro ? 'Probá cambiando el filtro de canal' : '¡Sé el primero en cargar un precio!'}
           </p>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {precios.map((p, i) => {
-            const tipoInfo = TIPOS_COMERCIO.find(t => t.id === p.comercio_tipo)
-            const precioEfectivo = p.en_oferta && p.precio_oferta ? p.precio_oferta : p.precio
-            const diffVsPrimero = i > 0 ? precioEfectivo - precioMin : 0
-            const isEditing = editandoPrecioId === p.precio_id
-            return (
-              <div
-                key={p.precio_id}
-                className={`card-premium p-4 transition-all ${i === 0 ? 'ring-2 ring-emerald-500/25' : ''}`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${
-                      i === 0
-                        ? 'bg-emerald-100 dark:bg-emerald-900/30'
-                        : 'bg-zinc-100 dark:bg-zinc-800'
-                    }`}>
-                      {tipoInfo?.emoji || '🏪'}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">
-                          {p.comercio_nombre}
+          {(() => {
+            // Agrupar precios por comercio
+            const grupos = {}
+            preciosFiltrados.forEach(p => {
+              const key = p.comercio_nombre + '|' + (p.comercio_dir || '')
+              if (!grupos[key]) grupos[key] = { info: p, precios: [] }
+              grupos[key].precios.push(p)
+            })
+            // Ordenar grupos por precio más bajo del local (o el menor disponible)
+            const gruposArr = Object.values(grupos).sort((a, b) => {
+              const precioA = a.precios.find(p => p.canal === 'local') || a.precios[0]
+              const precioB = b.precios.find(p => p.canal === 'local') || b.precios[0]
+              const valA = precioA.en_oferta && precioA.precio_oferta ? precioA.precio_oferta : precioA.precio
+              const valB = precioB.en_oferta && precioB.precio_oferta ? precioB.precio_oferta : precioB.precio
+              return valA - valB
+            })
+
+            return gruposArr.map((grupo, gi) => {
+              const tipoInfo = TIPOS_COMERCIO.find(t => t.id === grupo.info.comercio_tipo)
+              const pLocal = grupo.precios.find(p => p.canal === 'local')
+              const pSecundarios = grupo.precios.filter(p => p.canal !== 'local')
+              const pPrincipal = pLocal || grupo.precios[0]
+              const precioEfectivo = pPrincipal.en_oferta && pPrincipal.precio_oferta
+                ? pPrincipal.precio_oferta : pPrincipal.precio
+              const isEditing = editandoPrecioId === pPrincipal.precio_id
+
+              return (
+                <div key={`${grupo.info.comercio_nombre}-${gi}`}
+                  className={`card-premium p-4 transition-all ${gi === 0 ? 'ring-2 ring-emerald-500/25' : ''}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 ${
+                        gi === 0 ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-zinc-100 dark:bg-zinc-800'
+                      }`}>
+                        {tipoInfo?.emoji || '🏪'}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">
+                            {grupo.info.comercio_nombre}
+                          </p>
+                          {pPrincipal.en_oferta && (
+                            <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-black
+                              bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 uppercase">Oferta</span>
+                          )}
+                          {pPrincipal.es_retornable && (
+                            <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-black
+                              bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 uppercase">♻️ Ret.</span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-zinc-400 truncate">
+                          {grupo.info.comercio_dir || tipoInfo?.nombre}
                         </p>
-                        {p.en_oferta && (
-                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-black
-                            bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 uppercase">
-                            Oferta
-                          </span>
-                        )}
-                        {p.es_retornable && (
-                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-black
-                            bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 uppercase">
-                            ♻️ Retornable
+                        {/* Badge del canal principal si NO es local */}
+                        {!pLocal && (
+                          <span className={`inline-flex items-center gap-0.5 mt-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase w-fit
+                            ${pPrincipal.canal === 'pedidos_ya' ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400'
+                            : pPrincipal.canal === 'rappi' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                            : pPrincipal.canal === 'online' ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400'
+                            : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'}`}>
+                            {CANALES_COMPRA.find(c => c.id === pPrincipal.canal)?.emoji} {CANALES_COMPRA.find(c => c.id === pPrincipal.canal)?.nombre}
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-zinc-400 truncate">
-                        {p.comercio_dir || tipoInfo?.nombre}
-                        {p.comercio_cadena && ` · ${p.comercio_cadena}`}
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-3">
+                      <p className={`text-lg font-black ${
+                        gi === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-900 dark:text-white'
+                      }`}>
+                        {fmtPrecio(precioEfectivo)}
+                      </p>
+                      {pPrincipal.en_oferta && pPrincipal.precio_oferta && (
+                        <p className="text-[10px] text-zinc-400 line-through">{fmtPrecio(pPrincipal.precio)}</p>
+                      )}
+                      {pLocal && <p className="text-[9px] text-emerald-500 font-semibold">🏪 En el local</p>}
+                      <p className="text-[10px] text-zinc-400">{tiempoDesde(pPrincipal.updated_at)}</p>
+                    </div>
+                  </div>
+
+                  {/* Precios secundarios (delivery, online) — letra chica */}
+                  {pSecundarios.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800
+                      flex flex-wrap gap-x-4 gap-y-1">
+                      {pSecundarios.map(ps => {
+                        const ci = CANALES_COMPRA.find(c => c.id === ps.canal)
+                        const colorClass = ps.canal === 'pedidos_ya' ? 'text-violet-500'
+                          : ps.canal === 'rappi' ? 'text-orange-500'
+                          : ps.canal === 'online' ? 'text-sky-500' : 'text-zinc-400'
+                        return (
+                          <p key={ps.id} className={`text-[10px] ${colorClass} flex items-center gap-1`}>
+                            <span>{ci?.emoji}</span>
+                            <span className="font-semibold">{ci?.nombre}:</span>
+                            <span className="font-black">{fmtPrecio(ps.en_oferta && ps.precio_oferta ? ps.precio_oferta : ps.precio)}</span>
+                          </p>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Retornable info */}
+                  {pPrincipal.es_retornable && (
+                    <div className="mt-2 pt-2 border-t border-sky-100 dark:border-sky-900/30
+                      flex items-start gap-2 px-1">
+                      <span className="text-sm flex-shrink-0">♻️</span>
+                      <p className="text-[10px] text-sky-600 dark:text-sky-400 leading-relaxed">
+                        <span className="font-bold">Precio con envase retornable.</span> Sin envase, el precio será más alto.
                       </p>
                     </div>
-                  </div>
-                  <div className="text-right flex-shrink-0 ml-3">
-                    <p className={`text-lg font-black ${
-                      i === 0
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-zinc-900 dark:text-white'
-                    }`}>
-                      {fmtPrecio(precioEfectivo)}
-                    </p>
-                    {p.en_oferta && p.precio_oferta && (
-                      <p className="text-[10px] text-zinc-400 line-through">{fmtPrecio(p.precio)}</p>
-                    )}
-                    {i > 0 && diffVsPrimero > 0 && (
-                      <p className="text-[10px] text-red-400 font-semibold">+{fmtPrecio(diffVsPrimero)}</p>
-                    )}
-                    <p className="text-[10px] text-zinc-400">{tiempoDesde(p.updated_at)}</p>
-                  </div>
-                </div>
+                  )}
 
-                {/* Retornable info note */}
-                {p.es_retornable && (
-                  <div className="mt-2 pt-2 border-t border-sky-100 dark:border-sky-900/30
-                    flex items-start gap-2 px-1">
-                    <span className="text-sm flex-shrink-0">♻️</span>
-                    <p className="text-[10px] text-sky-600 dark:text-sky-400 leading-relaxed">
-                      <span className="font-bold">Precio con envase retornable.</span> Necesitás llevar una botella
-                      retornable para acceder a este precio. Sin envase, el precio será más alto.
-                    </p>
-                  </div>
-                )}
-
-                {/* Editor inline de precio (aparece al tocar "Desactualizado") */}
-                {isEditing && (
-                  <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800/40
-                    bg-amber-50/50 dark:bg-amber-900/10 -mx-4 -mb-4 px-4 pb-4 rounded-b-2xl
-                    animate-in slide-in-from-top-2 duration-200">
-                    <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300 mb-2 flex items-center gap-1.5">
-                      ✏️ ¿Cuánto sale ahora?
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400">$</span>
-                        <input
-                          type="number"
-                          value={nuevoPrecioInput}
-                          onChange={e => setNuevoPrecioInput(e.target.value)}
-                          placeholder={String(p.precio)}
-                          className="field-base !py-2.5 !pl-8 !pr-3 text-sm font-bold"
-                          inputMode="decimal"
-                          autoFocus
-                        />
+                  {/* Editor inline */}
+                  {isEditing && (
+                    <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800/40
+                      bg-amber-50/50 dark:bg-amber-900/10 -mx-4 -mb-4 px-4 pb-4 rounded-b-2xl
+                      animate-in slide-in-from-top-2 duration-200">
+                      <p className="text-[11px] font-bold text-amber-700 dark:text-amber-300 mb-2 flex items-center gap-1.5">
+                        ✏️ ¿Cuánto sale ahora?
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400">$</span>
+                          <input type="number" value={nuevoPrecioInput}
+                            onChange={e => setNuevoPrecioInput(e.target.value)}
+                            placeholder={String(pPrincipal.precio)}
+                            className="field-base !py-2.5 !pl-8 !pr-3 text-sm font-bold"
+                            inputMode="decimal" autoFocus />
+                        </div>
+                        <button onClick={() => handleActualizarPrecio(pPrincipal.precio_id)}
+                          disabled={guardandoPrecio || !nuevoPrecioInput}
+                          className="px-4 py-2.5 rounded-xl text-xs font-bold
+                            bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
+                            text-[var(--charcoal)] disabled:opacity-40 press-scale transition-all">
+                          {guardandoPrecio ? '...' : '✓ Actualizar'}
+                        </button>
+                        <button onClick={() => { setEditandoPrecioId(null); setNuevoPrecioInput('') }}
+                          className="px-2 py-2.5 rounded-xl text-xs font-bold text-zinc-400
+                            hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all">✕</button>
                       </div>
-                      <button
-                        onClick={() => handleActualizarPrecio(p.precio_id)}
-                        disabled={guardandoPrecio || !nuevoPrecioInput}
-                        className="px-4 py-2.5 rounded-xl text-xs font-bold
-                          bg-gradient-to-r from-[var(--mango)] to-[var(--mango-dark)]
-                          text-[var(--charcoal)] disabled:opacity-40 press-scale transition-all"
-                      >
-                        {guardandoPrecio ? '...' : '✓ Actualizar'}
-                      </button>
-                      <button
-                        onClick={() => { setEditandoPrecioId(null); setNuevoPrecioInput('') }}
-                        className="px-2 py-2.5 rounded-xl text-xs font-bold text-zinc-400
-                          hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all"
-                      >
-                        ✕
-                      </button>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Footer: badge + votos */}
-                {!isEditing && (
-                  <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-                    {i === 0 && precios.length > 1 ? (
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                        🏆 Mejor precio
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-zinc-400">
-                        {p.votos_ok > 0 && `✓ ${p.votos_ok} confirmaron`}
-                        {p.votos_desactual > 0 && ` · ⚠ ${p.votos_desactual} reportaron`}
-                      </span>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleVoto(p.precio_id, 'ok')}
-                        disabled={votando === p.precio_id}
-                        className="px-2 py-1 rounded-lg text-[10px] font-bold
-                          bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400
-                          hover:bg-emerald-100 active:scale-95 transition-all disabled:opacity-50"
-                      >
-                        👍 Confirmo
-                      </button>
-                      <button
-                        onClick={() => {
-                          setEditandoPrecioId(p.precio_id)
-                          setNuevoPrecioInput('')
-                        }}
-                        disabled={votando === p.precio_id}
-                        className="px-2 py-1 rounded-lg text-[10px] font-bold
-                          bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400
-                          hover:bg-amber-100 active:scale-95 transition-all disabled:opacity-50"
-                      >
-                        📢 Actualizar precio
-                      </button>
+                  {/* Footer: votos */}
+                  {!isEditing && (
+                    <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                      {gi === 0 && gruposArr.length > 1 ? (
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                          🏆 Mejor precio
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-zinc-400">
+                          {pPrincipal.votos_ok > 0 && `✓ ${pPrincipal.votos_ok} confirmaron`}
+                          {pPrincipal.votos_desactual > 0 && ` · ⚠ ${pPrincipal.votos_desactual} reportaron`}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleVoto(pPrincipal.precio_id, 'ok')}
+                          disabled={votando === pPrincipal.precio_id}
+                          className="px-2 py-1 rounded-lg text-[10px] font-bold
+                            bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400
+                            hover:bg-emerald-100 active:scale-95 transition-all disabled:opacity-50">
+                          👍 Confirmo
+                        </button>
+                        <button onClick={() => { setEditandoPrecioId(pPrincipal.precio_id); setNuevoPrecioInput('') }}
+                          disabled={votando === pPrincipal.precio_id}
+                          className="px-2 py-1 rounded-lg text-[10px] font-bold
+                            bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400
+                            hover:bg-amber-100 active:scale-95 transition-all disabled:opacity-50">
+                          📢 Actualizar
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+                  )}
+                </div>
+              )
+            })
+          })()}
         </div>
       )}
 
