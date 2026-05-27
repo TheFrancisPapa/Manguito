@@ -88,6 +88,11 @@ function stripHtml(str) {
   return str
     .replace(/<!\[CDATA\[(.*?)\]\]>/gs, '$1')
     .replace(/<[^>]*>/g, '')
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&aacute;/gi, 'á').replace(/&eacute;/gi, 'é').replace(/&iacute;/gi, 'í').replace(/&oacute;/gi, 'ó').replace(/&uacute;/gi, 'ú')
+    .replace(/&ntilde;/gi, 'ñ').replace(/&uuml;/gi, 'ü')
+    .replace(/&iquest;/g, '¿').replace(/&iexcl;/g, '¡')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
