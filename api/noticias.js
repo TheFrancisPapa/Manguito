@@ -175,13 +175,23 @@ function parseRssFeed(xml, fuente, categoriaDefault) {
     const itemXml = match[1]
 
     const titulo = stripHtml(extractTag(itemXml, 'title'))
+    if (!titulo) continue
+
+    // Ignorar contenido premium o reportes automatizados que requieren suscripción (muy comunes en Yahoo)
+    const tituloLower = titulo.toLowerCase()
+    if (
+      tituloLower.startsWith('analyst report:') ||
+      tituloLower.startsWith('market update:') ||
+      tituloLower.includes('zacks') // Reportes de Zacks suelen ser premium en Yahoo
+    ) {
+      continue
+    }
+
     const url = stripHtml(extractTag(itemXml, 'link'))
     const descripcionRaw = extractTag(itemXml, 'description')
     const descripcion = stripHtml(descripcionRaw)
     const pubDate = extractTag(itemXml, 'pubDate')
     const imagen = extractImageUrl(itemXml)
-
-    if (!titulo) continue
 
     const fecha = pubDate ? new Date(pubDate).toISOString() : new Date().toISOString()
     const categoria = detectCategoria(fuente, categoriaDefault, titulo, descripcion)
