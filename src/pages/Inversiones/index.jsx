@@ -6,6 +6,7 @@ import { Card, CardHeader, Button, EmptyState, Modal } from '../../components/ui
 import { FormInversion } from '../../components/forms/FormInversion'
 import { FormVenta } from '../../components/forms/FormVenta'
 import { TipContextual } from '../../components/ui/TipContextual'
+import { FeedNoticias } from './FeedNoticias'
 
 // ── Formateo ────────────────────────────────────────────────
 const fmt = (n, dec = 2) =>
@@ -269,7 +270,67 @@ function HistorialVentas({ ventas, onEliminar }) {
   )
 }
 
-// ── Resumen del portfolio ────────────────────────────────────
+// ── Resumen compacto del portfolio ───────────────────────────
+function ResumenPortfolioCompacto({ portfolio, dolarRate, cargandoPrecios, onVerCartera }) {
+  if (!portfolio || portfolio.detalles?.length === 0) return null
+
+  const positivo = portfolio.gananciaARS >= 0
+
+  return (
+    <div
+      className="card-premium card-interactive bg-white dark:bg-[var(--dark-card)]
+        border border-zinc-100/70 dark:border-[var(--dark-border)]
+        rounded-[20px] p-4 mb-4 cursor-pointer"
+      onClick={onVerCartera}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg
+            bg-gradient-to-br from-[var(--mango)]/15 to-[var(--mango)]/5">
+            💼
+          </div>
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500 mb-0.5">
+              Mi Cartera
+            </p>
+            <p className="text-lg font-black text-zinc-900 dark:text-white font-mono-num leading-tight">
+              {fmtARS(portfolio.totalValorARS)}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {cargandoPrecios && (
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--mango)] animate-live-dot" />
+          )}
+          {portfolio.gananciaTotalPct != null && (
+            <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full ${
+              positivo
+                ? 'bg-emerald-50 dark:bg-emerald-900/15'
+                : 'bg-red-50 dark:bg-red-900/15'
+            }`}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <path d={positivo ? "M7 17l9.2-9.2M17 17V7H7" : "M17 7l-9.2 9.2M7 7v10h10"}
+                  stroke={positivo ? 'var(--leaf)' : '#EF4444'}
+                  strokeWidth="2.5" strokeLinecap="round" />
+              </svg>
+              <span className={`text-xs font-extrabold ${
+                positivo ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+              }`}>
+                {positivo ? '+' : ''}{portfolio.gananciaTotalPct.toFixed(2)}%
+              </span>
+            </div>
+          )}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-zinc-300 dark:text-zinc-600">
+            <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Resumen del portfolio (detallado, para vista de cartera) ─
 function ResumenPortfolio({ portfolio, dolarRate, cargandoPrecios }) {
   if (!portfolio) {
     return (
@@ -347,6 +408,91 @@ function ResumenPortfolio({ portfolio, dolarRate, cargandoPrecios }) {
   )
 }
 
+// ── Vista de la cartera (portfolio detallado) ────────────────
+function VistaCartera({
+  inversiones, portfolio, ventas, dolarRate, cargando, cargandoPrecios,
+  onAgregarInversion, onEliminar, onVender, onRefrescar, onEliminarVenta, onVolver
+}) {
+  const detalles = portfolio?.detalles ?? []
+
+  return (
+    <>
+      {/* Botón volver */}
+      <button
+        onClick={onVolver}
+        className="flex items-center gap-1.5 text-sm font-medium text-zinc-400 dark:text-zinc-500
+          hover:text-[var(--mango)] transition-colors mb-4 cursor-pointer"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+        Volver a noticias
+      </button>
+
+      {/* Portfolio summary */}
+      <ResumenPortfolio
+        portfolio={portfolio}
+        dolarRate={dolarRate}
+        cargandoPrecios={cargandoPrecios}
+      />
+
+      {/* Investment list */}
+      {cargando ? (
+        <div className="flex flex-col gap-3">
+          {[0,1,2].map(i => (
+            <div key={i} className="h-40 bg-zinc-100 dark:bg-zinc-800 rounded-[20px] animate-pulse" />
+          ))}
+        </div>
+      ) : detalles.length === 0 || inversiones.length === 0 ? (
+        <Card className="py-12 mb-5">
+          <EmptyState
+            icono="📊"
+            titulo="Todavía no tenés inversiones"
+            descripcion="Agregá tus acciones, CEDEARs, cripto o fondos para ver tu cartera en tiempo real."
+            accion={<Button icono="+" onClick={onAgregarInversion}>Agregar mi primera inversión</Button>}
+          />
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-3 mb-5">
+          <div className="flex items-center justify-between px-1">
+            <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+              {inversiones.length} {inversiones.length === 1 ? 'posición' : 'posiciones'}
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variante="secondary"
+                tamaño="sm"
+                onClick={onRefrescar}
+                cargando={cargandoPrecios}
+                title="Actualizar precios"
+              >
+                🔄
+              </Button>
+            </div>
+          </div>
+          {detalles.map(det => (
+            <TarjetaInversion
+              key={det.id}
+              detalle={det}
+              onEliminar={onEliminar}
+              onVender={onVender}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Sales history */}
+      <HistorialVentas ventas={ventas} onEliminar={onEliminarVenta} />
+
+      {inversiones.length > 0 && (
+        <p className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center mt-2 pb-2">
+          Precios referenciales · Fuente: Yahoo Finance & CoinGecko · No constituyen asesoramiento financiero.
+        </p>
+      )}
+    </>
+  )
+}
+
 // ── Página principal ─────────────────────────────────────────
 export function InversionesPage() {
   const { usuario } = useAuthContext()
@@ -359,6 +505,7 @@ export function InversionesPage() {
   const [modalNuevo,  setModalNuevo]  = useState(false)
   const [modalVenta,  setModalVenta]  = useState(false)
   const [invParaVender, setInvParaVender] = useState(null)
+  const [vistaActiva, setVistaActiva] = useState('noticias') // 'noticias' | 'cartera'
 
   const handleEliminar = async (detalle) => {
     if (window.confirm(`¿Eliminás ${detalle.nombre} de tu cartera?`)) {
@@ -395,85 +542,77 @@ export function InversionesPage() {
         <PageHeader
           titulo="Inversiones"
           subtitulo={
-            cargando ? 'Cargando...'
+            vistaActiva === 'noticias'
+              ? 'Noticias · Informes · Análisis con IA'
+              : cargando ? 'Cargando...'
               : detalles.length === 0 ? 'Tu cartera en tiempo real'
               : `${ganadores} en verde · ${perdedores} en rojo`
           }
           accion={
             <div className="flex gap-2">
-              <Button
-                variante="secondary"
-                tamaño="sm"
-                onClick={refrescarPrecios}
-                cargando={cargandoPrecios}
-                title="Actualizar precios"
-              >
-                🔄
-              </Button>
-              <Button
-                variante="secondary"
-                tamaño="sm"
-                onClick={() => handleAbrirVenta(null)}
-                className="!text-red-600 dark:!text-red-400 !border-red-200 dark:!border-red-800/50 hover:!bg-red-50 dark:hover:!bg-red-900/20"
-                title="Registrar una venta"
-              >
-                📉 Vender
-              </Button>
-              <Button icono="+" onClick={() => setModalNuevo(true)}>
-                Agregar
-              </Button>
+              {vistaActiva === 'cartera' && (
+                <>
+                  <Button
+                    variante="secondary"
+                    tamaño="sm"
+                    onClick={() => handleAbrirVenta(null)}
+                    className="!text-red-600 dark:!text-red-400 !border-red-200 dark:!border-red-800/50 hover:!bg-red-50 dark:hover:!bg-red-900/20"
+                    title="Registrar una venta"
+                  >
+                    📉 Vender
+                  </Button>
+                  <Button icono="+" onClick={() => setModalNuevo(true)}>
+                    Agregar
+                  </Button>
+                </>
+              )}
+              {vistaActiva === 'noticias' && inversiones.length > 0 && (
+                <Button
+                  variante="secondary"
+                  tamaño="sm"
+                  onClick={() => setModalNuevo(true)}
+                >
+                  + Inversión
+                </Button>
+              )}
             </div>
           }
         />
 
         <TipContextual seccion="inversiones" className="mb-5" />
 
-        {/* Portfolio summary */}
-        <ResumenPortfolio
-          portfolio={portfolio}
-          dolarRate={dolarRate}
-          cargandoPrecios={cargandoPrecios}
-        />
-
-        {/* Investment list */}
-        {cargando ? (
-          <div className="flex flex-col gap-3">
-            {[0,1,2].map(i => (
-              <div key={i} className="h-40 bg-zinc-100 dark:bg-zinc-800 rounded-[20px] animate-pulse" />
-            ))}
-          </div>
-        ) : detalles.length === 0 || inversiones.length === 0 ? (
-          <Card className="py-12 mb-5">
-            <EmptyState
-              icono="📊"
-              titulo="Todavía no tenés inversiones"
-              descripcion="Agregá tus acciones, CEDEARs, cripto o fondos para ver tu cartera en tiempo real."
-              accion={<Button icono="+" onClick={() => setModalNuevo(true)}>Agregar mi primera inversión</Button>}
+        {/* Vista: Noticias (default) */}
+        {vistaActiva === 'noticias' && (
+          <>
+            {/* Resumen compacto del portfolio (clickeable para ir a la cartera) */}
+            <ResumenPortfolioCompacto
+              portfolio={portfolio}
+              dolarRate={dolarRate}
+              cargandoPrecios={cargandoPrecios}
+              onVerCartera={() => setVistaActiva('cartera')}
             />
-          </Card>
-        ) : (
-          <div className="flex flex-col gap-3 mb-5">
-            <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider px-1">
-              {inversiones.length} {inversiones.length === 1 ? 'posición' : 'posiciones'}
-            </p>
-            {detalles.map(det => (
-              <TarjetaInversion
-                key={det.id}
-                detalle={det}
-                onEliminar={handleEliminar}
-                onVender={handleAbrirVenta}
-              />
-            ))}
-          </div>
+
+            {/* Feed de noticias */}
+            <FeedNoticias holdings={inversiones} />
+          </>
         )}
 
-        {/* Sales history */}
-        <HistorialVentas ventas={ventas} onEliminar={eliminarVenta} />
-
-        {inversiones.length > 0 && (
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center mt-2 pb-2">
-            Precios referenciales · Fuente: Yahoo Finance & CoinGecko · No constituyen asesoramiento financiero.
-          </p>
+        {/* Vista: Cartera (portfolio detallado) */}
+        {vistaActiva === 'cartera' && (
+          <VistaCartera
+            inversiones={inversiones}
+            portfolio={portfolio}
+            ventas={ventas}
+            dolarRate={dolarRate}
+            cargando={cargando}
+            cargandoPrecios={cargandoPrecios}
+            onAgregarInversion={() => setModalNuevo(true)}
+            onEliminar={handleEliminar}
+            onVender={handleAbrirVenta}
+            onRefrescar={refrescarPrecios}
+            onEliminarVenta={eliminarVenta}
+            onVolver={() => setVistaActiva('noticias')}
+          />
         )}
       </PageWrapper>
 
