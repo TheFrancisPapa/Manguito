@@ -75,15 +75,20 @@ export function ResetPassword() {
           </p>
         </div>
 
-        {error ? (
-           <div className="flex flex-col gap-4">
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100 dark:border-red-900/50 animate-in fade-in zoom-in-95">
-              {error}
-            </div>
-            <Button onClick={() => navigate('/login')} className="w-full">
-              Volver al Login
-            </Button>
+        {error && (
+           <div className={`mb-4 ${!sesionValida ? '' : ''} text-sm px-4 py-3 rounded-xl border animate-in fade-in zoom-in-95 ${
+             !sesionValida 
+               ? 'bg-red-50 dark:bg-red-900/20 text-red-600 border-red-100 dark:border-red-900/50'
+               : 'bg-red-50 dark:bg-red-900/20 text-red-600 border-red-100 dark:border-red-900/50'
+           }`}>
+            {error}
           </div>
+        )}
+
+        {!sesionValida && error ? (
+          <Button onClick={() => navigate('/login')} className="w-full">
+            Volver al Login
+          </Button>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input 

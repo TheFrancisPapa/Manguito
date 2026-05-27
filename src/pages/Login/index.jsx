@@ -137,6 +137,8 @@ export function LoginPage() {
     try {
       await login({ email: formData.email, password: formData.password })
       setSuccess(true)
+      // Dar tiempo a la animación de éxito y al AuthContext para procesar la sesión
+      setTimeout(() => navigate('/dashboard'), 1200)
     } catch (err) {
       setError('Email o contraseña incorrectos. Volvé a intentar.')
       setCargando(false)
